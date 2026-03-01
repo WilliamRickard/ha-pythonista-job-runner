@@ -48,8 +48,8 @@ def read_options() -> Dict[str, Any]:
     Load the addon options file from OPTIONS_PATH and return its contents as a mapping.
     
     If the options file does not exist, contains invalid JSON, or the top-level JSON value is not an object, an empty dictionary is returned.
-    
-    Returns:
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
         dict: Parsed options from OPTIONS_PATH, or an empty dict if the file is missing, invalid JSON, or not a JSON object.
     """
     if not OPTIONS_PATH.exists():
