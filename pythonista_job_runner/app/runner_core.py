@@ -12,8 +12,7 @@ import sys
 import threading
 import time
 import uuid
-import dataclasses
-import zipfile
+from dataclasses import asdict, dataclass, field
 try:
     import pwd
 except ImportError:
