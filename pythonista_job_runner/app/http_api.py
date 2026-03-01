@@ -375,8 +375,9 @@ class Handler(BaseHTTPRequestHandler):
         if len(body) != ln:
             self._json(400, {"error": "incomplete_upload"})
             return
-
-        try:
+            # Avoid leaking internal details in errors; log exception server-side and return a stable error code.
+            self.log_error("Error creating job: %r", e)
+            self._json(400, {"error": "job_creation_failed"})
             j = runner.new_job(body, self.headers, self._get_client_ip())
         except Exception as e:
             # Avoid leaking internal details in errors; the server log still shows the exception.
