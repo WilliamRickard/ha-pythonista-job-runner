@@ -1,0 +1,40 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  addon-linter:
+    name: Add-on configuration lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run Home Assistant add-on linter
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: "./pythonista_job_runner"
+
+  yamllint:
+    name: YAML lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run yamllint
+        uses: frenck/action-yamllint@v1
+        with:
+          strict: true
+
+  hadolint:
+    name: Dockerfile lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
+          dockerfile: Dockerfile

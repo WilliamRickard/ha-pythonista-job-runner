@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+
+# Logs / dumps
+*.log
+pythonista_job_runner_logs/
