@@ -1,9 +1,10 @@
+# Version: 1.0.0
 from __future__ import annotations
 
+import hmac
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from io import BytesIO
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from runner_core import ADDON_VERSION, INGRESS_PROXY_IP, Runner, read_options
@@ -11,19 +12,40 @@ from utils import ip_in_cidrs, read_file_delta, stream_file
 from webui import html_page
 
 
+class RunnerHTTPServer(ThreadingHTTPServer):
+    """HTTP server that carries a Runner instance for request handlers."""
+
+    runner: Runner
+
+
 class Handler(BaseHTTPRequestHandler):
-    server: ThreadingHTTPServer
+    """HTTP API surface for the Runner.
+
+    This is intentionally lightweight and dependency-free to remain usable in
+    constrained environments (for example Pythonista).
+    """
+
+    server: RunnerHTTPServer
+
+    def _write_bytes(self, data: bytes) -> None:
+        """Write response bytes, swallowing client disconnects."""
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            return
 
     def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
-        self.wfile.write(data)
+        self._write_bytes(data)
 
     def _json(self, code: int, obj: Any) -> None:
-        b = json.dumps(obj).encode("utf-8")
+        # Compact JSON to reduce bandwidth and avoid unnecessary whitespace.
+        b = json.dumps(obj, separators=(",", ":")).encode("utf-8")
         self._send_bytes(code, "application/json; charset=utf-8", b)
 
     def _get_client_ip(self) -> str:
@@ -36,7 +58,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._get_client_ip() == INGRESS_PROXY_IP
 
     def _auth_ok(self) -> bool:
-        runner: Runner = self.server.runner  # type: ignore[attr-defined]
+        runner = self.server.runner
+
         if runner.ingress_strict and not self._is_ingress():
             return False
 
@@ -44,13 +67,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/health":
             return True
 
-        # Ingress: trusted
+        # Ingress: trusted.
         if self._is_ingress():
             return True
 
-        # Direct access: token + optional CIDR allowlist
+        # Direct access: token plus optional CIDR allowlist.
         tok = self.headers.get("X-Runner-Token", "")
-        if not (runner.token and tok == runner.token):
+        if not (runner.token and hmac.compare_digest(tok, runner.token)):
             return False
 
         cidrs = runner.api_allow_cidrs
@@ -58,19 +81,37 @@ class Handler(BaseHTTPRequestHandler):
             return ip_in_cidrs(self._get_client_ip(), list(cidrs))
         return True
 
+    def _job_id_from_suffix(self, prefix: str, suffix: str) -> str:
+        path = urlparse(self.path).path
+        if not (path.startswith(prefix) and path.endswith(suffix)):
+            return ""
+        return path.split("/")[-1][: -len(suffix)]
+
+    @staticmethod
+    def _parse_int(value: str | None, default: int) -> int:
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except Exception:
+            return default
+
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
 
         if path in {"/", "/index.html"}:
             if not self._auth_ok():
-                return self._json(401, {"error": "unauthorised"})
-            return self._send_bytes(200, "text/html; charset=utf-8", html_page(ADDON_VERSION))
+                self._json(401, {"error": "unauthorised"})
+                return
+            self._send_bytes(200, "text/html; charset=utf-8", html_page(ADDON_VERSION))
+            return
 
         if path == "/health":
-            return self._json(200, {"status": "ok", "version": ADDON_VERSION})
+            self._json(200, {"status": "ok", "version": ADDON_VERSION})
+            return
 
         if path == "/info.json":
-            return self._json(
+            self._json(
                 200,
                 {
                     "service": "pythonista_job_runner",
@@ -89,45 +130,47 @@ class Handler(BaseHTTPRequestHandler):
                     },
                 },
             )
+            return
 
         if not self._auth_ok():
-            return self._json(401, {"error": "unauthorised"})
+            self._json(401, {"error": "unauthorised"})
+            return
 
-        runner: Runner = self.server.runner  # type: ignore[attr-defined]
+        runner = self.server.runner
 
         if path == "/stats.json":
-            return self._json(200, runner.stats_dict())
+            self._json(200, runner.stats_dict())
+            return
 
         if path == "/jobs.json":
             jobs = [j.status_dict() for j in runner.list_jobs()]
-            return self._json(200, {"jobs": jobs})
+            self._json(200, {"jobs": jobs})
+            return
 
         if path.startswith("/job/") and path.endswith(".json"):
-            job_id = path.split("/")[-1][:-5]
-            j = runner.get(job_id)
+            job_id = self._job_id_from_suffix("/job/", ".json")
+            j = runner.get(job_id) if job_id else None
             if not j:
-                return self._json(404, {"error": "unknown_job"})
-            return self._json(200, j.status_dict())
+                self._json(404, {"error": "unknown_job"})
+                return
+            self._json(200, j.status_dict())
+            return
 
         if path.startswith("/tail/") and path.endswith(".json"):
-            job_id = path.split("/")[-1][:-5]
-            j = runner.get(job_id)
+            job_id = self._job_id_from_suffix("/tail/", ".json")
+            j = runner.get(job_id) if job_id else None
             if not j:
-                return self._json(404, {"error": "unknown_job"})
+                self._json(404, {"error": "unknown_job"})
+                return
 
             q = parse_qs(urlparse(self.path).query)
-            try:
-                stdout_from = int((q.get("stdout_from") or ["-1"])[0])
-                stderr_from = int((q.get("stderr_from") or ["-1"])[0])
-            except Exception:
-                stdout_from = -1
-                stderr_from = -1
-            try:
-                max_bytes = int((q.get("max_bytes") or [str(runner.tail_chars * 2)])[0])
-            except Exception:
-                max_bytes = runner.tail_chars * 2
+            stdout_from = self._parse_int((q.get("stdout_from") or [None])[0], -1)
+            stderr_from = self._parse_int((q.get("stderr_from") or [None])[0], -1)
+
+            max_bytes_default = runner.tail_chars * 2
+            max_bytes = self._parse_int((q.get("max_bytes") or [str(max_bytes_default)])[0], max_bytes_default)
             if max_bytes <= 0:
-                max_bytes = runner.tail_chars * 2
+                max_bytes = max_bytes_default
             if max_bytes > 1024 * 1024:
                 max_bytes = 1024 * 1024
 
@@ -136,9 +179,11 @@ class Handler(BaseHTTPRequestHandler):
                     stdout_from = 0
                 if stderr_from < 0:
                     stderr_from = 0
+
+                # max_bytes is applied per stream; consider lowering the cap if clients request both streams.
                 out_txt, out_next, out_size = read_file_delta(j.stdout_path, stdout_from, max_bytes)
                 err_txt, err_next, err_size = read_file_delta(j.stderr_path, stderr_from, max_bytes)
-                return self._json(
+                self._json(
                     200,
                     {
                         "status": j.status_dict(),
@@ -153,130 +198,171 @@ class Handler(BaseHTTPRequestHandler):
                         },
                     },
                 )
+                return
 
-            return self._json(200, {"status": j.status_dict(), "tail": {"stdout": j.tail_stdout.get(), "stderr": j.tail_stderr.get()}})
+            self._json(
+                200,
+                {
+                    "status": j.status_dict(),
+                    "tail": {"stdout": j.tail_stdout.get(), "stderr": j.tail_stderr.get()},
+                },
+            )
+            return
 
         if path.startswith("/result/") and path.endswith(".zip"):
-            job_id = path.split("/")[-1][:-4]
-            j = runner.get(job_id)
+            job_id = self._job_id_from_suffix("/result/", ".zip")
+            j = runner.get(job_id) if job_id else None
             if not j:
-                return self._json(404, {"error": "unknown_job"})
+                self._json(404, {"error": "unknown_job"})
+                return
             if not j.result_zip.exists():
-                return self._json(404, {"error": "result_not_ready"})
+                self._json(404, {"error": "result_not_ready"})
+                return
 
             size = j.result_zip.stat().st_size
             self.send_response(200)
             self.send_header("Content-Type", "application/zip")
             self.send_header("Content-Length", str(size))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
-            stream_file(j.result_zip, self.wfile.write)
+            try:
+                stream_file(j.result_zip, self.wfile.write)
+            except (BrokenPipeError, ConnectionResetError):
+                return
             return
 
         if path.startswith("/stdout/") and path.endswith(".txt"):
-            job_id = path.split("/")[-1][:-4]
-            j = runner.get(job_id)
+            job_id = self._job_id_from_suffix("/stdout/", ".txt")
+            j = runner.get(job_id) if job_id else None
             if not j:
-                return self._json(404, {"error": "unknown_job"})
+                self._json(404, {"error": "unknown_job"})
+                return
             if not j.stdout_path.exists():
-                return self._json(404, {"error": "not_ready"})
+                self._json(404, {"error": "not_ready"})
+                return
             size = j.stdout_path.stat().st_size
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.send_header("Content-Length", str(size))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
-            stream_file(j.stdout_path, self.wfile.write)
+            try:
+                stream_file(j.stdout_path, self.wfile.write)
+            except (BrokenPipeError, ConnectionResetError):
+                return
             return
 
         if path.startswith("/stderr/") and path.endswith(".txt"):
-            job_id = path.split("/")[-1][:-4]
-            j = runner.get(job_id)
+            job_id = self._job_id_from_suffix("/stderr/", ".txt")
+            j = runner.get(job_id) if job_id else None
             if not j:
-                return self._json(404, {"error": "unknown_job"})
+                self._json(404, {"error": "unknown_job"})
+                return
             if not j.stderr_path.exists():
-                return self._json(404, {"error": "not_ready"})
+                self._json(404, {"error": "not_ready"})
+                return
             size = j.stderr_path.stat().st_size
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
             self.send_header("Content-Length", str(size))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.end_headers()
-            stream_file(j.stderr_path, self.wfile.write)
+            try:
+                stream_file(j.stderr_path, self.wfile.write)
+            except (BrokenPipeError, ConnectionResetError):
+                return
             return
 
-        return self._json(404, {"error": "not_found"})
+        self._json(404, {"error": "not_found"})
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
-        runner: Runner = self.server.runner  # type: ignore[attr-defined]
+        runner = self.server.runner
 
         if path.startswith("/cancel/"):
             if not self._auth_ok():
-                return self._json(401, {"error": "unauthorised"})
+                self._json(401, {"error": "unauthorised"})
+                return
             job_id = path.split("/")[-1]
             ok = runner.cancel(job_id)
-            return self._json(200, {"ok": ok})
+            self._json(200, {"ok": ok})
+            return
 
         if path == "/purge":
             if not self._auth_ok():
-                return self._json(401, {"error": "unauthorised"})
+                self._json(401, {"error": "unauthorised"})
+                return
+
             cl = self.headers.get("Content-Length")
-            if not cl:
-                ln = 0
-            else:
-                try:
-                    ln = int(cl)
-                except Exception:
-                    return self._json(400, {"error": "bad_content_length"})
-            # Purge payload is tiny JSON; cap it defensively
+            ln = self._parse_int(cl, 0) if cl else 0
+
+            # Purge payload is tiny JSON; cap it defensively.
             if ln < 0 or ln > 16 * 1024:
-                return self._json(413, {"error": "payload_too_large"})
+                self._json(413, {"error": "payload_too_large"})
+                return
+
             body = self.rfile.read(ln) if ln > 0 else b"{}"
             try:
                 payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
             except Exception:
                 payload = {}
+
             states = payload.get("states") or []
             if isinstance(states, str):
                 states = [states]
             if not isinstance(states, list):
                 states = []
+
             older_hours = payload.get("older_than_hours")
-            try:
-                older_hours_i = int(older_hours) if older_hours is not None else 0
-            except Exception:
-                older_hours_i = 0
+            older_hours_i = self._parse_int(str(older_hours) if older_hours is not None else None, 0)
             dry_run = bool(payload.get("dry_run", False))
+
             res = runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run)
-            return self._json(200, res)
+            self._json(200, res)
+            return
 
         if path != "/run":
-            return self._json(404, {"error": "not_found"})
+            self._json(404, {"error": "not_found"})
+            return
 
         if not self._auth_ok():
-            return self._json(401, {"error": "unauthorised"})
+            self._json(401, {"error": "unauthorised"})
+            return
 
         cl = self.headers.get("Content-Length")
         if not cl:
-            return self._json(411, {"error": "length_required"})
-        try:
-            ln = int(cl)
-        except Exception:
-            return self._json(400, {"error": "bad_content_length"})
+            self._json(411, {"error": "length_required"})
+            return
+
+        ln = self._parse_int(cl, -1)
+        if ln < 0:
+            self._json(400, {"error": "bad_content_length"})
+            return
+
         max_bytes = int(runner.max_upload_mb) * 1024 * 1024
         if ln <= 0:
-            return self._json(400, {"error": "empty_upload"})
+            self._json(400, {"error": "empty_upload"})
+            return
         if ln > max_bytes:
-            return self._json(413, {"error": "upload_too_large"})
+            self._json(413, {"error": "upload_too_large"})
+            return
 
         body = self.rfile.read(ln)
+        if len(body) != ln:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+
         try:
             j = runner.new_job(body, self.headers, self._get_client_ip())
         except Exception as e:
-            return self._json(400, {"error": f"{type(e).__name__}: {e}"})
+            # Avoid leaking internal details in errors; the server log still shows the exception.
+            self._json(400, {"error": f"{type(e).__name__}"})
+            return
 
-        return self._json(
+        self._json(
             202,
             {
                 "job_id": j.job_id,
@@ -288,23 +374,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
-        runner: Runner = self.server.runner  # type: ignore[attr-defined]
+        runner = self.server.runner
 
         if path.startswith("/job/"):
             if not self._auth_ok():
-                return self._json(401, {"error": "unauthorised"})
+                self._json(401, {"error": "unauthorised"})
+                return
             job_id = path.split("/")[-1]
             ok = runner.delete(job_id)
-            return self._json(200, {"ok": ok})
+            self._json(200, {"ok": ok})
+            return
 
-        return self._json(404, {"error": "not_found"})
+        self._json(404, {"error": "not_found"})
 
 
 def serve() -> None:
     opts = read_options()
     runner = Runner(opts)
-    httpd = ThreadingHTTPServer((runner.bind_host, runner.bind_port), Handler)
-    httpd.runner = runner  # type: ignore[attr-defined]
+    httpd = RunnerHTTPServer((runner.bind_host, runner.bind_port), Handler)
+    httpd.runner = runner
     print(f"Runner listening on http://{runner.bind_host}:{runner.bind_port}", flush=True)
     httpd.serve_forever()
-
