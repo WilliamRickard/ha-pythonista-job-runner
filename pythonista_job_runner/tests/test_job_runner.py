@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import sys
-import re
 from pathlib import Path
 from unittest import mock
 
