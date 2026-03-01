@@ -1,0 +1,6 @@
+---
+blank_issues_enabled: true
+contact_links:
+  - name: Home Assistant Add-ons documentation
+    url: https://developers.home-assistant.io/docs/add-ons/
+    about: Read the official Home Assistant add-on development docs.
