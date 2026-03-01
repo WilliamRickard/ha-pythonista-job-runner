@@ -817,7 +817,7 @@ class Runner:
             size = int(p.stat().st_size)
             total_bytes += size
             entry: Dict[str, Any] = {"path": rel, "size": size}
-            if self.manifest_sha256:
+    return hashlib.sha256(b).hexdigest()
                 try:
                     entry["sha256"] = sha256_file(p)
                 except Exception:
