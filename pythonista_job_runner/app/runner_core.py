@@ -193,11 +193,7 @@ class Runner:
         self.ingress_strict = bool(opts.get("ingress_strict", False))
 
         self.api_allow_cidrs = [str(c).strip() for c in (opts.get("api_allow_cidrs") or []) if isinstance(c, str) and str(c).strip()]
-        self.allow_env = [
-            k
-            for k in [str(x).strip() for x in (opts.get("allow_env") or []) if isinstance(x, str)]
-            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k)
-        ]
+import re
         self.bind_host = str(opts.get("bind_host") or "0.0.0.0").strip() or "0.0.0.0"
         try:
             self.bind_port = int(opts.get("bind_port") or 8787)
