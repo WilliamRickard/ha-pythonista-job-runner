@@ -12,7 +12,8 @@ import sys
 import threading
 import time
 import uuid
-from dataclasses import asdict, dataclass, field
+import dataclasses
+from dataclasses import asdict, dataclass
 try:
     import pwd
 except ImportError:
@@ -21,15 +22,23 @@ try:
     import resource
 except ImportError:
     resource = None  # type: ignore[assignment]
-from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 
-from utils import SafeZipLimits, TailBuffer, clamp_int, ip_in_cidrs, safe_extract_zip_bytes
+from utils import (
+    SafeZipLimits,
+    TailBuffer,
+    clamp_int,
+    ip_in_cidrs,
+    parse_utc,
+    safe_extract_zip_bytes,
+    utc_now,
+)
 
-ADDON_VERSION = "0.6.1"
+ADDON_VERSION = "0.6.2"
+print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")
 OPTIONS_PATH = DATA_DIR / "options.json"
