@@ -73,7 +73,8 @@ class Handler(BaseHTTPRequestHandler):
 
         # Direct access: token plus optional CIDR allowlist.
         tok = self.headers.get("X-Runner-Token", "")
-        if not (runner.token and hmac.compare_digest(tok, runner.token)):
+        if not runner.token or not hmac.compare_digest(tok, runner.token):
+            return False
             return False
 
         cidrs = runner.api_allow_cidrs
