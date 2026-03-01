@@ -175,14 +175,37 @@ class TestJobRunnerDocumentation:
         assert main.__doc__ is not None
         assert "HTTP API server" in main.__doc__
         assert "Pythonista Job Runner" in main.__doc__
-
     def test_module_version_info(self):
         """Test that module contains version information."""
         source = Path(__file__).parent.parent / "app" / "job_runner.py"
         content = source.read_text()
 
+        cfg = Path(__file__).parent.parent / "config.yaml"
+        cfg_text = cfg.read_text()
+
+        def _read_version(text: str):
+            for ln in text.splitlines():
+                s = ln.strip()
+                if not s.startswith("version:"):
+                    continue
+                v = s.split(":", 1)[1].strip()
+                v = v.split("#", 1)[0].strip()
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in ("\'", "\""):
+                    v = v[1:-1]
+                v = v.strip()
+                return v or None
+            return None
+
+        version = _read_version(cfg_text)
+        assert version, "config.yaml missing version"
+
         # Check for version mentions
-        assert "0.6.1" in content
+        assert version in content
+
+        # Also ensure runner_core.ADDON_VERSION matches config.yaml
+        import runner_core
+        assert getattr(runner_core, "ADDON_VERSION", None) == version
+
 
     def test_module_purpose_documented(self):
         """Test that module purpose is documented."""
@@ -200,7 +223,7 @@ class TestJobRunnerRegression:
 
     def test_dataclass_field_import_present(self):
         """Regression: Ensure the NameError fix for dataclasses.field is preserved."""
-        # This test verifies the 0.6.1 hotfix
+        # This test verifies the 0.6.x hotfix
         source = Path(__file__).parent.parent / "app" / "job_runner.py"
         content = source.read_text()
 
@@ -214,7 +237,7 @@ class TestJobRunnerRegression:
     @mock.patch("job_runner.serve")
     def test_no_field_name_error(self, mock_serve):
         """Regression: Test that calling main() doesn't raise NameError about 'field'."""
-        # This was the bug in pre-0.6.1
+        # This was the bug in pre-0.6.x
         try:
             main()
         except NameError as e:

@@ -9,6 +9,7 @@ Keep this module dependency-light; it is used by both runner_core and http_api.
 import hashlib
 import ipaddress
 import json
+import logging
 import os
 import stat
 import time
@@ -19,6 +20,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+_logger = logging.getLogger(__name__)
+_logger.addHandler(logging.NullHandler())
 
 def utc_now() -> str:
     """Return UTC timestamp in the format used by this add-on."""
@@ -225,15 +228,6 @@ def safe_extract_zip_bytes(zip_bytes: bytes, dst_dir: Path, limits: SafeZipLimit
                             break
                         dst.write(b)
 
-
-def ip_in_cidrs(ip_str: str, cidrs: List[str]) -> bool:
-    try:
-        ip = ipaddress.ip_address(ip_str)
-    except Exception:
-        return False
-import logging
-
-_logger = logging.getLogger(__name__)
 
 def ip_in_cidrs(ip_str: str, cidrs: List[str]) -> bool:
     try:
