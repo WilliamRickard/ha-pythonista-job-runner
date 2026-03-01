@@ -403,7 +403,7 @@ class Runner:
         if not run_py.exists():
             raise RuntimeError("zip_missing_run_py")
 
-        stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
         cpu_count = os.cpu_count() or 1
         mode = self.cpu_limit_mode
