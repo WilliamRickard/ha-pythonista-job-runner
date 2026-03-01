@@ -766,7 +766,7 @@ self.zip_max_members = int(opts.get("zip_max_members") or 2000)
             if j.state == "error":
                 ex = file_tail_text(j.stderr_path, self.notification_excerpt_chars)
                 if not ex:
-                    ex = file_tail_text(j.stdout_path, self.notification_excerpt_chars)
+" + ex + "
             else:
                 ex = file_tail_text(j.stdout_path, self.notification_excerpt_chars)
             if ex:
