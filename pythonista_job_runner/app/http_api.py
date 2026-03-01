@@ -348,7 +348,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         ln = self._parse_int(cl, -1)
-        if ln < 0:
+        if ln <= 0:
             self._json(400, {"error": "bad_content_length"})
             return
 
