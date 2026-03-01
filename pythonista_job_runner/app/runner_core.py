@@ -44,6 +44,14 @@ SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN", "")
 
 
 def read_options() -> Dict[str, Any]:
+    """
+    Load the addon options file from OPTIONS_PATH and return its contents as a mapping.
+    
+    If the options file does not exist, contains invalid JSON, or the top-level JSON value is not an object, an empty dictionary is returned.
+    
+    Returns:
+        dict: Parsed options from OPTIONS_PATH, or an empty dict if the file is missing, invalid JSON, or not a JSON object.
+    """
     if not OPTIONS_PATH.exists():
         return {}
     try:
@@ -94,6 +102,13 @@ class Job:
     tail_stderr: TailBuffer = field(default_factory=lambda: TailBuffer(8000))
 
     def duration_seconds(self) -> Optional[int]:
+        """
+        Compute the elapsed time of the job in seconds.
+        
+        Returns:
+            int: Number of whole seconds between `started_utc` and `finished_utc`, or between `started_utc` and now if the job has not finished.
+            None: If the job has not started (`started_utc` is not set).
+        """
         if not self.started_utc:
             return None
         t0 = parse_utc(self.started_utc) or 0.0
@@ -104,6 +119,21 @@ class Job:
         return d
 
     def status_dict(self) -> Dict[str, Any]:
+        """
+        Builds a serialisable dictionary representing the job's current status and metadata.
+        
+        Returns:
+            status (dict): A mapping with the job's identifying timestamps and state, plus:
+                - job_id, created_utc, started_utc, finished_utc
+                - duration_seconds: elapsed seconds between start and finish (or now if running)
+                - state, phase, exit_code, error
+                - runner_version: runner release identifier
+                - client_ip
+                - submitted_by (dict): keys `id`, `name`, `display_name`
+                - limits (dict): keys `cpu_percent`, `cpu_limit_mode`, `cpu_count`, `cpu_cpulimit_pct`, `mem_mb`, `threads`, `timeout_seconds`
+                - result_filename: name of the produced result ZIP
+                - input_sha256
+        """
         return {
             "job_id": self.job_id,
             "created_utc": self.created_utc,
@@ -136,6 +166,16 @@ class Job:
 
 
 def _ha_persistent_notification(title: str, message: str, notification_id: Optional[str]) -> None:
+    """
+    Send a Home Assistant persistent notification via the Supervisor API.
+    
+    Sends a persistent notification with the given title and message to the Supervisor persistent_notification service when a supervisor token is configured. If no supervisor token is available or the HTTP request fails, the function does nothing and returns silently.
+    
+    Parameters:
+        title (str): Notification title.
+        message (str): Notification body; may contain HTML for rendering.
+        notification_id (Optional[str]): Optional identifier to reuse or replace an existing notification.
+    """
     if not SUPERVISOR_TOKEN:
         return
     url = f"{SUPERVISOR_CORE_API}/services/persistent_notification/create"
@@ -160,6 +200,36 @@ def _ha_persistent_notification(title: str, message: str, notification_id: Optio
 
 class Runner:
     def __init__(self, opts: Dict[str, Any]) -> None:
+        """
+        Initialise the Runner with configuration options.
+        
+        Parameters:
+            opts (Dict[str, Any]): Configuration mapping. Recognised keys:
+                - token: Supervisor API token for notifications.
+                - ingress_strict: If true, enforce ingress path validation.
+                - timeout_seconds: Default job timeout in seconds.
+                - max_upload_mb: Maximum upload size in megabytes for incoming ZIPs.
+                - default_cpu_percent / max_cpu_percent: Default and maximum CPU percent allocation.
+                - default_mem_mb / max_mem_mb: Default and maximum memory (MB) per job.
+                - max_threads: Maximum allowed thread count for jobs.
+                - cpu_limit_mode: CPU limiting mode, e.g. "single_core".
+                - max_concurrent_jobs: Number of jobs allowed to run concurrently.
+                - queue_max_jobs: Maximum queued jobs permitted.
+                - tail_chars: Number of characters retained in in-memory tails for stdout/stderr.
+                - job_retention_hours: Hours to keep finished job directories before reaping.
+                - summary_head_chars / summary_tail_chars: Characters to include from job output in summaries.
+                - manifest_sha256: Include SHA-256 digests for output files in result manifest when true.
+                - notify_on_completion: Enable sending persistent notifications when jobs finish.
+                - notification_mode: "per_job" or "latest" notification behaviour.
+                - notification_id_prefix: Prefix used when constructing notification IDs.
+                - notification_excerpt_chars: Number of characters of output included in notifications.
+                - zip_max_members / zip_max_total_uncompressed / zip_max_single_uncompressed: Limits applied when extracting uploaded ZIPs.
+        
+        Initialisation side effects:
+            - Creates the jobs directory if missing.
+            - Loads any existing jobs from disk.
+            - Starts the background reaper thread.
+        """
         self._opts = opts
 
         self.token = str(opts.get("token") or "")
@@ -208,6 +278,22 @@ class Runner:
         threading.Thread(target=self._reaper, daemon=True).start()
 
     def stats_dict(self) -> Dict[str, Any]:
+        """
+        Collect runtime and storage statistics for the runner and its jobs.
+        
+        Returns:
+            stats (Dict[str, Any]): Mapping with the following keys:
+                - `runner_version`: Runner addon version string.
+                - `jobs_total`: Total number of tracked jobs.
+                - `jobs_running`: Number of jobs currently in the `running` state.
+                - `jobs_done`: Number of jobs in the `done` state.
+                - `jobs_error`: Number of jobs in the `error` state.
+                - `jobs_queued`: Number of jobs in the `queued` state.
+                - `job_retention_hours`: Configured retention window in hours.
+                - `jobs_dir_bytes`: Total size in bytes of files under the jobs directory (best-effort; 0 on error).
+                - `disk_free_bytes`: Free bytes available on the filesystem containing the jobs directory (0 on error).
+                - `disk_total_bytes`: Total bytes of the filesystem containing the jobs directory (0 on error).
+        """
         with self._lock:
             states = [j.state for j in self._jobs.values()]
         jobs_total = len(states)
@@ -246,14 +332,41 @@ class Runner:
         }
 
     def list_jobs(self) -> List[Job]:
+        """
+        Return the stored jobs ordered most-recent-first.
+        
+        Returns:
+            List[Job]: A list of Job objects with the most recently created/added job first.
+        """
         with self._lock:
             return [self._jobs[jid] for jid in self._job_order if jid in self._jobs]
 
     def get(self, job_id: str) -> Optional[Job]:
+        """
+        Retrieve a job by its identifier.
+        
+        Returns:
+            Job or None: `Job` if a job with the given id exists, `None` otherwise.
+        """
         with self._lock:
             return self._jobs.get(job_id)
 
     def new_job(self, zip_bytes: bytes, headers: Any, client_ip: str) -> Job:
+        """
+        Create and enqueue a new job from an uploaded ZIP archive.
+        
+        Parameters:
+            zip_bytes (bytes): ZIP payload containing the job workspace; its SHA-256 is recorded.
+            headers (Any): HTTP headers used to derive resource limits and, for ingress requests, submitter metadata.
+            client_ip (str): Source IP of the submission; used to detect ingress proxy submissions.
+        
+        Returns:
+            Job: The newly created Job object, persisted to disk and scheduled to run.
+        
+        Raises:
+            RuntimeError: "queue_full" if the runner's queue capacity is exceeded.
+            RuntimeError: "zip_missing_run_py" if the uploaded ZIP does not contain a top-level run.py.
+        """
         with self._lock:
             active = sum(1 for j in self._jobs.values() if j.state in ("queued", "running"))
         if active >= self.queue_max_jobs:
@@ -323,6 +436,15 @@ class Runner:
         return j
 
     def delete(self, job_id: str) -> bool:
+        """
+        Delete a job and its on-disk data, cancelling it first if it is running.
+        
+        Parameters:
+        	job_id (str): Identifier of the job to remove.
+        
+        Returns:
+        	bool: `True` if the job was found and deleted, `False` if no job with the given id exists.
+        """
         j = self.get(job_id)
         if not j:
             return False
@@ -335,6 +457,15 @@ class Runner:
         return True
 
     def cancel(self, job_id: str) -> bool:
+        """
+        Request cancellation of the job identified by `job_id` and, if it is running, attempt to terminate its process group.
+        
+        Parameters:
+            job_id (str): Identifier of the job to cancel.
+        
+        Returns:
+            bool: `True` if a job with `job_id` was found and cancellation was requested (termination attempted if running), `False` if no such job exists.
+        """
         j = self.get(job_id)
         if not j:
             return False
@@ -348,6 +479,21 @@ class Runner:
         return True
 
     def purge(self, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
+        """
+        Delete jobs that match the specified states and are older than the given age, optionally performing a dry run.
+        
+        Parameters:
+            states (List[str]): Job state names to match (e.g. "done", "error"). An empty list matches all states.
+            older_than_hours (int): Minimum age in hours for a job to be eligible for deletion; zero disables age filtering.
+            dry_run (bool): If True, do not remove job data but return the list that would be deleted.
+        
+        Returns:
+            result (Dict[str, Any]): Summary dictionary containing:
+                - "ok": True if operation completed.
+                - "deleted": list of job IDs deleted (or that would be deleted on dry run).
+                - "count": number of entries in "deleted".
+                - "dry_run": the input dry_run flag.
+        """
         now = time.time()
         older_than_s = max(0, older_than_hours) * 3600
         to_delete: List[str] = []
@@ -380,12 +526,24 @@ class Runner:
         return {"ok": True, "deleted": deleted, "count": len(deleted), "dry_run": dry_run}
 
     def _write_status(self, j: Job) -> None:
+        """
+        Persist the job's current status to the job's status file on disk.
+        
+        Parameters:
+            j (Job): Job whose status will be written to its `status_path`. IO or serialization errors are ignored.
+        """
         try:
             j.status_path.write_text(json.dumps(j.status_dict(), indent=2, sort_keys=True), encoding="utf-8")
         except Exception:
             pass
 
     def _run_job(self, job_id: str) -> None:
+        """
+        Execute the full lifecycle of the job identified by `job_id`: start the worker, enforce resource limits and timeouts, stream stdout/stderr to disk and in-memory tails, handle cancellation, record final status, produce the result ZIP and send completion notification.
+        
+        Parameters:
+            job_id (str): Identifier of the job to run; if the job does not exist the method returns immediately.
+        """
         j = self.get(job_id)
         if not j:
             return
@@ -426,6 +584,11 @@ class Runner:
                 env[k] = t
 
             def _preexec() -> None:
+                """
+                Prepare the child process environment before execution.
+                
+                When invoked in the child (pre-exec), this sets a new session id, lowers process priority, and — if the platform resource module is available — applies an address-space (virtual memory) limit based on the job's `mem_mb` value.
+                """
                 try:
                     os.setsid()
                 except Exception:
@@ -463,6 +626,16 @@ class Runner:
                     assert p.stderr is not None
 
                     def pump(src, dst, tail: TailBuffer) -> None:
+                        """
+                        Copy lines from a readable stream to a writable stream and record them in a TailBuffer.
+                        
+                        Reads from `src` until end-of-file, writing each line to `dst`, flushing after each write, and appending the raw bytes to `tail`.
+                        
+                        Parameters:
+                            src: A file-like object supporting `readline()` that yields bytes or text lines.
+                            dst: A writable file-like object to receive the copied lines; `write()` and `flush()` are used.
+                            tail (TailBuffer): Buffer that stores the most recent bytes written for quick access.
+                        """
                         while True:
                             b = src.readline()
                             if not b:
@@ -533,6 +706,16 @@ class Runner:
                 pass
 
     def _notification_id(self, j: Job) -> Optional[str]:
+        """
+        Compute the persistent notification identifier to use for a finished job.
+        
+        Parameters:
+            j (Job): The job for which to generate the notification identifier.
+        
+        Returns:
+            Optional[str]: `None` if notifications are disabled; otherwise a string.
+            For `"per_job"` mode returns `"<prefix>_<job_id>"`, otherwise returns `"<prefix>_latest"`.
+        """
         if not self.notify_on_completion:
             return None
         if self.notification_mode == "per_job":
@@ -541,6 +724,14 @@ class Runner:
         return f"{self.notification_id_prefix}_latest"
 
     def _notify_done(self, j: Job) -> None:
+        """
+        Send a Home Assistant persistent notification summarising a finished job if notifications are enabled.
+        
+        The notification includes the job ID, final state, exit code, error message (if any), duration, and submitter information. If the job has an ingress path a link to the web UI for that job is included. If an excerpt length is configured, a tail excerpt from the job's stdout (or stderr for error states) is appended and truncated to the configured size.
+        
+        Parameters:
+            j (Job): The job whose completion should be notified.
+        """
         if not self.notify_on_completion:
             return
         title = "Pythonista Job Runner"
@@ -577,12 +768,29 @@ class Runner:
         _ha_persistent_notification(title, msg, self._notification_id(j))
 
     def _iter_outputs(self, j: Job) -> Iterable[Path]:
+        """
+        Yield all regular files contained in a job's outputs directory, searched recursively.
+        
+        Parameters:
+            j (Job): The job whose work directory will be searched for an 'outputs' subdirectory.
+        
+        Returns:
+            files (Iterable[Path]): An iterable of file paths found under `j.work_dir / "outputs"`. Returns an empty iterable if the directory does not exist or contains no files.
+        """
         out_dir = j.work_dir / "outputs"
         if not out_dir.exists() or not out_dir.is_dir():
             return []
         return [p for p in out_dir.rglob("*") if p.is_file()]
 
     def _make_result_zip(self, j: Job) -> None:
+        """
+        Create the job result ZIP file for the given job.
+        
+        The ZIP at j.result_zip will contain the job's status.json, exit_code.txt, summary.txt, result_manifest.json, job.log, stdout.txt and stderr.txt (if present), and any files under the job's work/outputs directory preserved with their relative paths. The manifest records job metadata, a listing of output files with sizes (and SHA-256 digests if the runner's manifest SHA-256 option is enabled), and totals for files and bytes. The summary text includes a brief job overview, configured limits and truncated head/tail excerpts of stdout and stderr.
+        
+        Parameters:
+            j (Job): The job whose artifacts and metadata will be packaged into the result ZIP at j.result_zip.
+        """
         exit_code_text = (str(j.exit_code) if j.exit_code is not None else "").encode("utf-8")
         status_json = json.dumps(j.status_dict(), indent=2, sort_keys=True).encode("utf-8")
 
@@ -692,6 +900,14 @@ class Runner:
                         zf.write(p, rel)
 
     def _reaper(self) -> None:
+        """
+        Periodically removes completed jobs that are older than the configured retention window.
+        
+        Calculates a cutoff time from self.retention_hours, finds jobs with a finished timestamp older than
+        that cutoff, deletes their job directory from disk, and removes their entries from the runner's
+        in-memory indexes (job list, job order and process map). Runs indefinitely, sleeping for 600
+        seconds between iterations and ignoring any errors encountered during cleanup.
+        """
         while True:
             try:
                 cutoff = int(time.time()) - (int(self.retention_hours) * 3600)
@@ -715,7 +931,13 @@ class Runner:
             time.sleep(600)
 
     def _load_jobs_from_disk(self) -> None:
-        """Rebuild job index from /data/jobs on startup."""
+        """
+        Reconstruct the in-memory job index from the on-disk job directories in /data/jobs.
+        
+        Scans each subdirectory that contains a status.json, loads and normalises its data into a Job object, seeds stdout/stderr tail buffers from existing log files, and populates the runner's internal job map and ordering under the instance lock. Any job in a non-final state ("queued" or "running") is marked as an error with a default exit code of 125 and a restart message. After loading, each job's status.json is rewritten to ensure a consistent, normalised on-disk representation.
+        
+        No return value.
+        """
         items: List[Path] = []
         for p in JOBS_DIR.iterdir() if JOBS_DIR.exists() else []:
             if not p.is_dir():
@@ -726,6 +948,15 @@ class Runner:
             items.append(p)
 
         def sort_key(p: Path) -> float:
+            """
+            Determine a numeric sort key for a job directory based on its creation time.
+            
+            Parameters:
+                p (Path): Path to a job directory expected to contain a `status.json`.
+            
+            Returns:
+                float: Unix timestamp in seconds derived from `created_utc` in `status.json` if present and parseable; otherwise the file-system modification time of the path; if neither is available, `0.0`.
+            """
             try:
                 data = json.loads((p / "status.json").read_text(encoding="utf-8"))
                 t = parse_utc(str(data.get("created_utc") or "")) or 0.0
@@ -817,11 +1048,32 @@ class Runner:
 
 
 def hashlib_sha256_bytes(b: bytes) -> str:
+    """
+    Compute the SHA-256 hexadecimal digest of the given bytes.
+    
+    Parameters:
+        b (bytes): Input data to hash.
+    
+    Returns:
+        hex_digest (str): Lowercase hexadecimal SHA-256 digest of `b`.
+    """
     import hashlib
     return hashlib.sha256(b).hexdigest()
 
 
 def _kill_process_group(p: subprocess.Popen, soft_seconds: int) -> None:
+    """
+    Terminate a process group gracefully, escalating to a forceful kill after a grace period.
+    
+    Attempts to obtain the process group for the provided subprocess and sends SIGTERM to that group.
+    Waits up to `soft_seconds` for the process to exit, polling periodically; if the process remains
+    running after the grace period, sends SIGKILL to the group. If the process group cannot be
+    determined, attempts to terminate the single process. All errors during termination are ignored.
+    
+    Parameters:
+        p (subprocess.Popen): The child process whose process group should be terminated.
+        soft_seconds (int): Number of seconds to wait after sending SIGTERM before sending SIGKILL.
+    """
     try:
         pgid = os.getpgid(p.pid)
     except Exception:

@@ -14,6 +14,11 @@ from http_api import serve
 
 
 def main() -> None:
+    """
+    Start the HTTP API server for the Pythonista Job Runner add-on.
+    
+    This function serves as the module entry point when executed as a script.
+    """
     serve()
 
 

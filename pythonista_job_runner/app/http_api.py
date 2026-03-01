@@ -15,6 +15,18 @@ class Handler(BaseHTTPRequestHandler):
     server: ThreadingHTTPServer
 
     def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
+        """
+        Send an HTTP response using the handler's output stream.
+        
+        Sets the response status code, the Content-Type and Content-Length headers, and a
+        Cache-Control: no-store header, then writes the provided binary `data` to the
+        connection.
+        
+        Parameters:
+            code (int): HTTP status code to send.
+            content_type (str): MIME type for the response Content-Type header.
+            data (bytes): Binary payload to write to the response body.
+        """
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
@@ -23,19 +35,46 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def _json(self, code: int, obj: Any) -> None:
+        """
+        Send a JSON HTTP response with the given status code.
+        
+        Parameters:
+            code (int): HTTP status code to send.
+            obj (Any): Python object to serialize as the JSON response body; encoded using UTF-8 and served with content type "application/json; charset=utf-8".
+        """
         b = json.dumps(obj).encode("utf-8")
         self._send_bytes(code, "application/json; charset=utf-8", b)
 
     def _get_client_ip(self) -> str:
+        """
+        Obtain the remote client's IP address from the HTTP request.
+        
+        Returns:
+            client_ip (str): The client's IP address with surrounding whitespace removed, or an empty string if it cannot be determined.
+        """
         try:
             return (self.client_address[0] or "").strip()
         except Exception:
             return ""
 
     def _is_ingress(self) -> bool:
+        """
+        Determine whether the request originated from the configured ingress proxy.
+        
+        Returns:
+            `true` if the client IP matches the configured ingress proxy address, `false` otherwise.
+        """
         return self._get_client_ip() == INGRESS_PROXY_IP
 
     def _auth_ok(self) -> bool:
+        """
+        Determine whether the incoming HTTP request is authorised to access the API.
+        
+        Authorisation rules: the /health path is always allowed; requests originating from the configured ingress proxy are trusted; when ingress_strict is enabled, non-ingress requests are denied; direct access requires a matching `X-Runner-Token` header and, if `api_allow_cidrs` is configured, the client's IP must fall within one of those CIDRs.
+        
+        Returns:
+            `true` if the request is authorised, `false` otherwise.
+        """
         runner: Runner = self.server.runner  # type: ignore[attr-defined]
         if runner.ingress_strict and not self._is_ingress():
             return False
@@ -59,6 +98,11 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def do_GET(self) -> None:  # noqa: N802
+        """
+        Handle incoming HTTP GET requests and dispatch to the HTTP API endpoints.
+        
+        Serves the public endpoints for the runner: root/index page, health, static info, statistics, job listings and job status, incremental or in-memory log tails (honouring `stdout_from`, `stderr_from` and `max_bytes` query parameters with sane bounds), downloadable job result ZIP, and raw stdout/stderr text streams. Enforces the handler's authentication rules and returns JSON error objects for unauthorised access, unknown jobs, results or outputs not ready, and other not-found routes. Streams file responses with appropriate content-type and cache-control headers.
+        """
         path = urlparse(self.path).path
 
         if path in {"/", "/index.html"}:
@@ -208,6 +252,16 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(404, {"error": "not_found"})
 
     def do_POST(self) -> None:  # noqa: N802
+        """
+        Handle HTTP POST requests for job-control endpoints.
+        
+        Supports the following paths and observable behaviours:
+        - /cancel/<job_id>: requires authorisation; requests cancellation of the named job and responds with JSON {"ok": true|false}. Responds 401 if unauthorised.
+        - /purge: requires authorisation; accepts a JSON payload with optional keys `states` (string or list), `older_than_hours` (int-like), and `dry_run` (bool). Invokes a purge operation and returns its JSON result. Responds 401 if unauthorised.
+        - /run: requires authorisation; accepts an upload whose size must be > 0 and not exceed the configured maximum. Creates a new job and responds 202 with JSON containing `job_id`, `tail_url`, `result_url` and `jobs_url`. Responds 401 if unauthorised, 413 if the upload is too large, and 400 if job creation fails.
+        
+        For unknown POST paths responds with 404 and for unauthorised access responds with 401 and an error payload.
+        """
         path = urlparse(self.path).path
         runner: Runner = self.server.runner  # type: ignore[attr-defined]
 
@@ -269,6 +323,11 @@ class Handler(BaseHTTPRequestHandler):
         )
 
     def do_DELETE(self) -> None:  # noqa: N802
+        """
+        Handle HTTP DELETE requests for deleting a job.
+        
+        If the request path is /job/<job_id> the handler checks authorisation and, if authorised, attempts to delete the job and responds with a JSON object {"ok": <bool>} where the boolean indicates whether the job was deleted. If authorisation fails the response is a 401 JSON error. For any other path the handler responds with a 404 JSON error.
+        """
         path = urlparse(self.path).path
         runner: Runner = self.server.runner  # type: ignore[attr-defined]
 
@@ -283,6 +342,11 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve() -> None:
+    """
+    Start the HTTP API server and attach a Runner instance.
+    
+    Reads configuration options, binds a ThreadingHTTPServer to 0.0.0.0:8787, assigns a Runner (constructed from the options) to the server as `server.runner`, prints the listening address to stdout and enters the server's main loop to accept requests.
+    """
     opts = read_options()
     httpd = ThreadingHTTPServer(("0.0.0.0", 8787), Handler)
     httpd.runner = Runner(opts)  # type: ignore[attr-defined]

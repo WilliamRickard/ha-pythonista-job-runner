@@ -12,6 +12,17 @@ from typing import Optional
 
 
 def html_page(addon_version: str) -> bytes:
+    """
+    Generate the complete HTML UI page for the Pythonista Job Runner with the provided addon version embedded.
+    
+    The returned document is a self-contained HTML/JavaScript UI that uses relative URLs for its API endpoints and assets (e.g. jobs.json, stats.json, tail/, result/) so it works behind ingress or a reverse proxy.
+    
+    Parameters:
+        addon_version (str): Version string to substitute for the `__ADDON_VERSION__` placeholder in the page.
+    
+    Returns:
+        bytes: The resulting HTML encoded as UTF-8.
+    """
     html_text = """<!doctype html>
 <html>
 <head>
