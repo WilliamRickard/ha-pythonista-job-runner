@@ -13,7 +13,7 @@ import threading
 import time
 import uuid
 import dataclasses
-import zipfile
+from dataclasses import asdict, dataclass
 try:
     import pwd
 except ImportError:
@@ -22,7 +22,6 @@ try:
     import resource
 except ImportError:
     resource = None  # type: ignore[assignment]
-from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -32,16 +31,14 @@ from utils import (
     SafeZipLimits,
     TailBuffer,
     clamp_int,
-    file_tail_text,
     ip_in_cidrs,
     parse_utc,
-    read_head_tail_text,
     safe_extract_zip_bytes,
-    sha256_file,
     utc_now,
 )
 
-ADDON_VERSION = "0.6.1"
+ADDON_VERSION = "0.6.2"
+print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")
 OPTIONS_PATH = DATA_DIR / "options.json"
