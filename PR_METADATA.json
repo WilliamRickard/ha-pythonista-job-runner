@@ -1,9 +1,2 @@
 {
-  "base_branch": "main",
-  "draft": false,
-  "mode": "create",
-  "new_branch": "fix/runner-core-stability-20260301",
-  "pr_body": "Fixes several issues found during review.\n\nChanges:\n- Import missing utilities in runner_core to prevent NameError during result zip creation and notifications.\n- Wire up install_requirements and pip_* options (per-job pip install into work/_deps, adds to PYTHONPATH).\n- Wire up cleanup_min_free_mb (best-effort deletion of oldest finished jobs when disk is low).\n- Fix duplicate ip_in_cidrs definition in utils.\n- Preserve newest-first job ordering across restarts.\n- Update version documentation checks to follow config.yaml.\n- Add a GitHub Actions job to run pytest.\n\nVerification:\n- python -m pytest -q (75 passed)\n",
-  "pr_title": "Fix runner_core completion crashes, utils duplication, and add CI tests",
-  "repo": "WilliamRickard/ha-pythonista-job-runner"
 }
