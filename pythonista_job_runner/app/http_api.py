@@ -162,7 +162,10 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith("/tail/") and path.endswith(".json"):
             job_id = self._job_id_from_suffix("/tail/", ".json")
-            j = runner.get(job_id) if job_id else None
+            if not job_id:
+                self._json(404, {"error": "unknown_job"})
+                return
+            j = runner.get(job_id)
             if not j:
                 self._json(404, {"error": "unknown_job"})
                 return
