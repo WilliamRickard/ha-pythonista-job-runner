@@ -547,8 +547,9 @@ class Runner:
                         os.setgid(int(job_gid))
                     if job_uid is not None:
                         os.setuid(int(job_uid))
-                except Exception:
-                    pass
+                except Exception as e:
+                    import sys
+                    print(f"WARNING: Failed to drop privileges: {e}", file=sys.stderr)
 
             cmd = ["python3", "-u", str(j.work_dir / "run.py")]
             if shutil.which("cpulimit"):
