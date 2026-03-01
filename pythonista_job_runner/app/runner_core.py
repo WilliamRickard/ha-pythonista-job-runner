@@ -641,13 +641,7 @@ class Runner:
 
             env = self._build_job_env(j.threads)
 
-            pip_err = self._maybe_install_requirements(j, env)
-            if pip_err:
-                j.exit_code = 125
-                j.finished_utc = utc_now()
-                j.state = "error"
-                j.phase = "done"
-                j.error = pip_err
+j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installation failures
                 try:
                     j.stderr_path.write_text(
                         ("pip install failed\n" + pip_err + "\n"),
