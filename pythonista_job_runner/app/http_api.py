@@ -302,7 +302,7 @@ class Handler(BaseHTTPRequestHandler):
             if not self._auth_ok():
                 self._json(401, {"error": "unauthorised"})
                 return
-            job_id = path.split("/")[-1]
+            job_id = self._job_id_from_suffix("/cancel/", "")
             ok = runner.cancel(job_id)
             self._json(200, {"ok": ok})
             return
