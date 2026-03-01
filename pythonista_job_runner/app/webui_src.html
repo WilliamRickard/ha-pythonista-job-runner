@@ -1,0 +1,118 @@
+<!doctype html><!-- VERSION: 0.6.5 -->
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Pythonista Job Runner</title>
+  <!-- Generated: edit webui_src.html, webui.css, webui.js and run webui_build.py to regenerate webui.html -->
+  <style>
+/*__WEBUI_CSS__*/
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <h1>Pythonista Job Runner</h1>
+    <small>v__ADDON_VERSION__ · <span id="statusline" class="statuschip" role="status" aria-live="polite">loading…</span></small>
+  </header>
+
+  <main>
+    <div id="stats" hidden>
+      <div class="kv" id="stats_kv"></div>
+    </div>
+
+    <div class="actions">
+      <button type="button" id="btn_refresh" data-action="refresh">Refresh</button>
+      <button type="button" id="btn_auto" data-action="toggle-auto">Auto refresh: <span id="autostate">on</span></button>
+      <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
+        poll <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" style="width:90px;"/> ms
+      </label>
+      <span style="flex:1 1 240px;"></span>
+      <label class="sr-only" for="search">Search jobs</label>
+      <input id="search" type="search" placeholder="Search job id or user…" style="flex:1 1 220px;min-width:160px;"/>
+    </div>
+
+    <div class="actions" style="margin-top:8px;">
+      <button type="button" class="rowbtn" data-action="set-view" data-view="all">All</button>
+      <button type="button" class="rowbtn" data-action="set-view" data-view="running">Running</button>
+      <button type="button" class="rowbtn" data-action="set-view" data-view="error">Errors</button>
+      <button type="button" class="rowbtn" data-action="set-view" data-view="done">Done</button>
+      <span style="flex:1 1 240px;"></span>
+      <button type="button" class="rowbtn" data-action="purge" data-state="done">Purge done</button>
+      <button type="button" class="rowbtn" data-action="purge" data-state="error">Purge errors</button>
+    </div>
+
+    <table id="jobtable">
+      <thead>
+        <tr>
+          <th>Job</th>
+          <th>State</th>
+          <th>Exit</th>
+          <th>User</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="empty" hidden>No jobs yet. Run something from Pythonista and hit Refresh.</div>
+
+    <section id="detail" hidden aria-label="Job detail">
+      <h2 style="font-size:16px;margin:0 0 8px 0;">Job <span id="jobid"></span></h2>
+
+      <div class="actions" style="margin-bottom:8px;">
+        <button type="button" data-action="download-zip">Download zip</button>
+        <button type="button" data-action="download-text" data-which="stdout">stdout.txt</button>
+        <button type="button" data-action="download-text" data-which="stderr">stderr.txt</button>
+        <button type="button" data-action="cancel">Cancel</button>
+        <button type="button" data-action="delete">Delete</button>
+      </div>
+
+      <div><small id="meta"></small></div>
+
+      <div class="actions" style="margin-top:10px;">
+        <button type="button" class="rowbtn" data-action="set-tab" data-tab="stdout">stdout</button>
+        <button type="button" class="rowbtn" data-action="set-tab" data-tab="stderr">stderr</button>
+        <button type="button" class="rowbtn" data-action="set-tab" data-tab="overview">overview</button>
+        <span style="flex:1 1 240px;"></span>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
+          <input type="checkbox" id="follow" checked/> follow
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
+          <input type="checkbox" id="wrap" checked/> wrap
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
+          font <input type="range" id="font" min="11" max="18" value="13"/>
+        </label>
+      </div>
+
+      <div class="actions" style="margin-top:8px;">
+        <label class="sr-only" for="logsearch">Find in log</label>
+        <input id="logsearch" type="search" placeholder="Find in log…" style="flex:1 1 220px;min-width:160px;"/>
+        <button type="button" class="rowbtn" data-action="find-next">Next</button>
+        <button type="button" class="rowbtn" data-action="find-prev">Prev</button>
+        <button type="button" class="rowbtn" data-action="clear-search">Clear</button>
+      </div>
+
+      <div id="overview" hidden style="margin-top:10px;">
+        <div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <div style="flex:1 1 220px;"><small id="overview_text"></small></div>
+            <button type="button" class="rowbtn" data-action="copy-curl">Copy curl snippet</button>
+          </div>
+          <div style="margin-top:10px;">
+            <textarea id="curl_snippet" rows="8" readonly></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="logpanel" style="margin-top:10px;">
+        <pre id="logview"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+/*__WEBUI_JS__*/
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@ from __future__ import annotations
 """
 Entry point for the Pythonista Job Runner Home Assistant add-on.
 
-0.6.4
+0.6.5
 - Fix runner_core syntax error in pip failure handling.
 - Run pip installation as the unprivileged job user (preexec privilege drop).
 - Harden result zip creation (skip symlinks, enforce job-dir boundaries).

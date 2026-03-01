@@ -13,6 +13,20 @@ Run Python jobs sent from Pythonista and return results as a zip.
 
 The add-on uses Home Assistant Ingress, so you can open the Web UI from the add-on page.
 
+
+### Editing the Web UI
+
+The add-on serves a single `webui.html` file so it works reliably behind Home Assistant Ingress.
+To make edits easier, the UI source is split into:
+- `pythonista_job_runner/app/webui_src.html`
+- `pythonista_job_runner/app/webui.css`
+- `pythonista_job_runner/app/webui.js`
+
+After editing, regenerate `webui.html` by running:
+
+    python pythonista_job_runner/app/webui_build.py
+
+The test suite will fail if `webui.html` is out of date.
 ## Configuration
 
 See `config.yaml` for all options and defaults. Key ones:
