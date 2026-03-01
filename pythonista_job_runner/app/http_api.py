@@ -238,7 +238,10 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith("/stdout/") and path.endswith(".txt"):
             job_id = self._job_id_from_suffix("/stdout/", ".txt")
-            j = runner.get(job_id) if job_id else None
+            if not job_id:
+                self._json(404, {"error": "unknown_job"})
+                return
+            j = runner.get(job_id)
             if not j:
                 self._json(404, {"error": "unknown_job"})
                 return
