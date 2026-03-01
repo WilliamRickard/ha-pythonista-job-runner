@@ -4,6 +4,9 @@
 
 - Repository scaffold added: CI linting, issue templates, PR checklist.
 
+- Web UI: split source into webui_src.html/webui.css/webui.js with a small bundler (webui_build.py) to regenerate webui.html.
+- Web UI: remove inline event handlers and stop using innerHTML for dynamic rows to reduce XSS risk and improve maintainability.
+- Web UI: fix tab switching so logs do not go blank (keep per-stream buffers) and cap log growth to avoid runaway memory use.
 ## 0.6.4
 
 - Fix runner_core syntax error in pip failure handling and restore passing tests.
