@@ -12,7 +12,8 @@ import sys
 import threading
 import time
 import uuid
-from dataclasses import asdict, dataclass, field
+import dataclasses
+import zipfile
 try:
     import pwd
 except ImportError:
@@ -27,7 +28,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.request import Request, urlopen
 
-from utils import SafeZipLimits, TailBuffer, clamp_int, ip_in_cidrs, safe_extract_zip_bytes
+from utils import (
+    SafeZipLimits,
+    TailBuffer,
+    clamp_int,
+    file_tail_text,
+    ip_in_cidrs,
+    parse_utc,
+    read_head_tail_text,
+    safe_extract_zip_bytes,
+    sha256_file,
+    utc_now,
+)
 
 ADDON_VERSION = "0.6.1"
 
