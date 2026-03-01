@@ -12,6 +12,15 @@ import sys
 import threading
 import time
 import uuid
+from dataclasses import asdict, dataclass, field
+try:
+    import pwd
+except ImportError:
+    pwd = None  # type: ignore[assignment]
+try:
+    import resource
+except ImportError:
+    resource = None  # type: ignore[assignment]
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +29,7 @@ from urllib.request import Request, urlopen
 
 from utils import SafeZipLimits, TailBuffer, clamp_int, ip_in_cidrs, safe_extract_zip_bytes
 
-ADDON_VERSION = "0.6.0"
+ADDON_VERSION = "0.6.1"
 
 DATA_DIR = Path("/data")
 OPTIONS_PATH = DATA_DIR / "options.json"
@@ -57,7 +66,7 @@ def _resolve_user_ids(username: str) -> tuple[Optional[int], Optional[int]]:
 @dataclass
 class Job:
     job_id: str
-    created_utc: str = field(default_factory=utc_now)
+    created_utc: str = dataclasses.field(default_factory=utc_now)
     started_utc: Optional[str] = None
     finished_utc: Optional[str] = None
     state: str = "queued"  # queued|running|done|error
@@ -83,16 +92,16 @@ class Job:
 
     cancel_requested: bool = False
 
-    job_dir: Path = field(default_factory=lambda: JOBS_DIR / "unset")
-    work_dir: Path = field(default_factory=lambda: JOBS_DIR / "unset" / "work")
+    job_dir: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset")
+    work_dir: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset" / "work")
 
-    stdout_path: Path = field(default_factory=lambda: JOBS_DIR / "unset" / "stdout.txt")
-    stderr_path: Path = field(default_factory=lambda: JOBS_DIR / "unset" / "stderr.txt")
-    status_path: Path = field(default_factory=lambda: JOBS_DIR / "unset" / "status.json")
-    result_zip: Path = field(default_factory=lambda: JOBS_DIR / "unset" / "result.zip")
+    stdout_path: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset" / "stdout.txt")
+    stderr_path: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset" / "stderr.txt")
+    status_path: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset" / "status.json")
+    result_zip: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset" / "result.zip")
 
-    tail_stdout: TailBuffer = field(default_factory=lambda: TailBuffer(8000))
-    tail_stderr: TailBuffer = field(default_factory=lambda: TailBuffer(8000))
+    tail_stdout: TailBuffer = dataclasses.field(default_factory=lambda: TailBuffer(8000))
+    tail_stderr: TailBuffer = dataclasses.field(default_factory=lambda: TailBuffer(8000))
 
     def duration_seconds(self) -> Optional[int]:
         if not self.started_utc:
