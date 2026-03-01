@@ -1,0 +1,47 @@
+---
+name: Bug report
+description: Report a bug in the add-on
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please include logs and the add-on version.
+
+  - type: input
+    id: version
+    attributes:
+      label: Add-on version
+      description: Version from `pythonista_job_runner/config.yaml`
+      placeholder: "0.6.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste relevant logs (redact tokens)
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: false
