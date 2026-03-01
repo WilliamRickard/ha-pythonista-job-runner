@@ -31,13 +31,16 @@ from utils import (
     SafeZipLimits,
     TailBuffer,
     clamp_int,
+    file_tail_text,
     ip_in_cidrs,
     parse_utc,
+    read_head_tail_text,
     safe_extract_zip_bytes,
+    sha256_file,
     utc_now,
 )
 
-ADDON_VERSION = "0.6.2"
+ADDON_VERSION = "0.6.3"
 print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")
@@ -204,6 +207,17 @@ class Runner:
 
         self.timeout_seconds = int(opts.get("timeout_seconds") or 3600)
         self.max_upload_mb = int(opts.get("max_upload_mb") or 50)
+        self.install_requirements = bool(opts.get("install_requirements", False))
+        self.cleanup_min_free_mb = int(opts.get("cleanup_min_free_mb") or 0)
+        self.pip_timeout_seconds = int(opts.get("pip_timeout_seconds") or 120)
+        self.pip_index_url = str(opts.get("pip_index_url") or "").strip()
+        self.pip_extra_index_url = str(opts.get("pip_extra_index_url") or "").strip()
+        self.pip_trusted_hosts = [
+            str(x).strip()
+            for x in (opts.get("pip_trusted_hosts") or [])
+            if isinstance(x, str) and str(x).strip()
+        ]
+
 
         self.default_cpu = int(opts.get("default_cpu_percent") or 25)
         self.max_cpu = int(opts.get("max_cpu_percent") or 50)
@@ -300,6 +314,119 @@ class Runner:
         except Exception:
             pass
 
+    def _disk_free_bytes(self) -> int:
+        try:
+            return int(shutil.disk_usage(str(JOBS_DIR)).free)
+        except Exception:
+            return 0
+
+    def _ensure_min_free_space(self) -> None:
+        """Best-effort cleanup of finished jobs if disk is below configured threshold."""
+        try:
+            min_mb = int(self.cleanup_min_free_mb)
+        except Exception:
+            min_mb = 0
+        if min_mb <= 0:
+            return
+        target_free = int(min_mb) * 1024 * 1024
+        free_now = self._disk_free_bytes()
+        if free_now >= target_free:
+            return
+
+        # Only delete jobs that have finished (done/error), oldest first.
+        candidates: List[Tuple[float, Path]] = []
+        for p in JOBS_DIR.iterdir() if JOBS_DIR.exists() else []:
+            if not p.is_dir():
+                continue
+            status_path = p / "status.json"
+            if not status_path.exists():
+                continue
+            try:
+                data = json.loads(status_path.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            state = str(data.get("state") or "")
+            if state not in ("done", "error"):
+                continue
+            finished = parse_utc(str(data.get("finished_utc") or ""))
+            if finished is None:
+                try:
+                    finished = float(p.stat().st_mtime)
+                except Exception:
+                    finished = 0.0
+            candidates.append((float(finished), p))
+
+        candidates.sort(key=lambda t: t[0])
+        for _, p in candidates:
+            if self._disk_free_bytes() >= target_free:
+                return
+            try:
+                shutil.rmtree(p, ignore_errors=True)
+            except Exception:
+                pass
+
+    def _maybe_install_requirements(self, j: Job, env: Dict[str, str]) -> Optional[str]:
+        """Optionally install requirements.txt into a per-job directory and set PYTHONPATH."""
+        if not self.install_requirements:
+            return None
+        req = j.work_dir / "requirements.txt"
+        if not req.exists() or not req.is_file():
+            return None
+
+        deps_dir = j.work_dir / "_deps"
+        deps_dir.mkdir(parents=True, exist_ok=True)
+
+        cmd = [
+            "python3",
+            "-m",
+            "pip",
+            "install",
+            "--disable-pip-version-check",
+            "--no-input",
+            "--no-cache-dir",
+            "-r",
+            str(req),
+            "-t",
+            str(deps_dir),
+        ]
+        if self.pip_index_url:
+            cmd += ["--index-url", self.pip_index_url]
+        if self.pip_extra_index_url:
+            cmd += ["--extra-index-url", self.pip_extra_index_url]
+        for h in self.pip_trusted_hosts:
+            cmd += ["--trusted-host", h]
+
+        try:
+            r = subprocess.run(
+                cmd,
+                cwd=str(j.work_dir),
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=max(10, int(self.pip_timeout_seconds)),
+                check=False,
+                text=True,
+            )
+        except Exception as e:
+            return f"pip_install_failed: {e}"
+
+        if r.returncode != 0:
+            try:
+                # Preserve output for debugging.
+                (j.work_dir / "pip_install_stdout.txt").write_text(r.stdout or "", encoding="utf-8")
+                (j.work_dir / "pip_install_stderr.txt").write_text(r.stderr or "", encoding="utf-8")
+            except Exception:
+                pass
+            tail = (r.stderr or r.stdout or "").strip()
+            if len(tail) > 2000:
+                tail = tail[-2000:]
+            return f"pip_install_rc_{r.returncode}: {tail}"
+
+        # Prepend to PYTHONPATH so run.py can import installed dependencies.
+        existing = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = str(deps_dir) + (os.pathsep + existing if existing else "")
+        return None
+
     def stats_dict(self) -> Dict[str, Any]:
         with self._lock:
             states = [j.state for j in self._jobs.values()]
@@ -351,6 +478,11 @@ class Runner:
             active = sum(1 for j in self._jobs.values() if j.state in ("queued", "running"))
         if active >= self.queue_max_jobs:
             raise RuntimeError("queue_full")
+
+        try:
+            self._ensure_min_free_space()
+        except Exception:
+            pass
 
         cpu = clamp_int(headers.get("X-Runner-CPU-PCT"), self.default_cpu, 1, self.max_cpu)
         mem = clamp_int(headers.get("X-Runner-MEM-MB"), self.default_mem, 256, self.max_mem)
@@ -508,6 +640,27 @@ class Runner:
             self._write_status(j)
 
             env = self._build_job_env(j.threads)
+
+            pip_err = self._maybe_install_requirements(j, env)
+            if pip_err:
+                j.exit_code = 125
+                j.finished_utc = utc_now()
+                j.state = "error"
+                j.phase = "done"
+                j.error = pip_err
+                try:
+                    j.stderr_path.write_text(
+                        ("pip install failed\n" + pip_err + "\n"),
+                        encoding="utf-8",
+                        errors="replace",
+                    )
+                except Exception:
+                    pass
+                self._write_status(j)
+                self._make_result_zip(j)
+                self._notify_done(j)
+                return
+
 
             job_uid = self._job_uid
             job_gid = self._job_gid
@@ -758,6 +911,14 @@ class Runner:
             zf.writestr("exit_code.txt", exit_code_text)
             zf.writestr("summary.txt", summary_txt)
             zf.writestr("result_manifest.json", manifest_json)
+            for extra_name in ("pip_install_stdout.txt", "pip_install_stderr.txt"):
+                p = j.work_dir / extra_name
+                if p.exists() and p.is_file():
+                    try:
+                        zf.write(p, extra_name)
+                    except Exception:
+                        pass
+
 
             job_log_lines = [
                 f"job_id={j.job_id}",
@@ -907,7 +1068,7 @@ class Runner:
 
             with self._lock:
                 self._jobs[j.job_id] = j
-                self._job_order.insert(0, j.job_id)
+                self._job_order.append(j.job_id)
 
         # rewrite status for normalisation
         with self._lock:

@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 """
-Entry point for the Pythonista Job Runner add-on.
+Entry point for the Pythonista Job Runner Home Assistant add-on.
 
-0.6.2 hotfix
-- Fix add-on startup crash seen as NameError: field is not defined (dataclasses.field import/usage).
-
-v0.6.2 implements plan steps 7 to 10 (plus a hotfix):
-- Step 7: Job detail + diagnostics in Web UI (stats, disk/retention, curl snippet)
-- Step 8: Smoother live output (delta tail remains; configurable poll interval in UI)
-- Step 9: Actionable, non-spammy notifications (notification_id overwrite mode)
-- Step 10: Split into modules (utils, runner_core, webui, http_api)
+0.6.3
+- Fix runner_core missing imports that could crash on job completion (result zip, notifications).
+- Wire up install_requirements and pip_* options (per-job pip install into work/_deps, adds to PYTHONPATH).
+- Wire up cleanup_min_free_mb (best-effort deletion of oldest finished jobs when disk is low).
+- Fix duplicate ip_in_cidrs definition in utils.
+- Preserve job ordering across restarts.
+- Add CI job to run pytest.
 """
 
 from http_api import serve
