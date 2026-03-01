@@ -1,4 +1,3 @@
----
 name: "Pythonista Job Runner"
 version: "0.6.0"
 slug: "pythonista_job_runner"
@@ -23,6 +22,9 @@ ports_description:
 
 options:
   token: ""
+  bind_host: "0.0.0.0"
+  bind_port: 8787
+  job_user: "jobrunner"
   timeout_seconds: 3600
   max_upload_mb: 50
   install_requirements: false
@@ -65,6 +67,9 @@ options:
 
 schema:
   token: str
+  bind_host: str
+  bind_port: int
+  job_user: str
   timeout_seconds: int
   max_upload_mb: int
   install_requirements: bool
