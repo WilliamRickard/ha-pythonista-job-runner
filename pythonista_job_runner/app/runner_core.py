@@ -13,6 +13,15 @@ import threading
 import time
 import uuid
 import dataclasses
+import zipfile
+try:
+    import pwd
+except ImportError:
+    pwd = None  # type: ignore[assignment]
+try:
+    import resource
+except ImportError:
+    resource = None  # type: ignore[assignment]
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
