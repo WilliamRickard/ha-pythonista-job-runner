@@ -92,7 +92,7 @@ class Handler(BaseHTTPRequestHandler):
         if value is None:
             return default
         try:
-            return int(value)
+        except (ValueError, TypeError):
         except Exception:
             return default
 
