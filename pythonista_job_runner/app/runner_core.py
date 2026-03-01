@@ -275,11 +275,14 @@ class Runner:
         self.notification_id_prefix = str(opts.get("notification_id_prefix") or "pythonista_job_runner").strip() or "pythonista_job_runner"
         self.notification_excerpt_chars = int(opts.get("notification_excerpt_chars") or 1200)
 
-        self.safe_zip_limits = SafeZipLimits(
-            max_members=int(opts.get("zip_max_members") or 2000),
-            max_total_uncompressed=int(opts.get("zip_max_total_uncompressed") or (200 * 1024 * 1024)),
-            max_single_uncompressed=int(opts.get("zip_max_single_uncompressed") or (50 * 1024 * 1024)),
-        )
+self.zip_max_members = int(opts.get("zip_max_members") or 2000)
+          self.zip_max_total_uncompressed = int(opts.get("zip_max_total_uncompressed") or (200 * 1024 * 1024))
+          self.zip_max_single_uncompressed = int(opts.get("zip_max_single_uncompressed") or (50 * 1024 * 1024))
+          self.safe_zip_limits = SafeZipLimits(
+              max_members=self.zip_max_members,
+              max_total_uncompressed=self.zip_max_total_uncompressed,
+              max_single_uncompressed=self.zip_max_single_uncompressed,
+          )
 
         self._lock = threading.Lock()
         self._jobs: Dict[str, Job] = {}
