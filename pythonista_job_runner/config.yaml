@@ -1,5 +1,5 @@
 name: "Pythonista Job Runner"
-version: "0.6.3"
+version: "0.6.4"
 slug: "pythonista_job_runner"
 description: "Run Python jobs sent from Pythonista and return results as a zip."
 url: "https://github.com/WilliamRickard/ha-pythonista-job-runner"

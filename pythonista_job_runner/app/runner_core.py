@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 import uuid
+import zipfile
 import dataclasses
 from dataclasses import asdict, dataclass
 try:
@@ -40,7 +41,7 @@ from utils import (
     utc_now,
 )
 
-ADDON_VERSION = "0.6.3"
+ADDON_VERSION = "0.6.4"
 print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")
@@ -212,11 +213,19 @@ class Runner:
         self.pip_timeout_seconds = int(opts.get("pip_timeout_seconds") or 120)
         self.pip_index_url = str(opts.get("pip_index_url") or "").strip()
         self.pip_extra_index_url = str(opts.get("pip_extra_index_url") or "").strip()
-        self.pip_trusted_hosts = [
-            str(x).strip()
-            for x in (opts.get("pip_trusted_hosts") or [])
-            if isinstance(x, str) and str(x).strip()
-        ]
+        trusted_hosts: List[str] = []
+        for x in (opts.get("pip_trusted_hosts") or []):
+            if not isinstance(x, str):
+                continue
+            host = x.strip()
+            if not host:
+                continue
+            # Basic allowlist: hostnames / IPv4 literals without spaces.
+            if re.fullmatch(r"[A-Za-z0-9.\-]+", host):
+                trusted_hosts.append(host)
+            else:
+                print(f"WARNING: Invalid pip_trusted_hosts entry skipped: {x!r}", flush=True)
+        self.pip_trusted_hosts = trusted_hosts
 
 
         self.default_cpu = int(opts.get("default_cpu_percent") or 25)
@@ -253,6 +262,7 @@ class Runner:
         self._job_order: List[str] = []
         self._procs: Dict[str, subprocess.Popen] = {}
         self._sema = threading.Semaphore(max(1, self.max_concurrent_jobs))
+        self._last_cleanup_check_ts = 0.0
 
         JOBS_DIR.mkdir(parents=True, exist_ok=True)
         self._load_jobs_from_disk()
@@ -321,20 +331,35 @@ class Runner:
             return 0
 
     def _ensure_min_free_space(self) -> None:
-        """Best-effort cleanup of finished jobs if disk is below configured threshold."""
+        """Best-effort cleanup of finished jobs if disk is below configured threshold.
+
+        This is intentionally conservative: only deletes jobs that are finalised (done/error)
+        and have a result zip present, to avoid racing jobs that are still packaging artefacts.
+        """
         try:
             min_mb = int(self.cleanup_min_free_mb)
         except Exception:
             min_mb = 0
         if min_mb <= 0:
             return
+
         target_free = int(min_mb) * 1024 * 1024
         free_now = self._disk_free_bytes()
         if free_now >= target_free:
             return
 
+        # Throttle scans when disk is low to avoid repeated O(n) directory walks.
+        now = time.time()
+        try:
+            last = float(getattr(self, "_last_cleanup_check_ts", 0.0))
+        except Exception:
+            last = 0.0
+        if now - last < 30:
+            return
+        self._last_cleanup_check_ts = now
+
         # Only delete jobs that have finished (done/error), oldest first.
-        candidates: List[Tuple[float, Path]] = []
+        candidates: List[Tuple[float, str, Path]] = []
         for p in JOBS_DIR.iterdir() if JOBS_DIR.exists() else []:
             if not p.is_dir():
                 continue
@@ -345,36 +370,70 @@ class Runner:
                 data = json.loads(status_path.read_text(encoding="utf-8"))
             except Exception:
                 continue
+
+            job_id = str(data.get("job_id") or p.name)
             state = str(data.get("state") or "")
             if state not in ("done", "error"):
                 continue
+
+            # Avoid racing jobs marked done/error before result packaging completes.
+            if not any(p.glob("result_*.zip")) and not (p / "result.zip").exists():
+                continue
+
             finished = parse_utc(str(data.get("finished_utc") or ""))
             if finished is None:
                 try:
                     finished = float(p.stat().st_mtime)
                 except Exception:
                     finished = 0.0
-            candidates.append((float(finished), p))
+            candidates.append((float(finished), job_id, p))
 
         candidates.sort(key=lambda t: t[0])
-        for _, p in candidates:
+
+        for _, job_id, p in candidates:
             if self._disk_free_bytes() >= target_free:
                 return
+
+            # Prefer the standard delete path to keep in-memory state consistent.
+            deleted = False
+            try:
+                deleted = bool(self.delete(job_id))
+            except Exception:
+                deleted = False
+
+            if deleted:
+                continue
+
+            # Fallback: best-effort remove directory and clean in-memory indices.
             try:
                 shutil.rmtree(p, ignore_errors=True)
             except Exception:
                 pass
+            with self._lock:
+                self._jobs.pop(job_id, None)
+                self._job_order = [x for x in self._job_order if x != job_id]
+                self._procs.pop(job_id, None)
 
     def _maybe_install_requirements(self, j: Job, env: Dict[str, str]) -> Optional[str]:
-        """Optionally install requirements.txt into a per-job directory and set PYTHONPATH."""
+        """Optionally install requirements.txt into a per-job directory and set PYTHONPATH.
+
+        Security: pip may execute build hooks. Run the install step as the unprivileged job user.
+        """
         if not self.install_requirements:
             return None
+        if self._job_uid is None or self._job_gid is None:
+            return "pip_install_disabled_no_job_user"
         req = j.work_dir / "requirements.txt"
         if not req.exists() or not req.is_file():
             return None
 
         deps_dir = j.work_dir / "_deps"
         deps_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            os.chown(str(deps_dir), int(self._job_uid), int(self._job_gid))
+            os.chmod(str(deps_dir), 0o770)
+        except Exception:
+            pass
 
         cmd = [
             "python3",
@@ -396,33 +455,62 @@ class Runner:
         for h in self.pip_trusted_hosts:
             cmd += ["--trusted-host", h]
 
+        redaction_urls = [self.pip_index_url, self.pip_extra_index_url]
+
+        def _pip_preexec() -> None:
+            try:
+                try:
+                    os.setgroups([])
+                except Exception:
+                    pass
+                os.setgid(int(self._job_gid))
+                os.setuid(int(self._job_uid))
+            except Exception:
+                pass
+
         try:
             r = subprocess.run(
                 cmd,
                 cwd=str(j.work_dir),
                 env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 timeout=max(10, int(self.pip_timeout_seconds)),
                 check=False,
                 text=True,
+                preexec_fn=_pip_preexec,
             )
+        except subprocess.TimeoutExpired as e:
+            out = _redact_pip_text((e.stdout or ""), redaction_urls)
+            err = _redact_pip_text((e.stderr or ""), redaction_urls)
+            try:
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stdout.txt", out)
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stderr.txt", err)
+            except Exception:
+                pass
+            tail = (err or out).strip()
+            if len(tail) > 2000:
+                tail = tail[-2000:]
+            return f"pip_install_timeout: {tail}"
         except Exception as e:
-            return f"pip_install_failed: {e}"
+            msg = _redact_pip_text(f"{type(e).__name__}: {e}", redaction_urls)
+            return f"pip_install_failed: {msg}"
+
+        out = _redact_pip_text((r.stdout or ""), redaction_urls)
+        err = _redact_pip_text((r.stderr or ""), redaction_urls)
 
         if r.returncode != 0:
             try:
-                # Preserve output for debugging.
-                (j.work_dir / "pip_install_stdout.txt").write_text(r.stdout or "", encoding="utf-8")
-                (j.work_dir / "pip_install_stderr.txt").write_text(r.stderr or "", encoding="utf-8")
+                # Preserve (redacted) output for debugging. Avoid symlink-following writes.
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stdout.txt", out)
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stderr.txt", err)
             except Exception:
                 pass
-            tail = (r.stderr or r.stdout or "").strip()
+            tail = (err or out).strip()
             if len(tail) > 2000:
                 tail = tail[-2000:]
             return f"pip_install_rc_{r.returncode}: {tail}"
 
-        # Prepend to PYTHONPATH so run.py can import installed dependencies.
+        # Success: prepend to PYTHONPATH so run.py can import installed dependencies.
         existing = env.get("PYTHONPATH", "")
         env["PYTHONPATH"] = str(deps_dir) + (os.pathsep + existing if existing else "")
         return None
@@ -639,22 +727,23 @@ class Runner:
             j.started_utc = utc_now()
             self._write_status(j)
 
-            env = self._build_job_env(j.threads)
+            env = self._build_job_env(j.threads).copy()
 
-j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installation failures
+            pip_err = self._maybe_install_requirements(j, env)
+            if pip_err:
+                j.state = "error"
+                j.phase = "done"
+                j.exit_code = 126  # command invoked cannot execute (pip / dependency install failure)
+                j.error = pip_err
+                j.finished_utc = utc_now()
                 try:
-                    j.stderr_path.write_text(
-                        ("pip install failed\n" + pip_err + "\n"),
-                        encoding="utf-8",
-                        errors="replace",
-                    )
+                    _safe_write_text_no_symlink(j.stderr_path, "pip install failed\n" + pip_err + "\n")
                 except Exception:
                     pass
                 self._write_status(j)
                 self._make_result_zip(j)
                 self._notify_done(j)
                 return
-
 
             job_uid = self._job_uid
             job_gid = self._job_gid
@@ -809,6 +898,7 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
             else:
                 ex = file_tail_text(j.stdout_path, self.notification_excerpt_chars)
             if ex:
+                ex = _redact_pip_text(ex, [self.pip_index_url, self.pip_extra_index_url])
                 excerpt = "\n\n```text\n" + ex[-self.notification_excerpt_chars :] + "\n```"
 
         msg = (
@@ -825,9 +915,9 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
 
     def _iter_outputs(self, j: Job) -> Iterable[Path]:
         out_dir = j.work_dir / "outputs"
-        if not out_dir.exists() or not out_dir.is_dir():
+        if not out_dir.exists() or not out_dir.is_dir() or out_dir.is_symlink():
             return []
-        return [p for p in out_dir.rglob("*") if p.is_file()]
+        return [p for p in out_dir.rglob("*") if p.is_file() and not p.is_symlink()]
 
     def _make_result_zip(self, j: Job) -> None:
         exit_code_text = (str(j.exit_code) if j.exit_code is not None else "").encode("utf-8")
@@ -896,10 +986,8 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
         manifest_json = json.dumps(manifest, indent=2, sort_keys=True).encode("utf-8")
 
         with zipfile.ZipFile(j.result_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            if j.stdout_path.exists():
-                zf.write(j.stdout_path, "stdout.txt")
-            if j.stderr_path.exists():
-                zf.write(j.stderr_path, "stderr.txt")
+            _safe_zip_write(zf, j.stdout_path, "stdout.txt", j.job_dir)
+            _safe_zip_write(zf, j.stderr_path, "stderr.txt", j.job_dir)
 
             zf.writestr("status.json", status_json)
             zf.writestr("exit_code.txt", exit_code_text)
@@ -907,11 +995,7 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
             zf.writestr("result_manifest.json", manifest_json)
             for extra_name in ("pip_install_stdout.txt", "pip_install_stderr.txt"):
                 p = j.work_dir / extra_name
-                if p.exists() and p.is_file():
-                    try:
-                        zf.write(p, extra_name)
-                    except Exception:
-                        pass
+                _safe_zip_write(zf, p, extra_name, j.work_dir)
 
 
             job_log_lines = [
@@ -940,11 +1024,12 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
             zf.writestr("job.log", ("\n".join(job_log_lines) + "\n").encode("utf-8", errors="replace"))
 
             out_dir = j.work_dir / "outputs"
-            if out_dir.exists() and out_dir.is_dir():
+            if out_dir.exists() and out_dir.is_dir() and not out_dir.is_symlink():
                 for p in out_dir.rglob("*"):
-                    if p.is_file():
-                        rel = p.relative_to(j.work_dir).as_posix()
-                        zf.write(p, rel)
+                    if not (p.is_file() and not p.is_symlink()):
+                        continue
+                    rel = p.relative_to(j.work_dir).as_posix()
+                    _safe_zip_write(zf, p, rel, out_dir)
 
     def _reaper(self) -> None:
         while True:
@@ -991,7 +1076,7 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
                 except Exception:
                     return 0.0
 
-        items.sort(key=sort_key, reverse=True)
+        items.sort(key=sort_key, reverse=False)
 
         with self._lock:
             self._jobs.clear()
@@ -1062,7 +1147,7 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
 
             with self._lock:
                 self._jobs[j.job_id] = j
-                self._job_order.append(j.job_id)
+                self._job_order.insert(0, j.job_id)
 
         # rewrite status for normalisation
         with self._lock:
@@ -1074,6 +1159,80 @@ j.exit_code = 126  # Use 126 (command invoked cannot execute) for pip/installati
 def hashlib_sha256_bytes(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
+
+
+def _redact_basic_auth_in_urls(text: str) -> str:
+    """Redact basic-auth credentials in URLs within a string."""
+    if not text:
+        return text
+    # Replace scheme://user:pass@host with scheme://user:***@host
+    return re.sub(r"(https?://)([^\s/:@]+):([^\s@]+)@", r"\1\2:***@", text)
+
+
+def _redact_common_query_secrets(text: str) -> str:
+    """Redact common secret-like query parameters."""
+    if not text:
+        return text
+    return re.sub(r"(?i)\b(token|password|passwd|api_key|apikey)=[^&\s]+", r"\1=***", text)
+
+
+def _redact_pip_text(text: str, urls: List[str]) -> str:
+    """Redact likely secrets from pip output/status strings."""
+    if not text:
+        return text
+    out = _redact_common_query_secrets(_redact_basic_auth_in_urls(text))
+    for u in urls:
+        try:
+            raw = str(u or "")
+            if not raw:
+                continue
+            red = _redact_basic_auth_in_urls(raw)
+            if raw != red:
+                out = out.replace(raw, red)
+        except Exception:
+            continue
+    return out
+
+
+def _safe_write_text_no_symlink(path: Path, text: str) -> None:
+    """Write text to a path, avoiding symlink-following where possible."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW  # type: ignore[attr-defined]
+        fd = os.open(str(path), flags, 0o660)
+        with os.fdopen(fd, "w", encoding="utf-8", errors="replace") as f:
+            f.write(text)
+    except Exception:
+        # Fallback: best-effort with a pre-check.
+        try:
+            if path.exists() and path.is_symlink():
+                return
+        except Exception:
+            return
+        try:
+            path.write_text(text, encoding="utf-8", errors="replace")
+        except Exception:
+            return
+
+
+def _safe_zip_write(zf: zipfile.ZipFile, path: Path, arcname: str, base_dir: Path) -> None:
+    """Add a file to a zip if it is a regular file inside base_dir (no symlinks)."""
+    try:
+        if not path.exists():
+            return
+        if path.is_symlink():
+            return
+        if not path.is_file():
+            return
+        base = base_dir.resolve()
+        rp = path.resolve()
+        if rp != base and not str(rp).startswith(str(base) + os.sep):
+            return
+        zf.write(path, arcname)
+    except Exception:
+        return
 
 def _kill_process_group(p: subprocess.Popen, soft_seconds: int) -> None:
     try:

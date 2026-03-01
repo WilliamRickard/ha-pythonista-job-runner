@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 _logger = logging.getLogger(__name__)
+_logger.addHandler(logging.NullHandler())
 
 def utc_now() -> str:
     """Return UTC timestamp in the format used by this add-on."""

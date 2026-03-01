@@ -183,12 +183,29 @@ class TestJobRunnerDocumentation:
 
         cfg = Path(__file__).parent.parent / "config.yaml"
         cfg_text = cfg.read_text()
-        m = re.search(r'^version:\s*"(.*?)"\s*$', cfg_text, flags=re.M)
-        assert m, "config.yaml missing version"
-        version = m.group(1)
+
+        def _read_version(text: str):
+            for ln in text.splitlines():
+                s = ln.strip()
+                if not s.startswith("version:"):
+                    continue
+                v = s.split(":", 1)[1].strip()
+                v = v.split("#", 1)[0].strip()
+                if len(v) >= 2 and v[0] == v[-1] and v[0] in ("\'", "\""):
+                    v = v[1:-1]
+                v = v.strip()
+                return v or None
+            return None
+
+        version = _read_version(cfg_text)
+        assert version, "config.yaml missing version"
 
         # Check for version mentions
         assert version in content
+
+        # Also ensure runner_core.ADDON_VERSION matches config.yaml
+        import runner_core
+        assert getattr(runner_core, "ADDON_VERSION", None) == version
 
 
     def test_module_purpose_documented(self):
