@@ -255,8 +255,9 @@ class Handler(BaseHTTPRequestHandler):
         """
         Handle HTTP POST requests for job-control endpoints.
         
-        Supports the following paths and observable behaviours:
-        - /cancel/<job_id>: requires authorisation; requests cancellation of the named job and responds with JSON {"ok": true|false}. Responds 401 if unauthorised.
+        except Exception as e:
+            print(f"Error creating new job: {e!r}")
+            return self._json(400, {"error": "bad_request"})
         - /purge: requires authorisation; accepts a JSON payload with optional keys `states` (string or list), `older_than_hours` (int-like), and `dry_run` (bool). Invokes a purge operation and returns its JSON result. Responds 401 if unauthorised.
         - /run: requires authorisation; accepts an upload whose size must be > 0 and not exceed the configured maximum. Creates a new job and responds 202 with JSON containing `job_id`, `tail_url`, `result_url` and `jobs_url`. Responds 401 if unauthorised, 413 if the upload is too large, and 400 if job creation fails.
         
