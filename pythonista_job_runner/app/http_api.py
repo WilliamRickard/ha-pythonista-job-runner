@@ -308,7 +308,13 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/purge":
             if not self._auth_ok():
-                self._json(401, {"error": "unauthorised"})
+            if cl is not None:
+                ln = self._parse_int(cl, -1)
+                if ln < 0:
+                    self._json(400, {"error": "bad_content_length"})
+                    return
+            else:
+                ln = 0
                 return
 
             cl = self.headers.get("Content-Length")
