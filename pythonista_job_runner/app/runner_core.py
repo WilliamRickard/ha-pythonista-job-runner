@@ -10,7 +10,7 @@ import time
 import uuid
 import zipfile
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
