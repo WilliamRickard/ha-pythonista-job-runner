@@ -235,6 +235,20 @@ class Runner:
         self.token = str(opts.get("token") or "")
         self.ingress_strict = bool(opts.get("ingress_strict", False))
 
+        # Normalize api_allow_cidrs to a list of non-empty strings
+        raw_api_allow_cidrs = opts.get("api_allow_cidrs")
+        api_allow_cidrs: List[str] = []
+        if isinstance(raw_api_allow_cidrs, str):
+            # Support comma-separated list in a single string
+            api_allow_cidrs = [cidr.strip() for cidr in raw_api_allow_cidrs.split(",") if cidr.strip()]
+        elif isinstance(raw_api_allow_cidrs, (list, tuple, set)):
+            api_allow_cidrs = [str(cidr).strip() for cidr in raw_api_allow_cidrs if str(cidr).strip()]
+        elif raw_api_allow_cidrs is None:
+            api_allow_cidrs = []
+        else:
+            # Unexpected type; fall back to empty list to avoid errors
+            api_allow_cidrs = []
+        self.api_allow_cidrs = api_allow_cidrs
         self.timeout_seconds = int(opts.get("timeout_seconds") or 3600)
         self.max_upload_mb = int(opts.get("max_upload_mb") or 50)
 
