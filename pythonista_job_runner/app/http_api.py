@@ -53,7 +53,7 @@ class Handler(BaseHTTPRequestHandler):
             client_ip (str): The client's IP address with surrounding whitespace removed, or an empty string if it cannot be determined.
         """
         try:
-            return (self.client_address[0] or "").strip()
+        cidrs = getattr(runner, "api_allow_cidrs", [])
         except Exception:
             return ""
 
