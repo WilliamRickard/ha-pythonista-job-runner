@@ -300,8 +300,7 @@ def safe_extract_zip_bytes(
             except AttributeError:
                 # Python < 3.9 fallback
                 root_prefix = str(dst_root) + os.sep
-                is_safe = str(out_path).startswith(root_prefix)
-                is_safe = is_safe or out_path == dst_root
+                is_safe = str(out_path).startswith(root_prefix) or out_path == dst_root
 
             if not is_safe:
                 raise RuntimeError(f"zip_path_escape: {zi.filename}")
