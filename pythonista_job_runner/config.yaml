@@ -21,7 +21,7 @@ ports_description:
   8787/tcp: "Runner HTTP API (POST /run, GET /tail/<id>.json, GET /result/<id>.zip)"
 
 options:
-  token: "CHANGE_ME_LONG_RANDOM_TOKEN"
+  token: ""
   timeout_seconds: 3600
   max_upload_mb: 50
   install_requirements: false
