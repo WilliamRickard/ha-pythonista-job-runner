@@ -215,7 +215,10 @@ class Handler(BaseHTTPRequestHandler):
 
         if path.startswith("/result/") and path.endswith(".zip"):
             job_id = self._job_id_from_suffix("/result/", ".zip")
-            j = runner.get(job_id) if job_id else None
+            if not job_id:
+                self._json(404, {"error": "unknown_job"})
+                return
+            j = runner.get(job_id)
             if not j:
                 self._json(404, {"error": "unknown_job"})
                 return
