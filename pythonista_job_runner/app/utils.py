@@ -249,7 +249,3 @@ def ip_in_cidrs(ip_str: str, cidrs: List[str]) -> bool:
         if ip in net:
             return True
     return False
-        if ip in net:
-            return True
-    return False
-

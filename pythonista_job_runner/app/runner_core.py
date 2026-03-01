@@ -1,50 +1,24 @@
 from __future__ import annotations
 
+import hashlib
+import ipaddress
 import json
 import os
 import re
 import shutil
-import hashlib
-import os
-import re
-import shutil
-import os
-import shutil
 import signal
 import subprocess
+import sys
 import threading
 import time
 import uuid
-import zipfile
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.request import Request, urlopen
 
-try:
-    import resource  # type: ignore
-except Exception:
-    resource = None  # type: ignore[assignment]
-
-try:
-    import pwd  # type: ignore
-    import grp  # type: ignore
-except Exception:
-    pwd = None  # type: ignore[assignment]
-    grp = None  # type: ignore[assignment]
-
-from utils import (
-    SafeZipLimits,
-    TailBuffer,
-    clamp_int,
-    file_tail_text,
-    parse_utc,
-    read_head_tail_text,
-    safe_extract_zip_bytes,
-    sha256_file,
-    utc_now,
-)
+from utils import SafeZipLimits, TailBuffer, clamp_int, ip_in_cidrs, safe_extract_zip_bytes
 
 ADDON_VERSION = "0.6.0"
 
@@ -170,7 +144,6 @@ def _ha_persistent_notification(title: str, message: str, notification_id: Optio
     if notification_id:
         payload["notification_id"] = notification_id
     data = json.dumps(payload).encode("utf-8")
-    from urllib.request import Request, urlopen
 
     req = Request(
         url=url,
@@ -193,7 +166,11 @@ class Runner:
         self.ingress_strict = bool(opts.get("ingress_strict", False))
 
         self.api_allow_cidrs = [str(c).strip() for c in (opts.get("api_allow_cidrs") or []) if isinstance(c, str) and str(c).strip()]
-import re
+        self.allow_env = [
+            k
+            for k in [str(x).strip() for x in (opts.get("allow_env") or []) if isinstance(x, str)]
+            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", k)
+        ]
         self.bind_host = str(opts.get("bind_host") or "0.0.0.0").strip() or "0.0.0.0"
         try:
             self.bind_port = int(opts.get("bind_port") or 8787)
@@ -544,7 +521,6 @@ import re
                     if job_uid is not None:
                         os.setuid(int(job_uid))
                 except Exception as e:
-                    import sys
                     print(f"WARNING: Failed to drop privileges: {e}", file=sys.stderr)
 
             cmd = ["python3", "-u", str(j.work_dir / "run.py")]
@@ -949,4 +925,3 @@ def _kill_process_group(p: subprocess.Popen, soft_seconds: int) -> None:
         os.killpg(pgid, signal.SIGKILL)
     except Exception:
         pass
-
