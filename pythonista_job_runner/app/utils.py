@@ -231,11 +231,24 @@ def ip_in_cidrs(ip_str: str, cidrs: List[str]) -> bool:
         ip = ipaddress.ip_address(ip_str)
     except Exception:
         return False
+import logging
+
+_logger = logging.getLogger(__name__)
+
+def ip_in_cidrs(ip_str: str, cidrs: List[str]) -> bool:
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except Exception:
+        return False
     for c in cidrs:
         try:
             net = ipaddress.ip_network(c, strict=False)
         except Exception:
+            _logger.warning("Invalid CIDR entry skipped: %s", c)
             continue
+        if ip in net:
+            return True
+    return False
         if ip in net:
             return True
     return False
