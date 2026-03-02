@@ -113,6 +113,23 @@
     return Math.floor(Date.now() / 1000);
   }
 
+function parseUtcSeconds(v) {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === "number") {
+      if (!Number.isFinite(v)) return 0;
+      return (v > 1e12) ? Math.floor(v / 1000) : Math.floor(v);
+    }
+    const s = String(v).trim();
+    if (!s) return 0;
+    const n = Number(s);
+    if (Number.isFinite(n)) {
+      return (n > 1e12) ? Math.floor(n / 1000) : Math.floor(n);
+    }
+    const ms = Date.parse(s);
+    if (Number.isFinite(ms)) return Math.floor(ms / 1000);
+    return 0;
+  }
+
   function fmtDuration(seconds) {
     const s = Number(seconds);
     if (!Number.isFinite(s) || s < 0) return "";
@@ -129,7 +146,7 @@
   }
 
   function fmtAge(createdUtc) {
-    const t = Number(createdUtc);
+    const t = parseUtcSeconds(createdUtc);
     if (!Number.isFinite(t) || t <= 0) return "";
     const age = Math.max(0, nowUtcSeconds() - t);
     return fmtDuration(age);
@@ -232,8 +249,11 @@
     if (tStderr) tStderr.classList.toggle("active", next === "stderr");
     if (tOverview) tOverview.classList.toggle("active", next === "overview");
 
-    els.overview.hidden = (next !== "overview");
-    els.logpanel.style.display = (next === "overview") ? "none" : "block";
+    const showLogs = (next !== "overview");
+    els.overview.hidden = showLogs;
+    els.logpanel.style.display = showLogs ? "block" : "none";
+    if (els.logtools) els.logtools.style.display = showLogs ? "flex" : "none";
+    if (els.findbar) els.findbar.style.display = showLogs ? "flex" : "none";
 
     if (next === "overview") {
       resetSearch();
@@ -348,8 +368,8 @@ function applyFilters() {
       const sa = order[a.state] ?? 9;
       const sb = order[b.state] ?? 9;
       if (sa !== sb) return sa - sb;
-      const ta = Number(a.created_utc) || 0;
-      const tb = Number(b.created_utc) || 0;
+      const ta = parseUtcSeconds(a.created_utc);
+      const tb = parseUtcSeconds(b.created_utc);
       return tb - ta;
     });
 
@@ -388,12 +408,54 @@ function applyFilters() {
 
       const tdJob = document.createElement("td");
       tdJob.setAttribute("data-label", "Job");
+
+      const wrap = document.createElement("div");
+      wrap.className = "jobcell";
+
+      const line = document.createElement("div");
+      line.className = "jobline";
+
       const btnJob = document.createElement("button");
       btnJob.type = "button";
-      btnJob.className = "small";
+      btnJob.className = "small jobbtn";
       btnJob.textContent = jobId;
+      btnJob.title = jobId;
       btnJob.addEventListener("click", () => selectJob(jobId));
-      tdJob.appendChild(btnJob);
+
+      const btnCopy = document.createElement("button");
+      btnCopy.type = "button";
+      btnCopy.className = "small copybtn";
+      btnCopy.textContent = "Copy";
+      btnCopy.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await copyTextToClipboard(jobId);
+        toast("ok", "Copied", "Job id copied");
+      });
+
+      line.append(btnJob, btnCopy);
+
+      const meta = document.createElement("div");
+      meta.className = "jobmeta";
+
+      const addMeta = (label, value) => {
+        const v = String(value || "");
+        if (!v) return;
+        const span = document.createElement("span");
+        span.className = "meta";
+        span.textContent = `${label}: ${v}`;
+        meta.appendChild(span);
+      };
+
+      addMeta("age", age);
+      addMeta("dur", dur);
+      addMeta("user", user);
+      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") {
+        addMeta("exit", String(j.exit_code));
+      }
+
+      wrap.append(line, meta);
+      tdJob.appendChild(wrap);
 
       const tdState = document.createElement("td");
       tdState.setAttribute("data-label", "State");
@@ -735,6 +797,15 @@ function closeAbout() {
     }
   }
 
+  function updateDetailActions(state) {
+    const st = String(state || "");
+    const canCancel = (st === "running" || st === "queued");
+    const canDelete = (st === "done" || st === "error");
+
+    if (els.btn_cancel) els.btn_cancel.style.display = canCancel ? "inline-flex" : "none";
+    if (els.btn_delete) els.btn_delete.style.display = canDelete ? "inline-flex" : "none";
+  }
+
   function renderMeta(st) {
     const s = st || {};
     const lim = s.limits || {};
@@ -800,12 +871,16 @@ function closeAbout() {
     try {
       const j = await api(`job/${encodeURIComponent(currentJob)}.json`);
       const st = j || {};
-      const dur = (st.duration_seconds !== null && st.duration_seconds !== undefined) ? st.duration_seconds : "";
+      const durStr = (st.duration_seconds !== null && st.duration_seconds !== undefined) ? fmtDuration(st.duration_seconds) : "";
       const who = (st.submitted_by && (st.submitted_by.display_name || st.submitted_by.name)) || "";
       const ip = st.client_ip || "";
 
-      els.overview_text.textContent =
-        `created=${st.created_utc} started=${st.started_utc} finished=${st.finished_utc} duration_s=${dur} ip=${ip} user=${who}`;
+      els.overview_text.textContent = `Created: ${st.created_utc || ""}
+Started: ${st.started_utc || ""}
+Finished: ${st.finished_utc || ""}
+Duration: ${durStr}
+User: ${who || ""}
+Client IP: ${ip || ""}`;
 
       const base = new URL(".", window.location.href).toString().replace(/\/$/, "");
       const curl = [
@@ -838,6 +913,7 @@ function closeAbout() {
 
       const st = data.status || {};
       renderMeta(st);
+      updateDetailActions(st.state);
 
       if (data.offsets) {
         offsets.stdout = data.offsets.stdout_next || offsets.stdout;
