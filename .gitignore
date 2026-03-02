@@ -1,19 +1,18 @@
+Version: 0.1.0
+
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
-.mypy_cache/
+
+# Builds
+build/
+dist/
+*.egg-info/
+
+# Local runtime/output folders
+GhKit/
+*.zip
 
 # OS
 .DS_Store
-
-# Editor
-.vscode/
-
-# Logs / dumps
-*.log
-pythonista_job_runner_logs/
-
-# PR tooling
-PR_METADATA.json
-pr_metadata.json

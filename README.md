@@ -1,29 +1,28 @@
-# Pythonista Job Runner Add-ons
+Version: 0.1.0
 
-This is a Home Assistant add-on repository containing the **Pythonista Job Runner** add-on.
+# ghkit-pythonista
 
-## Add this repository to Home Assistant
+A GitHub API toolkit designed to run in Pythonista on iPhone.
 
-In Home Assistant:
-1. Settings -> Add-ons -> Add-on Store
-2. Top-right menu (three dots) -> Repositories
-3. Add this URL:
-   `https://github.com/WilliamRickard/ha-pythonista-job-runner`
+This repository is scaffold-only. It sets up a clean structure so you can build:
+- a pure-Python core library (`ghkit/`) with GitHub REST and GraphQL workflow logic
+- a Pythonista integration layer (`ghkit_pythonista/`) for Share Sheet, keychain, and UI
+- thin wrapper entrypoints (`pythonista_wrappers/`) for running on-device
 
-Tip: you can also create a My Home Assistant link once your repo URL is final:
-- https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=<URL_ENCODED_REPO_URL>
+## Quick start (desktop)
 
-## Add-ons
+    python -m pip install -U pip
+    python -m pip install pytest
+    python -m pytest -q
 
-- `pythonista_job_runner`: Runs Python jobs sent from Pythonista and returns results as a zip.
+## Quick start (Pythonista)
 
-## Development workflow
+For now, run:
 
-- Make changes under `pythonista_job_runner/`
-- Bump `pythonista_job_runner/config.yaml` version for each release
-- Push to GitHub
-- In Home Assistant: open the add-on and click **Update** (or **Rebuild** for local changes)
+- `pythonista_wrappers/GhKit.py`
 
-## Support
+It currently provides a minimal console menu to prove imports and folder layout.
 
-- File issues in this repository.
+## Licence
+
+See LICENSE.
