@@ -354,7 +354,8 @@ function applyFilters() {
       els.about_sub.textContent = "Help";
       els.about_api.textContent = "";
       els.about_curl.value = "";
-      toast("err", "Could not load info", e.message);
+      const msg = String(e && e.message ? e.message : e);
+      toast("err", "Could not load info", msg);
     }
   }
 
