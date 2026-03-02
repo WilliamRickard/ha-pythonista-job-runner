@@ -1,4 +1,4 @@
-/* VERSION: 0.6.7 */
+/* VERSION: 0.6.8 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -19,6 +19,8 @@
   let wrap = true;
   let fontSize = 13;
 
+  let infoCache = null;
+
   let logSearch = "";
   let matchIdx = -1;
   let matches = [];
@@ -35,6 +37,11 @@
 
   function apiUrl(path) {
     return new URL(path, window.location.href).toString();
+  }
+
+  function baseUrl() {
+    // Directory URL without trailing slash.
+    return new URL(".", window.location.href).toString().replace(/\/$/, "");
   }
 
   async function api(path, opts) {
@@ -102,6 +109,29 @@
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
+  }
+
+  async function copyTextToClipboard(text) {
+    const t = String(text || "");
+    if (!t) return;
+    try {
+      await navigator.clipboard.writeText(t);
+      return;
+    } catch (_e) {
+      // Fallback for older webviews.
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      ta.setAttribute("readonly", "true");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
   }
 
   let toastTimer = null;
@@ -339,6 +369,105 @@
     });
     toast("ok", "Purge complete", `Purged ${state} jobs`);
     await refreshAll();
+  }
+
+  function parseEndpointPath(v) {
+    const s = String(v || "").trim();
+    if (!s) return "";
+    const parts = s.split(/\s+/, 2);
+    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/")) {
+      return parts[1];
+    }
+    if (s.startsWith("/")) return s;
+    return "";
+  }
+
+  function renderInfo(info) {
+    const i = info || {};
+    const service = i.service ? String(i.service) : "pythonista_job_runner";
+    const version = i.version ? String(i.version) : "";
+    els.about_sub.textContent = version ? `${service} v${version}` : service;
+
+    const endpoints = i.endpoints || {};
+    const keys = Object.keys(endpoints).sort();
+    els.about_api.textContent = "";
+
+    for (const k of keys) {
+      const raw = endpoints[k];
+      const row = document.createElement("div");
+      row.className = "api-row";
+
+      const left = document.createElement("div");
+      left.className = "api-left";
+
+      const name = document.createElement("div");
+      name.className = "api-name";
+      name.textContent = k;
+
+      const path = document.createElement("div");
+      path.className = "api-path";
+      path.textContent = String(raw);
+
+      left.append(name, path);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "small";
+      btn.textContent = "Copy";
+      btn.setAttribute("data-action", "copy-endpoint");
+      btn.setAttribute("data-endpoint", k);
+
+      const p = parseEndpointPath(raw);
+      if (p) {
+        btn.setAttribute("data-copy", apiUrl(p));
+      } else {
+        btn.disabled = true;
+        btn.title = "No URL available";
+      }
+
+      row.append(left, btn);
+      els.about_api.appendChild(row);
+    }
+
+    const base = baseUrl();
+    const curl = [
+      `# ${service} ${version ? `v${version}` : ""}`.trim(),
+      "# Direct access requires X-Runner-Token unless you are using Ingress",
+      `BASE=\"${base}\"`,
+      "TOKEN=\"YOUR_TOKEN_HERE\"",
+      "",
+      "curl \"$BASE/health\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/jobs.json\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/stats.json\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" -X POST \"$BASE/purge\" -H \"content-type: application/json\" -d '{\"state\":\"done\"}'",
+      "# Run requires a zip payload; see DOCS.md for the Pythonista client",
+    ].join("\n");
+    els.about_curl.value = curl;
+  }
+
+  async function loadInfo() {
+    infoCache = await api("info.json");
+    renderInfo(infoCache);
+  }
+
+  async function openAbout() {
+    els.about_overlay.hidden = false;
+    els.about_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    try {
+      await loadInfo();
+    } catch (e) {
+      els.about_sub.textContent = "Help";
+      els.about_api.textContent = "";
+      els.about_curl.value = "";
+      toast("err", "Could not load info", e.message);
+    }
+  }
+
+  function closeAbout() {
+    els.about_overlay.hidden = true;
+    els.about_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
   }
 
   function applyLogStyle() {
@@ -583,11 +712,23 @@
 
   async function copyCurl() {
     if (els.curl_snippet && els.curl_snippet.value) {
-      await navigator.clipboard.writeText(els.curl_snippet.value);
+      await copyTextToClipboard(els.curl_snippet.value);
       toast("ok", "Copied", "curl snippet copied to clipboard");
     } else {
       toast("err", "Nothing to copy", "Select a job first");
     }
+  }
+
+  async function copyBase() {
+    await copyTextToClipboard(baseUrl());
+    toast("ok", "Copied", "Base URL copied to clipboard");
+  }
+
+  async function copyEndpoint(btn) {
+    const val = btn.getAttribute("data-copy") || "";
+    if (!val) return;
+    await copyTextToClipboard(val);
+    toast("ok", "Copied", val);
   }
 
   async function cancelJob() {
@@ -664,10 +805,23 @@
       if (action === "find-prev") findPrev();
       if (action === "clear-search") clearSearch();
       if (action === "copy-curl") await copyCurl();
+      if (action === "open-about") await openAbout();
+      if (action === "close-about") closeAbout();
+      if (action === "copy-base") await copyBase();
+      if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
+      if (action === "copy-endpoint") await copyEndpoint(btn);
       if (action === "download-zip") downloadZip();
       if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
       if (action === "cancel") await cancelJob();
       if (action === "delete") await deleteJob();
+    });
+
+    els.about_overlay.addEventListener("click", (ev) => {
+      if (ev.target === els.about_overlay) closeAbout();
+    });
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && !els.about_overlay.hidden) closeAbout();
     });
 
     els.pollms.addEventListener("change", setPollMsFromInput);
@@ -732,6 +886,11 @@
     els.toast = document.getElementById("toast");
     els.toast_title = document.getElementById("toast_title");
     els.toast_msg = document.getElementById("toast_msg");
+
+    els.about_overlay = document.getElementById("about_overlay");
+    els.about_sub = document.getElementById("about_sub");
+    els.about_api = document.getElementById("about_api");
+    els.about_curl = document.getElementById("about_curl");
   }
 
   async function init() {
