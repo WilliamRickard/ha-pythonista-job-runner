@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.7 -->
+<!doctype html><!-- VERSION: 0.6.8 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -6,7 +6,7 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.7 */
+/* VERSION: 0.6.8 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -44,6 +44,13 @@
 
     --shadow: 0 10px 30px rgba(17,24,39,0.10);
   }
+
+  body{
+    background:
+      radial-gradient(900px circle at 12% -10%, rgba(29,78,216,0.10), transparent 45%),
+      radial-gradient(900px circle at 88% 0%, rgba(46,204,113,0.08), transparent 40%),
+      var(--bg);
+  }
 }
 
 *{ box-sizing: border-box; }
@@ -52,7 +59,10 @@ body{
   font-family: -apple-system, system-ui, sans-serif;
   margin: 0;
   padding: 16px;
-  background: var(--bg);
+  background:
+    radial-gradient(900px circle at 12% -10%, rgba(138,180,255,0.16), transparent 45%),
+    radial-gradient(900px circle at 88% 0%, rgba(46,204,113,0.10), transparent 40%),
+    var(--bg);
   color: var(--text);
 }
 
@@ -490,6 +500,123 @@ pre.nowrap{ white-space: pre; }
   border:0;
 }
 
+.overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+  z-index: 60;
+  padding: 16px;
+  display:flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+}
+
+.modal{
+  width: 100%;
+  max-width: 920px;
+  margin-top: 22px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow);
+}
+
+.modal-header{
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-title{
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.modal-sub{
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.modal-body{
+  padding: 14px;
+}
+
+details{
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel2);
+  padding: 10px 12px;
+}
+
+details + details{ margin-top: 10px; }
+
+summary{
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--text);
+  list-style: none;
+}
+
+summary::-webkit-details-marker{ display:none; }
+
+.steps{
+  margin: 10px 0 0 0;
+  padding-left: 18px;
+  color: var(--text);
+}
+
+.steps li{ margin: 8px 0; }
+
+.hint{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(138,180,255,0.08);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.api-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.api-row{
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.api-left{
+  min-width: 0;
+}
+
+.api-name{
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.api-path{
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-word;
+}
+
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -554,7 +681,7 @@ pre.nowrap{ white-space: pre; }
         </div>
       </div>
       <div class="toplinks">
-        <a class="linkbtn" href="info.json" target="_blank" rel="noopener noreferrer">API info</a>
+        <button type="button" class="linkbtn" data-action="open-about">Help</button>
       </div>
     </header>
 
@@ -657,6 +784,7 @@ pre.nowrap{ white-space: pre; }
           <div id="empty" class="empty" hidden>
             <div style="font-weight:700;color:var(--text);">No jobs yet</div>
             <div style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
+            <div style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
           </div>
         </div>
       </section>
@@ -729,13 +857,61 @@ pre.nowrap{ white-space: pre; }
     </main>
   </div>
 
+  <div id="about_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Help and API information">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Help</div>
+          <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
+        </div>
+        <button type="button" class="small" data-action="close-about" aria-label="Close help">Close</button>
+      </div>
+      <div class="modal-body">
+        <details open>
+          <summary>Quick start</summary>
+          <ol class="steps">
+            <li>Set a token in the add-on Configuration. Keep it private.</li>
+            <li>From Pythonista, submit a job to the runner (POST /run). Your client script should add the X-Runner-Token header for direct access.</li>
+            <li>Use this Web UI to watch the job, view logs, and download the result zip.</li>
+          </ol>
+          <div class="hint">
+            Tip: If you are using Home Assistant Ingress, the Web UI is trusted and you usually do not need to add headers in your browser.
+          </div>
+        </details>
+
+        <details>
+          <summary>API and endpoints</summary>
+          <div class="hint" style="margin-top:8px;">These are the endpoints exposed by the runner. Tap Copy to copy a full URL.</div>
+          <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+          </div>
+
+          <textarea id="about_curl" rows="9" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
+          <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
+        </details>
+
+        <details>
+          <summary>Troubleshooting</summary>
+          <ul class="steps" style="list-style:disc;padding-left:18px;">
+            <li>If the status shows Disconnected, check the add-on logs and confirm the token matches your client.</li>
+            <li>If you see unauthorised, you are likely using direct access without the X-Runner-Token header.</li>
+            <li>If jobs never appear, confirm your Pythonista script posts a zip to /run with Content-Length set.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast" role="status" aria-live="polite">
     <div class="title" id="toast_title"></div>
     <div class="msg" id="toast_msg"></div>
   </div>
 
   <script>
-/* VERSION: 0.6.7 */
+/* VERSION: 0.6.8 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -756,6 +932,8 @@ pre.nowrap{ white-space: pre; }
   let wrap = true;
   let fontSize = 13;
 
+  let infoCache = null;
+
   let logSearch = "";
   let matchIdx = -1;
   let matches = [];
@@ -772,6 +950,11 @@ pre.nowrap{ white-space: pre; }
 
   function apiUrl(path) {
     return new URL(path, window.location.href).toString();
+  }
+
+  function baseUrl() {
+    // Directory URL without trailing slash.
+    return new URL(".", window.location.href).toString().replace(/\/$/, "");
   }
 
   async function api(path, opts) {
@@ -839,6 +1022,29 @@ pre.nowrap{ white-space: pre; }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
+  }
+
+  async function copyTextToClipboard(text) {
+    const t = String(text || "");
+    if (!t) return;
+    try {
+      await navigator.clipboard.writeText(t);
+      return;
+    } catch (_e) {
+      // Fallback for older webviews.
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      ta.setAttribute("readonly", "true");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } finally {
+        document.body.removeChild(ta);
+      }
+    }
   }
 
   let toastTimer = null;
@@ -1076,6 +1282,105 @@ pre.nowrap{ white-space: pre; }
     });
     toast("ok", "Purge complete", `Purged ${state} jobs`);
     await refreshAll();
+  }
+
+  function parseEndpointPath(v) {
+    const s = String(v || "").trim();
+    if (!s) return "";
+    const parts = s.split(/\s+/, 2);
+    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/")) {
+      return parts[1];
+    }
+    if (s.startsWith("/")) return s;
+    return "";
+  }
+
+  function renderInfo(info) {
+    const i = info || {};
+    const service = i.service ? String(i.service) : "pythonista_job_runner";
+    const version = i.version ? String(i.version) : "";
+    els.about_sub.textContent = version ? `${service} v${version}` : service;
+
+    const endpoints = i.endpoints || {};
+    const keys = Object.keys(endpoints).sort();
+    els.about_api.textContent = "";
+
+    for (const k of keys) {
+      const raw = endpoints[k];
+      const row = document.createElement("div");
+      row.className = "api-row";
+
+      const left = document.createElement("div");
+      left.className = "api-left";
+
+      const name = document.createElement("div");
+      name.className = "api-name";
+      name.textContent = k;
+
+      const path = document.createElement("div");
+      path.className = "api-path";
+      path.textContent = String(raw);
+
+      left.append(name, path);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "small";
+      btn.textContent = "Copy";
+      btn.setAttribute("data-action", "copy-endpoint");
+      btn.setAttribute("data-endpoint", k);
+
+      const p = parseEndpointPath(raw);
+      if (p) {
+        btn.setAttribute("data-copy", apiUrl(p));
+      } else {
+        btn.disabled = true;
+        btn.title = "No URL available";
+      }
+
+      row.append(left, btn);
+      els.about_api.appendChild(row);
+    }
+
+    const base = baseUrl();
+    const curl = [
+      `# ${service} ${version ? `v${version}` : ""}`.trim(),
+      "# Direct access requires X-Runner-Token unless you are using Ingress",
+      `BASE=\"${base}\"`,
+      "TOKEN=\"YOUR_TOKEN_HERE\"",
+      "",
+      "curl \"$BASE/health\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/jobs.json\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/stats.json\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" -X POST \"$BASE/purge\" -H \"content-type: application/json\" -d '{\"state\":\"done\"}'",
+      "# Run requires a zip payload; see DOCS.md for the Pythonista client",
+    ].join("\n");
+    els.about_curl.value = curl;
+  }
+
+  async function loadInfo() {
+    infoCache = await api("info.json");
+    renderInfo(infoCache);
+  }
+
+  async function openAbout() {
+    els.about_overlay.hidden = false;
+    els.about_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    try {
+      await loadInfo();
+    } catch (e) {
+      els.about_sub.textContent = "Help";
+      els.about_api.textContent = "";
+      els.about_curl.value = "";
+      toast("err", "Could not load info", e.message);
+    }
+  }
+
+  function closeAbout() {
+    els.about_overlay.hidden = true;
+    els.about_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
   }
 
   function applyLogStyle() {
@@ -1320,11 +1625,23 @@ pre.nowrap{ white-space: pre; }
 
   async function copyCurl() {
     if (els.curl_snippet && els.curl_snippet.value) {
-      await navigator.clipboard.writeText(els.curl_snippet.value);
+      await copyTextToClipboard(els.curl_snippet.value);
       toast("ok", "Copied", "curl snippet copied to clipboard");
     } else {
       toast("err", "Nothing to copy", "Select a job first");
     }
+  }
+
+  async function copyBase() {
+    await copyTextToClipboard(baseUrl());
+    toast("ok", "Copied", "Base URL copied to clipboard");
+  }
+
+  async function copyEndpoint(btn) {
+    const val = btn.getAttribute("data-copy") || "";
+    if (!val) return;
+    await copyTextToClipboard(val);
+    toast("ok", "Copied", val);
   }
 
   async function cancelJob() {
@@ -1401,10 +1718,23 @@ pre.nowrap{ white-space: pre; }
       if (action === "find-prev") findPrev();
       if (action === "clear-search") clearSearch();
       if (action === "copy-curl") await copyCurl();
+      if (action === "open-about") await openAbout();
+      if (action === "close-about") closeAbout();
+      if (action === "copy-base") await copyBase();
+      if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
+      if (action === "copy-endpoint") await copyEndpoint(btn);
       if (action === "download-zip") downloadZip();
       if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
       if (action === "cancel") await cancelJob();
       if (action === "delete") await deleteJob();
+    });
+
+    els.about_overlay.addEventListener("click", (ev) => {
+      if (ev.target === els.about_overlay) closeAbout();
+    });
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key === "Escape" && !els.about_overlay.hidden) closeAbout();
     });
 
     els.pollms.addEventListener("change", setPollMsFromInput);
@@ -1469,6 +1799,11 @@ pre.nowrap{ white-space: pre; }
     els.toast = document.getElementById("toast");
     els.toast_title = document.getElementById("toast_title");
     els.toast_msg = document.getElementById("toast_msg");
+
+    els.about_overlay = document.getElementById("about_overlay");
+    els.about_sub = document.getElementById("about_sub");
+    els.about_api = document.getElementById("about_api");
+    els.about_curl = document.getElementById("about_curl");
   }
 
   async function init() {

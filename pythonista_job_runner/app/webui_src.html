@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.7 -->
+<!doctype html><!-- VERSION: 0.6.8 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="toplinks">
-        <a class="linkbtn" href="info.json" target="_blank" rel="noopener noreferrer">API info</a>
+        <button type="button" class="linkbtn" data-action="open-about">Help</button>
       </div>
     </header>
 
@@ -130,6 +130,7 @@
           <div id="empty" class="empty" hidden>
             <div style="font-weight:700;color:var(--text);">No jobs yet</div>
             <div style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
+            <div style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
           </div>
         </div>
       </section>
@@ -200,6 +201,54 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="about_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Help and API information">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Help</div>
+          <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
+        </div>
+        <button type="button" class="small" data-action="close-about" aria-label="Close help">Close</button>
+      </div>
+      <div class="modal-body">
+        <details open>
+          <summary>Quick start</summary>
+          <ol class="steps">
+            <li>Set a token in the add-on Configuration. Keep it private.</li>
+            <li>From Pythonista, submit a job to the runner (POST /run). Your client script should add the X-Runner-Token header for direct access.</li>
+            <li>Use this Web UI to watch the job, view logs, and download the result zip.</li>
+          </ol>
+          <div class="hint">
+            Tip: If you are using Home Assistant Ingress, the Web UI is trusted and you usually do not need to add headers in your browser.
+          </div>
+        </details>
+
+        <details>
+          <summary>API and endpoints</summary>
+          <div class="hint" style="margin-top:8px;">These are the endpoints exposed by the runner. Tap Copy to copy a full URL.</div>
+          <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+          </div>
+
+          <textarea id="about_curl" rows="9" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
+          <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
+        </details>
+
+        <details>
+          <summary>Troubleshooting</summary>
+          <ul class="steps" style="list-style:disc;padding-left:18px;">
+            <li>If the status shows Disconnected, check the add-on logs and confirm the token matches your client.</li>
+            <li>If you see unauthorised, you are likely using direct access without the X-Runner-Token header.</li>
+            <li>If jobs never appear, confirm your Pythonista script posts a zip to /run with Content-Length set.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite">

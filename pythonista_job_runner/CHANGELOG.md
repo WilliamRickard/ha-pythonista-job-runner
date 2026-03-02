@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.8
+
+- Web UI: add an in-app Help panel with a quick start guide and a human-friendly API endpoint list (copy buttons and curl examples).
+- API: add content negotiation for / so browsers get the Web UI while API clients (curl, scripts) get a JSON service index.
+- Web UI: improve clipboard behaviour with a fallback for older WebViews.
+
 ## 0.6.7
 
 - Web UI: redesigned to be more modern and mobile-friendly (KPI overview cards, clearer controls, and a responsive job list).

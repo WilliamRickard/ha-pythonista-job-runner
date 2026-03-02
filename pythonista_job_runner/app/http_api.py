@@ -48,6 +48,32 @@ class Handler(BaseHTTPRequestHandler):
         b = json.dumps(obj, separators=(",", ":")).encode("utf-8")
         self._send_bytes(code, "application/json; charset=utf-8", b)
 
+    def _info_payload(self) -> dict[str, Any]:
+        """Return a simple service index payload.
+
+        This is useful for humans (quickly seeing what the service is) and for
+        clients that want to discover the API surface without hard-coding.
+        """
+
+        return {
+            "service": "pythonista_job_runner",
+            "version": ADDON_VERSION,
+            "endpoints": {
+                "health": "/health",
+                "run": "POST /run",
+                "tail": "/tail/<job_id>.json",
+                "result": "/result/<job_id>.zip",
+                "jobs": "/jobs.json",
+                "job": "/job/<job_id>.json",
+                "stdout": "/stdout/<job_id>.txt",
+                "stderr": "/stderr/<job_id>.txt",
+                "stats": "/stats.json",
+                "purge": "POST /purge",
+                "cancel": "POST /cancel/<job_id>",
+                "delete": "DELETE /job/<job_id>",
+            },
+        }
+
     def _get_client_ip(self) -> str:
         try:
             return (self.client_address[0] or "").strip()
@@ -122,10 +148,21 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path in {"/", "/index.html"}:
-            if not self._auth_ok():
-                self._json(401, {"error": "unauthorised"})
+            # Content negotiation: browsers get the Web UI, API clients get JSON.
+            # This keeps direct access friendly (curl defaults to */*), while
+            # ensuring Home Assistant Ingress still loads the HTML UI.
+            accept = (self.headers.get("Accept") or "").lower()
+            wants_html = ("text/html" in accept) or ("application/xhtml+xml" in accept)
+
+            if wants_html:
+                if not self._auth_ok():
+                    self._json(401, {"error": "unauthorised"})
+                    return
+                self._send_bytes(200, "text/html; charset=utf-8", html_page(ADDON_VERSION))
                 return
-            self._send_bytes(200, "text/html; charset=utf-8", html_page(ADDON_VERSION))
+
+            # JSON index is safe to expose without auth (it contains no secrets).
+            self._json(200, self._info_payload())
             return
 
         if path == "/health":
@@ -133,27 +170,7 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/info.json":
-            self._json(
-                200,
-                {
-                    "service": "pythonista_job_runner",
-                    "version": ADDON_VERSION,
-                    "endpoints": {
-                        "health": "/health",
-                        "run": "POST /run",
-                        "tail": "/tail/<job_id>.json",
-                        "result": "/result/<job_id>.zip",
-                        "jobs": "/jobs.json",
-                        "job": "/job/<job_id>.json",
-                        "stdout": "/stdout/<job_id>.txt",
-                        "stderr": "/stderr/<job_id>.txt",
-                        "stats": "/stats.json",
-                        "purge": "POST /purge",
-                        "cancel": "POST /cancel/<job_id>",
-                        "delete": "DELETE /job/<job_id>",
-                    },
-                },
-            )
+            self._json(200, self._info_payload())
             return
 
         if not self._auth_ok():
