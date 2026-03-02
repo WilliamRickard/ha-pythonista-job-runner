@@ -1,0 +1,15 @@
+{
+  "base_branch": "main",
+  "base_repo_full_name": "WilliamRickard/ha-pythonista-job-runner",
+  "exported_utc": "2026-03-02 01:13:11Z",
+  "head_branch": "fix/runner-core-stability-20260301",
+  "head_repo_full_name": "WilliamRickard/ha-pythonista-job-runner",
+  "head_sha": "0f65756a5191f56fdae22de819dcbec2687bb599",
+  "mode": "update",
+  "pr_number": 13,
+  "repo": "WilliamRickard/ha-pythonista-job-runner",
+  "tool": {
+    "name": "gh_pr_edit.py",
+    "version": "1.4.0"
+  }
+}
