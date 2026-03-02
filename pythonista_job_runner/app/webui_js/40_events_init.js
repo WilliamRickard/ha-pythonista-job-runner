@@ -13,29 +13,33 @@
       if (!btn) return;
 
       const action = btn.getAttribute("data-action");
-      if (action === "refresh") await refreshAll();
-      if (action === "open-advanced") openAdvanced();
-      if (action === "close-advanced") closeAdvanced();
-      if (action === "back-to-jobs") setPane("jobs");
-      if (action === "clear-filters") clearFilters();
-      if (action === "reset-ui") resetUi();
-      if (action === "jump-error") jumpToNextError();
-      if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
-      if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
-      if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
-      if (action === "find-next") findNext();
-      if (action === "find-prev") findPrev();
-      if (action === "clear-search") clearSearch();
-      if (action === "copy-curl") await copyCurl();
-      if (action === "open-about") await openAbout();
-      if (action === "close-about") closeAbout();
-      if (action === "copy-base") await copyBase();
-      if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
-      if (action === "copy-endpoint") await copyEndpoint(btn);
-      if (action === "download-zip") downloadZip();
-      if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
-      if (action === "cancel") await cancelJob();
-      if (action === "delete") await deleteJob();
+      try {
+        if (action === "refresh") await refreshAll();
+        if (action === "open-advanced") openAdvanced();
+        if (action === "close-advanced") closeAdvanced();
+        if (action === "back-to-jobs") setPane("jobs");
+        if (action === "clear-filters") clearFilters();
+        if (action === "reset-ui") resetUi();
+        if (action === "jump-error") jumpToNextError();
+        if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
+        if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
+        if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
+        if (action === "find-next") findNext();
+        if (action === "find-prev") findPrev();
+        if (action === "clear-search") clearSearch();
+        if (action === "copy-curl") await copyCurl();
+        if (action === "open-about") await openAbout();
+        if (action === "close-about") closeAbout();
+        if (action === "copy-base") await copyBase();
+        if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
+        if (action === "copy-endpoint") await copyEndpoint(btn);
+        if (action === "download-zip") downloadZip();
+        if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
+        if (action === "cancel") await cancelJob();
+        if (action === "delete") await deleteJob();
+      } catch (e) {
+        toast("err", "Action failed", e && e.message ? e.message : String(e));
+      }
     });
 
     els.about_overlay.addEventListener("click", (ev) => {
