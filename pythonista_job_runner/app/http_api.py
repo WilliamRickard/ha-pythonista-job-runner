@@ -92,8 +92,22 @@ class Handler(BaseHTTPRequestHandler):
         tail = path[len(prefix) :]
         if suffix:
             tail = tail[: -len(suffix)]
-        return tail.strip("/")
+        tail = tail.strip("/")
+        if not tail:
+            return ""
 
+        # Only allow a single path segment as job_id.
+        # Take the last non-empty segment to avoid matching extra path parts.
+        segments = [seg for seg in tail.split("/") if seg]
+        if not segments:
+            return ""
+        job_id = segments[-1]
+
+        # Reject suspicious or traversal-like job_ids.
+        if job_id in (".", "..") or "/" in job_id:
+            return ""
+
+        return job_id
     @staticmethod
     def _parse_int(value: str | None, default: int) -> int:
         """Parse an int value or return the default."""
