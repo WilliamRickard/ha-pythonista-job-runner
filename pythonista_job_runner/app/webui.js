@@ -1,16 +1,22 @@
-/* VERSION: 0.6.10 */
+/* VERSION: 0.6.11 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
 
-  const LOG_MAX_CHARS = 2_000_000;
+  // Guard against double-injection (Ingress / hot reload / duplicate script tags).
+  if (window.__pjr_webui_loaded__) return;
+  window.__pjr_webui_loaded__ = true;
+
+  const LOG_MAX_CHARS = 2000000;
   const MAX_MATCHES = 500;
-  const TAIL_MAX_BYTES = 65_536;
+  const TAIL_MAX_BYTES = 65536;
 
   let auto = true;
   let pollMs = 2000;
 
   let currentJob = null;
+    initialTailForJob = null;
+  let initialTailForJob = null;
   let currentTab = "stdout";
   let view = "all";
 
@@ -31,6 +37,7 @@
   let matchIdx = -1;
   let matches = [];
   let logSearchTimer = null;
+  let tickTimer = null;
 
   const offsets = { stdout: 0, stderr: 0 };
   const buffers = { stdout: "", stderr: "" };
@@ -77,7 +84,7 @@
   }
 
   async function api(path, opts) {
-    const timeoutMs = 10_000;
+    const timeoutMs = 10000;
     const controller = (opts && opts.signal) ? null : new AbortController();
     const signal = controller ? controller.signal : (opts ? opts.signal : undefined);
 
@@ -217,7 +224,7 @@ function parseUtcSeconds(v) {
   }
 
   function setPollMsFromInput() {
-    pollMs = clampInt(els.pollms.value, 250, 10_000, pollMs);
+    pollMs = clampInt(els.pollms.value, 250, 10000, pollMs);
     els.pollms.value = String(pollMs);
     localStorage.setItem("pjr_pollms", String(pollMs));
   }
@@ -301,11 +308,11 @@ function parseUtcSeconds(v) {
 
   function escapeHtml(s) {
     return String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function renderLog(kind) {
@@ -317,7 +324,7 @@ function parseUtcSeconds(v) {
       return;
     }
 
-    const MAX_RENDER = 200_000;
+    const MAX_RENDER = 200000;
     const truncated = (txt.length > MAX_RENDER);
     const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
     const lines = slice.split("\n");
@@ -750,8 +757,9 @@ function closeAbout() {
     const start = matches[matchIdx];
     const before = txt.slice(0, start);
     const line = before.split("\n").length;
-    const approxLineHeight = 16;
-    els.logview.scrollTop = Math.max(0, (line - 5) * approxLineHeight);
+        const style = window.getComputedStyle(els.logview);
+    const lh = Number.parseFloat(style.lineHeight) || 16;
+    els.logview.scrollTop = Math.max(0, (line - 5) * lh);
     updateMatchCount();
   }
 
@@ -857,12 +865,13 @@ function closeAbout() {
 
     resetBuffers();
     clearSearch();
+    initialTailForJob = null;
 
     // Ensure row highlight is updated
     applyFilters();
 
-    await Promise.all([refreshMetaAndTail(), refreshOverview()]);
     setTab(currentTab);
+    await Promise.all([refreshMetaAndTail({ forceTail: true }), refreshOverview()]);
   }
 
   async function refreshOverview() {
@@ -902,9 +911,27 @@ Client IP: ${ip || ""}`;
     }
   }
 
-  async function refreshMetaAndTail() {
+  async function refreshMetaAndTail(opts) {
     if (!currentJob) return;
-    if (paused && currentTab !== "overview") return;
+
+    const forceTail = Boolean(opts && opts.forceTail);
+
+    // When paused, do not consume new log bytes. We still refresh status/meta.
+    if (paused && !forceTail && initialTailForJob === currentJob) {
+      try {
+        const st = await api(`job/${encodeURIComponent(currentJob)}.json`);
+        renderMeta(st || {});
+        updateDetailActions((st && st.state) || "");
+      } catch (e) {
+        els.meta.textContent = "";
+        const dt = document.createElement("dt");
+        dt.textContent = "Error";
+        const dd = document.createElement("dd");
+        dd.textContent = e.message;
+        els.meta.append(dt, dd);
+      }
+      return;
+    }
 
     try {
       const data = await api(
@@ -923,6 +950,8 @@ Client IP: ${ip || ""}`;
       const tail = data.tail || {};
       appendBuffer("stdout", tail.stdout || "");
       appendBuffer("stderr", tail.stderr || "");
+
+      initialTailForJob = currentJob;
 
       if (currentTab !== "overview") {
         renderLog(currentTab);
@@ -1021,7 +1050,7 @@ Client IP: ${ip || ""}`;
     if (auto) {
       await refreshAll();
     }
-    window.setTimeout(tick, pollMs);
+    tickTimer = window.setTimeout(tick, pollMs);
   }
 
   function toggleAuto() {
@@ -1226,6 +1255,8 @@ Client IP: ${ip || ""}`;
     els.adv_close = document.getElementById("adv_close");
     els.auto = document.getElementById("auto");
     els.btn_back = document.getElementById("btn_back");
+    els.btn_cancel = document.getElementById("btn_cancel");
+    els.btn_delete = document.getElementById("btn_delete");
   }
 
   async function init() {
@@ -1239,7 +1270,7 @@ Client IP: ${ip || ""}`;
     if (savedTab) currentTab = savedTab;
 
     const savedPoll = localStorage.getItem("pjr_pollms");
-    if (savedPoll) pollMs = clampInt(savedPoll, 250, 10_000, pollMs);
+    if (savedPoll) pollMs = clampInt(savedPoll, 250, 10000, pollMs);
     els.pollms.value = String(pollMs);
 
     const savedAuto = localStorage.getItem("pjr_auto");
@@ -1285,8 +1316,24 @@ Client IP: ${ip || ""}`;
 
     setView(view);
     setTab(currentTab);
+    window.addEventListener("beforeunload", () => {
+      if (tickTimer) window.clearTimeout(tickTimer);
+      tickTimer = null;
+    }, { once: true });
+
     tick();
   }
 
-  init();
+  const start = () => {
+    init().catch((e) => {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    });
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
 })();
