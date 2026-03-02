@@ -1,4 +1,4 @@
-/* VERSION: 0.6.9 */
+/* VERSION: 0.6.10 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -18,6 +18,12 @@
   let follow = true;
   let wrap = true;
   let fontSize = 13;
+
+  let paused = false;
+  let hilite = false;
+  let pane = "jobs"; // "jobs" or "detail" on narrow screens
+  let refreshing = false;
+  let toastActionHandler = null;
 
   let infoCache = null;
 
@@ -44,15 +50,57 @@
     return new URL(".", window.location.href).toString().replace(/\/$/, "");
   }
 
-  async function api(path, opts) {
-    const r = await fetch(apiUrl(path), opts || {});
-    if (!r.ok) {
-      const t = await r.text();
-      throw new Error(`${r.status} ${t}`);
+  function isNarrow() {
+    return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+  }
+
+  function setPane(next) {
+    pane = (next === "detail") ? "detail" : "jobs";
+    localStorage.setItem("pjr_pane", pane);
+    ensurePaneForViewport();
+  }
+
+  function ensurePaneForViewport() {
+    const narrow = isNarrow();
+    if (!els.pane_jobs || !els.pane_detail) return;
+
+    if (!narrow) {
+      els.pane_jobs.hidden = false;
+      els.pane_detail.hidden = false;
+      if (els.btn_back) els.btn_back.hidden = true;
+      return;
     }
-    const ct = r.headers.get("content-type") || "";
-    if (ct.includes("application/json")) return await r.json();
-    return await r.text();
+
+    els.pane_jobs.hidden = (pane !== "jobs");
+    els.pane_detail.hidden = (pane !== "detail");
+    if (els.btn_back) els.btn_back.hidden = (pane !== "detail");
+  }
+
+  async function api(path, opts) {
+    const timeoutMs = 10_000;
+    const controller = (opts && opts.signal) ? null : new AbortController();
+    const signal = controller ? controller.signal : (opts ? opts.signal : undefined);
+
+    const finalOpts = Object.assign({}, (opts || {}));
+    if (signal) finalOpts.signal = signal;
+
+    let timer = null;
+    if (controller) {
+      timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    }
+
+    try {
+      const r = await fetch(apiUrl(path), finalOpts);
+      if (!r.ok) {
+        const t = await r.text();
+        throw new Error(`${r.status} ${t}`);
+      }
+      const ct = r.headers.get("content-type") || "";
+      if (ct.includes("application/json")) return await r.json();
+      return await r.text();
+    } finally {
+      if (timer) window.clearTimeout(timer);
+    }
   }
 
   function clampInt(v, min, max, fallback) {
@@ -431,9 +479,14 @@ function applyFilters() {
   }
 
   async function refreshJobs() {
-    const data = await api("jobs.json");
-    jobsCache = (data && data.jobs) ? data.jobs : [];
-    applyFilters();
+    if (els.jobs_loading) els.jobs_loading.hidden = false;
+    try {
+      const data = await api("jobs.json");
+      jobsCache = (data && data.jobs) ? data.jobs : [];
+      applyFilters();
+    } finally {
+      if (els.jobs_loading) els.jobs_loading.hidden = true;
+    }
   }
 
   async function purgeState(state) {
@@ -796,8 +849,7 @@ function closeAbout() {
       appendBuffer("stderr", tail.stderr || "");
 
       if (currentTab !== "overview") {
-        els.logview.textContent = buffers[currentTab] || "";
-        applyLogStyle();
+        renderLog(currentTab);
         if (follow) {
           els.logview.scrollTop = els.logview.scrollHeight;
         }
@@ -871,6 +923,8 @@ function closeAbout() {
   }
 
   async function refreshAll() {
+    if (refreshing) return;
+    refreshing = true;
     try {
       await Promise.all([refreshStats(), refreshJobs()]);
       if (currentJob) {
@@ -881,6 +935,9 @@ function closeAbout() {
     } catch (e) {
       setStatus("err", "Disconnected");
       toast("err", "Request failed", e.message);
+    }
+    finally {
+      refreshing = false;
     }
   }
 
@@ -1044,6 +1101,9 @@ function closeAbout() {
     els.kpi_error = document.getElementById("kpi_error");
     els.kpi_done = document.getElementById("kpi_done");
     els.kpi_total = document.getElementById("kpi_total");
+
+    els.pane_jobs = document.getElementById("pane_jobs");
+    els.pane_detail = document.getElementById("pane_detail");
 
     els.jobtable_tbody = document.querySelector("#jobtable tbody");
     els.empty = document.getElementById("empty");

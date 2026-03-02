@@ -309,6 +309,15 @@ class Runner:
         self._sema = threading.Semaphore(max(1, self.max_concurrent_jobs))
         self._last_cleanup_check_ts = 0.0
 
+        # Stats caching: avoid expensive directory walks on each /stats.json poll.
+        # These values are informational for the Web UI, so it is fine to refresh them
+        # on a short interval rather than recalculating every request.
+        self._disk_cache_ts = 0.0
+        self._disk_cache_free = 0
+        self._disk_cache_total = 0
+        self._jobs_bytes_cache_ts = 0.0
+        self._jobs_bytes_cache = 0
+
         JOBS_DIR.mkdir(parents=True, exist_ok=True)
         self._load_jobs_from_disk()
         threading.Thread(target=self._reaper, daemon=True).start()
@@ -560,6 +569,97 @@ class Runner:
         env["PYTHONPATH"] = str(deps_dir) + (os.pathsep + existing if existing else "")
         return None
 
+
+    def _get_disk_usage_cached(self, ttl_seconds: int = 5) -> Tuple[int, int]:
+        """Return (free_bytes, total_bytes) for JOBS_DIR with a small cache.
+
+        Disk usage calls can be relatively expensive on some filesystems, and the Web UI
+        may poll frequently. A short cache reduces latency without meaningfully harming UX.
+        """
+        now = time.time()
+        try:
+            if now - float(self._disk_cache_ts) < ttl_seconds:
+                return int(self._disk_cache_free), int(self._disk_cache_total)
+        except Exception:
+            pass
+
+        free_b = 0
+        total_b = 0
+        try:
+            du = shutil.disk_usage(str(JOBS_DIR))
+            free_b = int(du.free)
+            total_b = int(du.total)
+        except Exception:
+            free_b = 0
+            total_b = 0
+
+        self._disk_cache_ts = now
+        self._disk_cache_free = free_b
+        self._disk_cache_total = total_b
+        return free_b, total_b
+
+    @staticmethod
+    def _dir_size_bytes(root: Path, max_files: int = 200_000) -> int:
+        """Best-effort directory size computation.
+
+        Avoids Path.rglob overhead and caps traversal to prevent worst-case blow-ups.
+        """
+        try:
+            root_str = str(root)
+        except Exception:
+            return 0
+        total = 0
+        files_seen = 0
+        stack = [root_str]
+        while stack:
+            p = stack.pop()
+            try:
+                with os.scandir(p) as it:
+                    for ent in it:
+                        try:
+                            if ent.is_symlink():
+                                continue
+                            if ent.is_file(follow_symlinks=False):
+                                try:
+                                    total += int(ent.stat(follow_symlinks=False).st_size)
+                                except Exception:
+                                    pass
+                                files_seen += 1
+                                if files_seen >= max_files:
+                                    return total
+                            elif ent.is_dir(follow_symlinks=False):
+                                stack.append(ent.path)
+                        except Exception:
+                            continue
+            except Exception:
+                continue
+        return total
+
+    def _get_jobs_dir_bytes_cached(self, ttl_seconds: int = 30) -> int:
+        """Return approximate bytes used by JOBS_DIR with caching.
+
+        Computing this by walking the directory can be expensive, especially if jobs are
+        numerous. This value is informational, so a cache is acceptable.
+        """
+        now = time.time()
+        try:
+            if now - float(self._jobs_bytes_cache_ts) < ttl_seconds:
+                return int(self._jobs_bytes_cache)
+        except Exception:
+            pass
+
+        size_b = 0
+        try:
+            if JOBS_DIR.exists():
+                size_b = self._dir_size_bytes(JOBS_DIR)
+        except Exception:
+            size_b = 0
+
+        self._jobs_bytes_cache_ts = now
+        self._jobs_bytes_cache = size_b
+        return size_b
+
+
     def stats_dict(self) -> Dict[str, Any]:
         with self._lock:
             states = [j.state for j in self._jobs.values()]
@@ -569,21 +669,8 @@ class Runner:
         jobs_done = sum(1 for s in states if s == "done")
         jobs_queued = sum(1 for s in states if s == "queued")
 
-        try:
-            du = shutil.disk_usage(str(JOBS_DIR))
-            disk_free = int(du.free)
-            disk_total = int(du.total)
-        except Exception:
-            disk_free = 0
-            disk_total = 0
-
-        jobs_bytes = 0
-        try:
-            for p in JOBS_DIR.rglob("*"):
-                if p.is_file():
-                    jobs_bytes += int(p.stat().st_size)
-        except Exception:
-            pass
+        disk_free, disk_total = self._get_disk_usage_cached()
+        jobs_bytes = self._get_jobs_dir_bytes_cached()
 
         return {
             "runner_version": ADDON_VERSION,
