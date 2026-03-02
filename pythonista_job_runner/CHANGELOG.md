@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.6.7
+
+- Web UI: redesigned to be more modern and mobile-friendly (KPI overview cards, clearer controls, and a responsive job list).
+- Web UI: fix status indicator and stats display by wiring UI to the current stats.json schema.
+- Web UI: add toast notifications for common actions (purge, cancel, delete, copy curl) and better error surfacing.
+- Web UI: improve log search performance with debouncing and show match counts.
+
 ## 0.6.6
 
 - Improve add-on presentation in Home Assistant:

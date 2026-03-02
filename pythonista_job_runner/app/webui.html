@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.5 -->
+<!doctype html><!-- VERSION: 0.6.7 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -6,17 +6,29 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.5 */
+/* VERSION: 0.6.7 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
   --panel2: #0b0d12;
   --line: #242c3d;
   --text: #e6e6e6;
-  --muted: #b0b0b0;
+  --muted: #a9b0c0;
   --link: #8ab4ff;
+
   --chip: #1f2633;
+  --chip2: rgba(138,180,255,0.16);
+
+  --ok: #2ecc71;
+  --warn: #f1c40f;
+  --err: #ff5c5c;
+
+  --radius: 14px;
+  --shadow: 0 6px 24px rgba(0,0,0,0.20);
+
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
+
 @media (prefers-color-scheme: light){
   :root{
     --bg: #f5f7fb;
@@ -26,9 +38,16 @@
     --text: #0d1117;
     --muted: #4b5563;
     --link: #1d4ed8;
+
     --chip: #eef2ff;
+    --chip2: rgba(29,78,216,0.12);
+
+    --shadow: 0 10px 30px rgba(17,24,39,0.10);
   }
 }
+
+*{ box-sizing: border-box; }
+
 body{
   font-family: -apple-system, system-ui, sans-serif;
   margin: 0;
@@ -36,114 +55,429 @@ body{
   background: var(--bg);
   color: var(--text);
 }
-a{ color: var(--link); }
-h1{ margin: 0 0 6px 0; font-size: 20px; letter-spacing: 0.2px; }
-small{ color: var(--muted); }
-button{
+
+a{ color: var(--link); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+.container{
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header{
+  display:flex;
+  align-items:flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.brand h1{
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.2px;
+}
+
+.subline{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pill{
+  display:inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.pill.ok .dot{ background: var(--ok); }
+.pill.err .dot{ background: var(--err); }
+.pill.warn .dot{ background: var(--warn); }
+
+.toplinks{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+.card{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card + .card{ margin-top: 14px; }
+
+.card-header{
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.card-header h2{
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.card-body{ padding: 14px; }
+
+button, .linkbtn{
+  appearance: none;
   background: var(--chip);
   color: var(--text);
   border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+button:hover, .linkbtn:hover{ filter: brightness(1.05); }
+button:active, .linkbtn:active{ transform: translateY(1px); }
+button:disabled{ opacity: 0.55; }
+
+button.primary{
+  background: var(--chip2);
+  border-color: rgba(138,180,255,0.35);
+}
+
+button.danger{
+  border-color: rgba(255,92,92,0.45);
+}
+
+button.small{
+  padding: 7px 10px;
   border-radius: 10px;
-  padding: 8px 12px;
+  font-size: 12px;
 }
-button:hover{ filter: brightness(1.05); }
-button:active{ transform: translateY(1px); }
-.actions{ margin-top: 12px; display:flex; gap:8px; flex-wrap: wrap; align-items:center; }
-.statuschip{
-  display:inline-block;
-  padding:2px 10px;
-  border:1px solid var(--line);
-  border-radius:999px;
-  background: var(--panel);
-  margin-left: 6px;
+
+button.chip{
+  padding: 8px 10px;
+  border-radius: 999px;
 }
-input[type="text"], input[type="search"], input[type="number"]{
-  padding:10px 12px;
-  border-radius:10px;
-  border:1px solid var(--line);
-  background:var(--panel);
-  color:var(--text);
+
+button.chip.active{
+  background: var(--chip2);
+  border-color: rgba(138,180,255,0.45);
 }
+
+input[type="text"], input[type="search"], input[type="number"], textarea{
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+textarea{
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+input[type="number"]{ width: 110px; }
+
+.fieldrow{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.field{
+  flex: 1 1 220px;
+  min-width: 160px;
+}
+
+.field.small{
+  flex: 0 0 auto;
+  min-width: unset;
+}
+
+label{
+  display:block;
+  margin: 0 0 6px 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kpis{
+  display:grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.kpi{
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  text-align:left;
+}
+
+.kpi .label{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.kpi .value{
+  margin-top: 6px;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+}
+
+.kpi.running .value{ color: var(--link); }
+.kpi.queued .value{ color: var(--warn); }
+.kpi.error .value{ color: var(--err); }
+.kpi.done .value{ color: var(--ok); }
+
+.kpi button{
+  width: 100%;
+  text-align:left;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.meta-strip{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.meta-strip .pill{ background: var(--panel2); }
+
+.tablewrap{
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+}
+
 table{
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 700px;
 }
+
 th, td{
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 12px;
   font-size: 13px;
+  border-bottom: 1px solid var(--line);
   vertical-align: top;
 }
+
 th{
   text-align:left;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  background: rgba(20,24,36,0.92);
+  backdrop-filter: blur(8px);
 }
+
+@media (prefers-color-scheme: light){
+  th{
+    background: rgba(255,255,255,0.92);
+  }
+}
+
 tr:hover{ background: rgba(120, 140, 180, 0.10); }
+tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
+
 .badge{
-  display:inline-block;
-  padding:2px 10px;
-  border-radius:999px;
+  display:inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
   font-size: 12px;
   border: 1px solid var(--line);
   background: var(--chip);
 }
+
+.badge::before{
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
 .badge.running{ border-color: rgba(49,130,206,0.6); }
+.badge.running::before{ background: var(--link); }
 .badge.done{ border-color: rgba(31,139,76,0.6); }
+.badge.done::before{ background: var(--ok); }
 .badge.error{ border-color: rgba(197,48,48,0.6); }
-.rowbtn{ font-size: 12px; padding: 6px 10px; }
-#empty{
+.badge.error::before{ background: var(--err); }
+.badge.queued{ border-color: rgba(241,196,15,0.55); }
+.badge.queued::before{ background: var(--warn); }
+
+.actionsbar{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.actionsbar.right{
+  justify-content: flex-end;
+}
+
+.empty{
   margin-top: 12px;
-  padding: 12px;
+  padding: 14px;
   border: 1px dashed var(--line);
   border-radius: 12px;
-  background: var(--panel);
+  background: var(--panel2);
   color: var(--muted);
 }
-#stats{
-  margin-top: 12px;
-  padding: 12px;
+
+.kvgrid{
+  display:grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.kvgrid dt{
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kvgrid dd{
+  margin: 0;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.tabs{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tabs button{
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
+.tabs button.active{
+  background: var(--chip2);
+  border-color: rgba(138,180,255,0.45);
+}
+
+.logtools{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.logtools .tog{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  padding: 7px 10px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+  border-radius: 999px;
+  background: var(--panel2);
 }
-.kv{ display:flex; gap:10px; flex-wrap: wrap; }
-.kv .item{ padding:6px 10px; border:1px solid var(--line); border-radius:999px; background: var(--chip); font-size: 12px; color: var(--muted); }
-#detail{
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
+
+.logtools input[type="checkbox"]{ transform: scale(1.1); }
+
 pre{
+  margin: 10px 0 0 0;
   background: var(--panel2);
   color: var(--text);
   padding: 12px;
-  overflow-x: auto;
+  overflow: auto;
   max-height: 45vh;
   white-space: pre-wrap;
   border: 1px solid var(--line);
   border-radius: 12px;
-}
-textarea{
-  width: 100%;
-  background: var(--panel2);
-  color: var(--text);
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-@media (max-width: 520px){
-  th:nth-child(4), td:nth-child(4){ display:none; }
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-/* Additions for maintainability and accessibility */
+pre.nowrap{ white-space: pre; }
+
+.findbar{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.findbar .count{
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.toast{
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  z-index: 50;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(20,24,36,0.96);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow);
+  display:none;
+}
+
+@media (prefers-color-scheme: light){
+  .toast{
+    background: rgba(255,255,255,0.96);
+  }
+}
+
+.toast.show{ display:block; }
+.toast.ok{ border-color: rgba(46,204,113,0.45); }
+.toast.err{ border-color: rgba(255,92,92,0.45); }
+.toast .title{ font-weight: 700; }
+.toast .msg{ margin-top: 4px; color: var(--muted); }
+
 .sr-only{
   position:absolute;
   width:1px;
@@ -156,130 +490,267 @@ textarea{
   border:0;
 }
 
-.page-header{
-  margin-bottom: 12px;
+:focus-visible{
+  outline: 2px solid rgba(138,180,255,0.55);
+  outline-offset: 2px;
 }
 
-main{
-  display:block;
+@media (max-width: 980px){
+  .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  table{ min-width: 620px; }
+}
+
+@media (max-width: 720px){
+  .page-header{ align-items: flex-start; }
+  .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Mobile-first table: turn rows into cards */
+  .tablewrap{ border: none; background: transparent; }
+  table{ min-width: unset; }
+  thead{ display:none; }
+  table, tbody, tr, td{ display:block; width: 100%; }
+  tr{
+    margin: 0 0 12px 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--panel2);
+    overflow: hidden;
+  }
+  td{
+    border-bottom: 1px solid var(--line);
+    display:flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  td:last-child{ border-bottom: none; }
+  td::before{
+    content: attr(data-label);
+    color: var(--muted);
+    font-weight: 700;
+    flex: 0 0 110px;
+  }
+  td.actions{
+    justify-content: flex-start;
+  }
 }
   </style>
 </head>
 <body>
-  <header class="page-header">
-    <h1>Pythonista Job Runner</h1>
-    <small>v__ADDON_VERSION__ · <span id="statusline" class="statuschip" role="status" aria-live="polite">loading…</span></small>
-  </header>
-
-  <main>
-    <div id="stats" hidden>
-      <div class="kv" id="stats_kv"></div>
-    </div>
-
-    <div class="actions">
-      <button type="button" id="btn_refresh" data-action="refresh">Refresh</button>
-      <button type="button" id="btn_auto" data-action="toggle-auto">Auto refresh: <span id="autostate">on</span></button>
-      <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
-        poll <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" style="width:90px;"/> ms
-      </label>
-      <span style="flex:1 1 240px;"></span>
-      <label class="sr-only" for="search">Search jobs</label>
-      <input id="search" type="search" placeholder="Search job id or user…" style="flex:1 1 220px;min-width:160px;"/>
-    </div>
-
-    <div class="actions" style="margin-top:8px;">
-      <button type="button" class="rowbtn" data-action="set-view" data-view="all">All</button>
-      <button type="button" class="rowbtn" data-action="set-view" data-view="running">Running</button>
-      <button type="button" class="rowbtn" data-action="set-view" data-view="error">Errors</button>
-      <button type="button" class="rowbtn" data-action="set-view" data-view="done">Done</button>
-      <span style="flex:1 1 240px;"></span>
-      <button type="button" class="rowbtn" data-action="purge" data-state="done">Purge done</button>
-      <button type="button" class="rowbtn" data-action="purge" data-state="error">Purge errors</button>
-    </div>
-
-    <table id="jobtable">
-      <thead>
-        <tr>
-          <th>Job</th>
-          <th>State</th>
-          <th>Exit</th>
-          <th>User</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div id="empty" hidden>No jobs yet. Run something from Pythonista and hit Refresh.</div>
-
-    <section id="detail" hidden aria-label="Job detail">
-      <h2 style="font-size:16px;margin:0 0 8px 0;">Job <span id="jobid"></span></h2>
-
-      <div class="actions" style="margin-bottom:8px;">
-        <button type="button" data-action="download-zip">Download zip</button>
-        <button type="button" data-action="download-text" data-which="stdout">stdout.txt</button>
-        <button type="button" data-action="download-text" data-which="stderr">stderr.txt</button>
-        <button type="button" data-action="cancel">Cancel</button>
-        <button type="button" data-action="delete">Delete</button>
-      </div>
-
-      <div><small id="meta"></small></div>
-
-      <div class="actions" style="margin-top:10px;">
-        <button type="button" class="rowbtn" data-action="set-tab" data-tab="stdout">stdout</button>
-        <button type="button" class="rowbtn" data-action="set-tab" data-tab="stderr">stderr</button>
-        <button type="button" class="rowbtn" data-action="set-tab" data-tab="overview">overview</button>
-        <span style="flex:1 1 240px;"></span>
-        <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
-          <input type="checkbox" id="follow" checked/> follow
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
-          <input type="checkbox" id="wrap" checked/> wrap
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;color:var(--muted);">
-          font <input type="range" id="font" min="11" max="18" value="13"/>
-        </label>
-      </div>
-
-      <div class="actions" style="margin-top:8px;">
-        <label class="sr-only" for="logsearch">Find in log</label>
-        <input id="logsearch" type="search" placeholder="Find in log…" style="flex:1 1 220px;min-width:160px;"/>
-        <button type="button" class="rowbtn" data-action="find-next">Next</button>
-        <button type="button" class="rowbtn" data-action="find-prev">Prev</button>
-        <button type="button" class="rowbtn" data-action="clear-search">Clear</button>
-      </div>
-
-      <div id="overview" hidden style="margin-top:10px;">
-        <div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <div style="flex:1 1 220px;"><small id="overview_text"></small></div>
-            <button type="button" class="rowbtn" data-action="copy-curl">Copy curl snippet</button>
-          </div>
-          <div style="margin-top:10px;">
-            <textarea id="curl_snippet" rows="8" readonly></textarea>
-          </div>
+  <div class="container">
+    <header class="page-header">
+      <div class="brand">
+        <h1>Pythonista Job Runner</h1>
+        <div class="subline">
+          <span>v__ADDON_VERSION__</span>
+          <span class="pill" id="statuspill">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="statusline" role="status" aria-live="polite">Connecting…</span>
+          </span>
+          <span class="pill" title="Last refresh">
+            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
+            <span id="lastupdated">never</span>
+          </span>
         </div>
       </div>
-
-      <div id="logpanel" style="margin-top:10px;">
-        <pre id="logview"></pre>
+      <div class="toplinks">
+        <a class="linkbtn" href="info.json" target="_blank" rel="noopener noreferrer">API info</a>
       </div>
-    </section>
-  </main>
+    </header>
+
+    <main>
+      <section id="stats" class="card" hidden>
+        <div class="card-header">
+          <h2>Overview</h2>
+          <div class="actionsbar">
+            <button type="button" class="chip small" data-action="refresh">Refresh now</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="kpis" id="kpis">
+            <div class="kpi running">
+              <button type="button" data-action="set-view" data-view="running" aria-label="Show running jobs">
+                <div class="label">Running</div>
+                <div class="value" id="kpi_running">0</div>
+              </button>
+            </div>
+            <div class="kpi queued">
+              <button type="button" data-action="set-view" data-view="queued" aria-label="Show queued jobs">
+                <div class="label">Queued</div>
+                <div class="value" id="kpi_queued">0</div>
+              </button>
+            </div>
+            <div class="kpi error">
+              <button type="button" data-action="set-view" data-view="error" aria-label="Show error jobs">
+                <div class="label">Errors</div>
+                <div class="value" id="kpi_error">0</div>
+              </button>
+            </div>
+            <div class="kpi done">
+              <button type="button" data-action="set-view" data-view="done" aria-label="Show completed jobs">
+                <div class="label">Done</div>
+                <div class="value" id="kpi_done">0</div>
+              </button>
+            </div>
+            <div class="kpi">
+              <button type="button" data-action="set-view" data-view="all" aria-label="Show all jobs">
+                <div class="label">Total</div>
+                <div class="value" id="kpi_total">0</div>
+              </button>
+            </div>
+          </div>
+
+          <div class="meta-strip" id="stats_kv"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Jobs</h2>
+          <div class="actionsbar right">
+            <button type="button" class="primary" data-action="refresh" id="btn_refresh">Refresh</button>
+            <button type="button" class="chip" data-action="toggle-auto" id="btn_auto">Auto refresh: <span id="autostate">on</span></button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="fieldrow">
+            <div class="field">
+              <label for="search">Search</label>
+              <input id="search" type="search" placeholder="Job id, user, state…" autocomplete="off"/>
+            </div>
+            <div class="field small">
+              <label for="pollms">Poll</label>
+              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
+              <div style="color:var(--muted);font-size:12px;margin-top:6px;">milliseconds</div>
+            </div>
+          </div>
+
+          <div class="actionsbar" style="margin-top:12px;">
+            <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
+            <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
+            <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
+            <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
+            <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
+
+            <span style="flex:1 1 140px;"></span>
+
+            <button type="button" class="small" data-action="purge" data-state="done">Purge done</button>
+            <button type="button" class="small" data-action="purge" data-state="error">Purge errors</button>
+          </div>
+
+          <div class="tablewrap" style="margin-top:12px;">
+            <table id="jobtable">
+              <thead>
+                <tr>
+                  <th>Job</th>
+                  <th>State</th>
+                  <th>Age</th>
+                  <th>Duration</th>
+                  <th>User</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div id="empty" class="empty" hidden>
+            <div style="font-weight:700;color:var(--text);">No jobs yet</div>
+            <div style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="margin-top:14px;">
+        <div class="card-header">
+          <h2>Job details</h2>
+          <div class="actionsbar right">
+            <button type="button" class="small" data-action="copy-curl">Copy curl</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div id="detail_empty" class="empty">Select a job from the list to see logs, metadata, and download the result zip.</div>
+
+          <section id="detail" hidden aria-label="Job detail">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+              <div style="font-size:16px;font-weight:800;">Job <span id="jobid"></span></div>
+              <div class="actionsbar">
+                <button type="button" class="small primary" data-action="download-zip">Download zip</button>
+                <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
+                <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
+                <button type="button" class="small danger" data-action="cancel">Cancel</button>
+                <button type="button" class="small danger" data-action="delete">Delete</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <dl class="kvgrid" id="meta"></dl>
+            </div>
+
+            <div id="overview" hidden style="margin-top:14px;">
+              <textarea id="curl_snippet" rows="7" readonly></textarea>
+              <div style="margin-top:8px;"><small id="overview_text"></small></div>
+            </div>
+
+            <div class="tabs" style="margin-top:14px;" aria-label="Output tabs">
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout">stdout</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr">stderr</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview">overview</button>
+            </div>
+
+            <div class="logtools" style="margin-top:10px;">
+              <label class="tog"><input type="checkbox" id="follow" checked/> follow</label>
+              <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
+              <label class="tog" style="gap:10px;">
+                font
+                <input type="range" id="font" min="11" max="18" value="13"/>
+              </label>
+              <span style="flex:1 1 140px;"></span>
+              <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
+              <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+            </div>
+
+            <div class="findbar">
+              <label class="sr-only" for="logsearch">Find in log</label>
+              <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
+              <button type="button" class="small" data-action="find-prev">Prev</button>
+              <button type="button" class="small" data-action="find-next">Next</button>
+              <button type="button" class="small" data-action="clear-search">Clear</button>
+              <span class="count" id="matchcount"></span>
+            </div>
+
+            <div id="logpanel">
+              <pre id="logview"></pre>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    <div class="title" id="toast_title"></div>
+    <div class="msg" id="toast_msg"></div>
+  </div>
 
   <script>
-/* VERSION: 0.6.5 */
+/* VERSION: 0.6.7 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
 
   const LOG_MAX_CHARS = 2_000_000;
+  const MAX_MATCHES = 500;
+  const TAIL_MAX_BYTES = 65_536;
 
   let auto = true;
   let pollMs = 2000;
+
   let currentJob = null;
   let currentTab = "stdout";
   let view = "all";
+
   let jobsCache = [];
   let follow = true;
   let wrap = true;
@@ -288,6 +759,7 @@ main{
   let logSearch = "";
   let matchIdx = -1;
   let matches = [];
+  let logSearchTimer = null;
 
   const offsets = { stdout: 0, stderr: 0 };
   const buffers = { stdout: "", stderr: "" };
@@ -314,9 +786,76 @@ main{
   }
 
   function clampInt(v, min, max, fallback) {
-    const n = parseInt(String(v ?? ""), 10);
+    const n = Number.parseInt(String(v), 10);
     if (Number.isNaN(n)) return fallback;
     return Math.max(min, Math.min(max, n));
+  }
+
+  function nowUtcSeconds() {
+    return Math.floor(Date.now() / 1000);
+  }
+
+  function fmtDuration(seconds) {
+    const s = Number(seconds);
+    if (!Number.isFinite(s) || s < 0) return "";
+    if (s < 60) return `${Math.round(s)}s`;
+    const m = Math.floor(s / 60);
+    const rs = Math.floor(s % 60);
+    if (m < 60) return `${m}m ${rs}s`;
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    if (h < 24) return `${h}h ${rm}m`;
+    const d = Math.floor(h / 24);
+    const rh = h % 24;
+    return `${d}d ${rh}h`;
+  }
+
+  function fmtAge(createdUtc) {
+    const t = Number(createdUtc);
+    if (!Number.isFinite(t) || t <= 0) return "";
+    const age = Math.max(0, nowUtcSeconds() - t);
+    return fmtDuration(age);
+  }
+
+  function fmtBytes(n) {
+    const b = Number(n);
+    if (!Number.isFinite(b) || b <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let v = b;
+    let i = 0;
+    while (v >= 1024 && i < units.length - 1) {
+      v /= 1024;
+      i += 1;
+    }
+    const rounded = (v >= 100) ? Math.round(v) : Math.round(v * 10) / 10;
+    return `${rounded} ${units[i]}`;
+  }
+
+  function setStatus(kind, text) {
+    els.statusline.textContent = text;
+    els.statuspill.classList.remove("ok", "err", "warn");
+    if (kind) els.statuspill.classList.add(kind);
+  }
+
+  function setLastUpdated(ts) {
+    els.lastupdated.textContent = ts;
+  }
+
+  let toastTimer = null;
+  function toast(kind, title, msg) {
+    if (!els.toast) return;
+
+    els.toast.classList.remove("ok", "err");
+    if (kind) els.toast.classList.add(kind);
+
+    els.toast_title.textContent = title || "";
+    els.toast_msg.textContent = msg || "";
+    els.toast.classList.add("show");
+
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => {
+      els.toast.classList.remove("show");
+    }, 3500);
   }
 
   function setPollMsFromInput() {
@@ -325,21 +864,39 @@ main{
     localStorage.setItem("pjr_pollms", String(pollMs));
   }
 
+  function setActiveButton(prefixId, activeId) {
+    const ids = ["all", "running", "queued", "error", "done"];
+    for (const k of ids) {
+      const el = document.getElementById(`${prefixId}${k}`);
+      if (!el) continue;
+      el.classList.toggle("active", `${prefixId}${k}` === activeId);
+    }
+  }
+
   function setView(next) {
     view = next;
     localStorage.setItem("pjr_view", next);
     applyFilters();
+    setActiveButton("view_", `view_${next}`);
   }
 
   function setTab(next) {
     currentTab = next;
     localStorage.setItem("pjr_tab", next);
 
+    const tStdout = document.getElementById("tab_stdout");
+    const tStderr = document.getElementById("tab_stderr");
+    const tOverview = document.getElementById("tab_overview");
+    if (tStdout) tStdout.classList.toggle("active", next === "stdout");
+    if (tStderr) tStderr.classList.toggle("active", next === "stderr");
+    if (tOverview) tOverview.classList.toggle("active", next === "overview");
+
     els.overview.hidden = (next !== "overview");
     els.logpanel.style.display = (next === "overview") ? "none" : "block";
 
     if (next === "overview") {
       resetSearch();
+      applyLogStyle();
       return;
     }
 
@@ -351,23 +908,8 @@ main{
     }
 
     resetSearch();
-    highlightMatches();
-  }
-
-  function toggleAuto() {
-    auto = !auto;
-    els.autostate.textContent = auto ? "on" : "off";
-  }
-
-  function applyFilters() {
-    const q = (els.search.value || "").toLowerCase().trim();
-    const filtered = jobsCache.filter((j) => {
-      if (view !== "all" && (j.state || "") !== view) return false;
-      if (!q) return true;
-      const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
-      return (j.job_id || "").toLowerCase().includes(q) || user.toLowerCase().includes(q);
-    });
-    renderJobs(filtered);
+    computeMatches();
+    scrollToMatch();
   }
 
   function badgeEl(state) {
@@ -376,6 +918,37 @@ main{
     span.className = `badge ${cls}`;
     span.textContent = cls;
     return span;
+  }
+
+  function applyFilters() {
+    const q = (els.search.value || "").trim().toLowerCase();
+    let jobs = jobsCache.slice(0);
+
+    // Sort: running, queued, error, done, other; within each: newest first.
+    const order = { running: 0, queued: 1, error: 2, done: 3 };
+    jobs.sort((a, b) => {
+      const sa = order[a.state] ?? 9;
+      const sb = order[b.state] ?? 9;
+      if (sa !== sb) return sa - sb;
+      const ta = Number(a.created_utc) || 0;
+      const tb = Number(b.created_utc) || 0;
+      return tb - ta;
+    });
+
+    if (view !== "all") {
+      jobs = jobs.filter((j) => (j.state || "queued") === view);
+    }
+
+    if (q) {
+      jobs = jobs.filter((j) => {
+        const id = (j.job_id || "").toLowerCase();
+        const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name) || "").toLowerCase();
+        const st = (j.state || "queued").toLowerCase();
+        return id.includes(q) || user.includes(q) || st.includes(q);
+      });
+    }
+
+    renderJobs(jobs);
   }
 
   function renderJobs(jobs) {
@@ -388,36 +961,50 @@ main{
     for (const j of jobs) {
       const jobId = j.job_id || "";
       const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
+      const state = j.state || "queued";
+      const age = fmtAge(j.created_utc);
+      const dur = fmtDuration(j.duration_seconds);
 
       const tr = document.createElement("tr");
+      if (currentJob && jobId === currentJob) tr.classList.add("selected");
 
       const tdJob = document.createElement("td");
+      tdJob.setAttribute("data-label", "Job");
       const btnJob = document.createElement("button");
       btnJob.type = "button";
-      btnJob.className = "rowbtn";
+      btnJob.className = "small";
       btnJob.textContent = jobId;
       btnJob.addEventListener("click", () => selectJob(jobId));
       tdJob.appendChild(btnJob);
 
       const tdState = document.createElement("td");
-      tdState.appendChild(badgeEl(j.state));
+      tdState.setAttribute("data-label", "State");
+      tdState.appendChild(badgeEl(state));
 
-      const tdExit = document.createElement("td");
-      tdExit.textContent = (j.exit_code === null || j.exit_code === undefined) ? "" : String(j.exit_code);
+      const tdAge = document.createElement("td");
+      tdAge.setAttribute("data-label", "Age");
+      tdAge.textContent = age;
+
+      const tdDur = document.createElement("td");
+      tdDur.setAttribute("data-label", "Duration");
+      tdDur.textContent = dur;
 
       const tdUser = document.createElement("td");
+      tdUser.setAttribute("data-label", "User");
       tdUser.textContent = user;
 
       const tdActions = document.createElement("td");
+      tdActions.className = "actions";
+      tdActions.setAttribute("data-label", "Actions");
 
       const btnView = document.createElement("button");
       btnView.type = "button";
-      btnView.className = "rowbtn";
+      btnView.className = "small";
       btnView.textContent = "View";
       btnView.addEventListener("click", () => selectJob(jobId));
 
       const zip = document.createElement("a");
-      zip.className = "rowbtn";
+      zip.className = "linkbtn";
       zip.textContent = "Zip";
       zip.href = `result/${encodeURIComponent(jobId)}.zip`;
       zip.target = "_blank";
@@ -425,36 +1012,52 @@ main{
 
       tdActions.append(btnView, document.createTextNode(" "), zip);
 
-      tr.append(tdJob, tdState, tdExit, tdUser, tdActions);
+      tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
       frag.appendChild(tr);
     }
 
     tbody.appendChild(frag);
   }
 
-  async function refreshStats() {
-    const s = await api("stats.json");
-    const kv = els.stats_kv;
+  function renderStats(stats) {
+    const s = stats || {};
+    const running = Number(s.jobs_running) || 0;
+    const queued = Number(s.jobs_queued) || 0;
+    const done = Number(s.jobs_done) || 0;
+    const error = Number(s.jobs_error) || 0;
+    const total = Number(s.jobs_total) || 0;
 
-    const items = [];
-    if (s.version) items.push(`version: ${s.version}`);
-    if (s.queue) items.push(`queue: ${s.queue.active}/${s.queue.max} active, ${s.queue.total} total`);
-    if (s.disk) items.push(`disk: ${s.disk.free_mb}MB free (min ${s.disk.min_free_mb}MB)`);
+    els.kpi_running.textContent = String(running);
+    els.kpi_queued.textContent = String(queued);
+    els.kpi_done.textContent = String(done);
+    els.kpi_error.textContent = String(error);
+    els.kpi_total.textContent = String(total);
 
-    if (s.paths) {
-      if (s.paths.jobs_dir) items.push(`jobs_dir: ${s.paths.jobs_dir}`);
-      if (s.paths.result_dir) items.push(`result_dir: ${s.paths.result_dir}`);
+    // Meta pills
+    els.stats_kv.textContent = "";
+    const pills = [];
+
+    if (s.runner_version) pills.push(`runner: ${s.runner_version}`);
+    if (Number.isFinite(Number(s.job_retention_hours))) pills.push(`retention: ${s.job_retention_hours}h`);
+
+    if (Number.isFinite(Number(s.disk_free_bytes)) && Number.isFinite(Number(s.disk_total_bytes)) && Number(s.disk_total_bytes) > 0) {
+      pills.push(`disk free: ${fmtBytes(s.disk_free_bytes)} of ${fmtBytes(s.disk_total_bytes)}`);
     }
+    if (Number.isFinite(Number(s.jobs_dir_bytes))) pills.push(`jobs dir: ${fmtBytes(s.jobs_dir_bytes)}`);
 
-    kv.textContent = "";
-    for (const t of items) {
-      const div = document.createElement("div");
-      div.className = "item";
-      div.textContent = t;
-      kv.appendChild(div);
+    for (const t of pills) {
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = t;
+      els.stats_kv.appendChild(span);
     }
 
     els.stats.hidden = false;
+  }
+
+  async function refreshStats() {
+    const s = await api("stats.json");
+    renderStats(s);
   }
 
   async function refreshJobs() {
@@ -464,41 +1067,50 @@ main{
   }
 
   async function purgeState(state) {
-    try {
-      const res = await api("purge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state }),
-      });
-      alert(`Deleted ${res.count} jobs`);
-      await refreshAll();
-    } catch (e) {
-      alert(`Purge failed: ${e.message}`);
-    }
+    if (!state) return;
+    if (!window.confirm(`Purge ${state} jobs? This deletes job files.`)) return;
+    await api("purge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ state }),
+    });
+    toast("ok", "Purge complete", `Purged ${state} jobs`);
+    await refreshAll();
   }
 
   function applyLogStyle() {
-    els.logview.style.whiteSpace = wrap ? "pre-wrap" : "pre";
+    els.logview.classList.toggle("nowrap", !wrap);
     els.logview.style.fontSize = `${fontSize}px`;
   }
 
   function resetSearch() {
     matches = [];
     matchIdx = -1;
+    els.matchcount.textContent = "";
   }
 
-  function onLogSearch() {
-    logSearch = (els.logsearch.value || "").trim();
-    resetSearch();
-    highlightMatches();
+  function updateMatchCount() {
+    if (!logSearch) {
+      els.matchcount.textContent = "";
+      return;
+    }
+    if (!matches.length) {
+      els.matchcount.textContent = "0 matches";
+      return;
+    }
+    els.matchcount.textContent = `${matchIdx + 1} of ${matches.length}`;
   }
 
-  function highlightMatches() {
+  function computeMatches() {
     const txt = els.logview.textContent || "";
-    if (!logSearch) return;
+    const needleRaw = logSearch;
+    if (!needleRaw) {
+      resetSearch();
+      return;
+    }
 
     const haystack = txt.toLowerCase();
-    const needle = logSearch.toLowerCase();
+    const needle = needleRaw.toLowerCase();
 
     let idx = 0;
     matches = [];
@@ -507,20 +1119,37 @@ main{
       if (found === -1) break;
       matches.push(found);
       idx = found + needle.length;
-      if (matches.length > 500) break;
+      if (matches.length >= MAX_MATCHES) break;
     }
 
     matchIdx = matches.length ? 0 : -1;
-    scrollToMatch();
+    updateMatchCount();
   }
 
   function scrollToMatch() {
-    if (matchIdx < 0 || matchIdx >= matches.length) return;
+    if (matchIdx < 0 || matchIdx >= matches.length) {
+      updateMatchCount();
+      return;
+    }
     const txt = els.logview.textContent || "";
-    const before = txt.slice(0, matches[matchIdx]);
+    const needle = logSearch;
+    if (!needle) return;
+
+    const start = matches[matchIdx];
+    const before = txt.slice(0, start);
     const line = before.split("\n").length;
     const approxLineHeight = 16;
     els.logview.scrollTop = Math.max(0, (line - 5) * approxLineHeight);
+    updateMatchCount();
+  }
+
+  function onLogSearchDebounced() {
+    if (logSearchTimer) window.clearTimeout(logSearchTimer);
+    logSearchTimer = window.setTimeout(() => {
+      logSearch = (els.logsearch.value || "").trim();
+      computeMatches();
+      scrollToMatch();
+    }, 180);
   }
 
   function findNext() {
@@ -542,31 +1171,76 @@ main{
   }
 
   function resetBuffers() {
-    buffers.stdout = "";
-    buffers.stderr = "";
     offsets.stdout = 0;
     offsets.stderr = 0;
-    els.logview.textContent = "";
+    buffers.stdout = "";
+    buffers.stderr = "";
   }
 
   function appendBuffer(which, chunk) {
     if (!chunk) return;
-    buffers[which] += chunk;
+    buffers[which] = (buffers[which] || "") + chunk;
     if (buffers[which].length > LOG_MAX_CHARS) {
       buffers[which] = buffers[which].slice(-LOG_MAX_CHARS);
     }
   }
 
+  function renderMeta(st) {
+    const s = st || {};
+    const lim = s.limits || {};
+    const by = (s.submitted_by && (s.submitted_by.display_name || s.submitted_by.name)) || "";
+
+    const items = [
+      ["State", s.state || "queued"],
+      ["Phase", s.phase || ""],
+      ["Exit code", (s.exit_code === null || s.exit_code === undefined) ? "" : String(s.exit_code)],
+      ["Error", s.error || ""],
+      ["Created", s.created_utc ? String(s.created_utc) : ""],
+      ["Started", s.started_utc ? String(s.started_utc) : ""],
+      ["Finished", s.finished_utc ? String(s.finished_utc) : ""],
+      ["Duration", fmtDuration(s.duration_seconds)],
+      ["User", by],
+      ["Client IP", s.client_ip || ""],
+      ["CPU %", (lim.cpu_percent === null || lim.cpu_percent === undefined) ? "" : String(lim.cpu_percent)],
+      ["CPU mode", lim.cpu_limit_mode || ""],
+      ["CPU effective %", (lim.cpu_cpulimit_pct === null || lim.cpu_cpulimit_pct === undefined) ? "" : String(lim.cpu_cpulimit_pct)],
+      ["Memory (MB)", (lim.mem_mb === null || lim.mem_mb === undefined) ? "" : String(lim.mem_mb)],
+      ["Threads", (lim.threads === null || lim.threads === undefined) ? "" : String(lim.threads)],
+      ["Timeout (s)", (lim.timeout_seconds === null || lim.timeout_seconds === undefined) ? "" : String(lim.timeout_seconds)],
+    ];
+
+    els.meta.textContent = "";
+    for (const [k, v] of items) {
+      if (v === "") continue;
+      const dt = document.createElement("dt");
+      dt.textContent = k;
+      const dd = document.createElement("dd");
+      dd.textContent = v;
+      els.meta.append(dt, dd);
+    }
+  }
+
   async function selectJob(jobId) {
+    if (!jobId) return;
     currentJob = jobId;
+
+    els.detail_empty.hidden = true;
     els.detail.hidden = false;
     els.jobid.textContent = jobId;
 
-    resetBuffers();
-    setTab(currentTab);
+    // Update URL (Ingress-safe: keep relative)
+    const u = new URL(window.location.href);
+    u.searchParams.set("job", jobId);
+    window.history.replaceState({}, "", u.toString());
 
-    await refreshOverview();
-    await refreshMetaAndTail();
+    resetBuffers();
+    clearSearch();
+
+    // Ensure row highlight is updated
+    applyFilters();
+
+    await Promise.all([refreshMetaAndTail(), refreshOverview()]);
+    setTab(currentTab);
   }
 
   async function refreshOverview() {
@@ -602,28 +1276,16 @@ main{
     }
   }
 
-  async function copyCurl() {
-    try {
-      await navigator.clipboard.writeText(els.curl_snippet.value);
-      alert("Copied");
-    } catch {
-      els.curl_snippet.select();
-      document.execCommand("copy");
-      alert("Copied");
-    }
-  }
-
   async function refreshMetaAndTail() {
     if (!currentJob) return;
 
     try {
       const data = await api(
-        `tail/${encodeURIComponent(currentJob)}.json?stdout_from=${offsets.stdout}&stderr_from=${offsets.stderr}&max_bytes=65536`
+        `tail/${encodeURIComponent(currentJob)}.json?stdout_from=${offsets.stdout}&stderr_from=${offsets.stderr}&max_bytes=${TAIL_MAX_BYTES}`
       );
+
       const st = data.status || {};
-      const lim = st.limits || {};
-      els.meta.textContent =
-        `state=${st.state} exit=${st.exit_code} error=${st.error} cpu=${lim.cpu_percent} mode=${lim.cpu_limit_mode} eff=${lim.cpu_cpulimit_pct} mem_mb=${lim.mem_mb} thr=${lim.threads}`;
+      renderMeta(st);
 
       if (data.offsets) {
         offsets.stdout = data.offsets.stdout_next || offsets.stdout;
@@ -643,50 +1305,71 @@ main{
       }
 
       if (logSearch) {
-        // Recompute matches because content changed
-        resetSearch();
-        highlightMatches();
+        computeMatches();
+        scrollToMatch();
       }
     } catch (e) {
-      els.meta.textContent = `error: ${e.message}`;
+      els.meta.textContent = "";
+      const dt = document.createElement("dt");
+      dt.textContent = "Error";
+      const dd = document.createElement("dd");
+      dd.textContent = e.message;
+      els.meta.append(dt, dd);
+    }
+  }
+
+  async function copyCurl() {
+    if (els.curl_snippet && els.curl_snippet.value) {
+      await navigator.clipboard.writeText(els.curl_snippet.value);
+      toast("ok", "Copied", "curl snippet copied to clipboard");
+    } else {
+      toast("err", "Nothing to copy", "Select a job first");
     }
   }
 
   async function cancelJob() {
     if (!currentJob) return;
+    if (!window.confirm(`Cancel job ${currentJob}?`)) return;
     await api(`cancel/${encodeURIComponent(currentJob)}`, { method: "POST" });
+    toast("ok", "Cancelled", `Job ${currentJob} cancelled`);
     await refreshAll();
   }
 
   async function deleteJob() {
     if (!currentJob) return;
+    if (!window.confirm(`Delete job ${currentJob}? This removes job files.`)) return;
     await api(`job/${encodeURIComponent(currentJob)}`, { method: "DELETE" });
+    toast("ok", "Deleted", `Job ${currentJob} deleted`);
     currentJob = null;
     els.detail.hidden = true;
+    els.detail_empty.hidden = false;
+    applyFilters();
     await refreshAll();
-  }
-
-  function openInNewTab(path) {
-    window.open(apiUrl(path), "_blank", "noopener,noreferrer");
   }
 
   function downloadZip() {
     if (!currentJob) return;
-    openInNewTab(`result/${encodeURIComponent(currentJob)}.zip`);
+    window.open(apiUrl(`result/${encodeURIComponent(currentJob)}.zip`), "_blank", "noopener,noreferrer");
   }
 
   function downloadText(which) {
     if (!currentJob) return;
-    const p = (which === "stderr")
-      ? `stderr/${encodeURIComponent(currentJob)}.txt`
-      : `stdout/${encodeURIComponent(currentJob)}.txt`;
-    openInNewTab(p);
+    const w = which || "stdout";
+    const url = apiUrl(`${w}/${encodeURIComponent(currentJob)}.txt`);
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   async function refreshAll() {
-    await Promise.all([refreshStats(), refreshJobs()]);
-    if (currentJob) {
-      await Promise.all([refreshMetaAndTail(), refreshOverview()]);
+    try {
+      await Promise.all([refreshStats(), refreshJobs()]);
+      if (currentJob) {
+        await Promise.all([refreshMetaAndTail(), refreshOverview()]);
+      }
+      setStatus("ok", "Connected");
+      setLastUpdated(new Date().toLocaleTimeString());
+    } catch (e) {
+      setStatus("err", "Disconnected");
+      toast("err", "Request failed", e.message);
     }
   }
 
@@ -694,7 +1377,13 @@ main{
     if (auto) {
       await refreshAll();
     }
-    setTimeout(tick, pollMs);
+    window.setTimeout(tick, pollMs);
+  }
+
+  function toggleAuto() {
+    auto = !auto;
+    els.autostate.textContent = auto ? "on" : "off";
+    toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
   }
 
   function bindEvents() {
@@ -735,13 +1424,23 @@ main{
       applyLogStyle();
     });
 
-    els.logsearch.addEventListener("input", onLogSearch);
+    els.logsearch.addEventListener("input", onLogSearchDebounced);
   }
 
   function cacheEls() {
+    els.statuspill = document.getElementById("statuspill");
     els.statusline = document.getElementById("statusline");
+    els.lastupdated = document.getElementById("lastupdated");
+
     els.stats = document.getElementById("stats");
     els.stats_kv = document.getElementById("stats_kv");
+
+    els.kpi_running = document.getElementById("kpi_running");
+    els.kpi_queued = document.getElementById("kpi_queued");
+    els.kpi_error = document.getElementById("kpi_error");
+    els.kpi_done = document.getElementById("kpi_done");
+    els.kpi_total = document.getElementById("kpi_total");
+
     els.jobtable_tbody = document.querySelector("#jobtable tbody");
     els.empty = document.getElementById("empty");
 
@@ -750,6 +1449,7 @@ main{
     els.search = document.getElementById("search");
 
     els.detail = document.getElementById("detail");
+    els.detail_empty = document.getElementById("detail_empty");
     els.jobid = document.getElementById("jobid");
     els.meta = document.getElementById("meta");
 
@@ -758,12 +1458,17 @@ main{
     els.font = document.getElementById("font");
 
     els.logsearch = document.getElementById("logsearch");
+    els.matchcount = document.getElementById("matchcount");
     els.logpanel = document.getElementById("logpanel");
     els.logview = document.getElementById("logview");
 
     els.overview = document.getElementById("overview");
     els.overview_text = document.getElementById("overview_text");
     els.curl_snippet = document.getElementById("curl_snippet");
+
+    els.toast = document.getElementById("toast");
+    els.toast_title = document.getElementById("toast_title");
+    els.toast_msg = document.getElementById("toast_msg");
   }
 
   async function init() {
@@ -780,23 +1485,22 @@ main{
     if (savedPoll) pollMs = clampInt(savedPoll, 250, 10_000, pollMs);
     els.pollms.value = String(pollMs);
 
+    els.autostate.textContent = auto ? "on" : "off";
+
     applyLogStyle();
 
+    setStatus("warn", "Connecting…");
     await refreshAll();
 
     const j = qs("job");
     if (j) await selectJob(j);
 
+    setView(view);
     setTab(currentTab);
     tick();
   }
 
-  // Kick off after DOM is ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => { void init(); });
-  } else {
-    void init();
-  }
+  init();
 })();
   </script>
 </body>
