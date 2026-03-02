@@ -8,9 +8,9 @@ cleanly behind Home Assistant Ingress without requiring a static file server.
 To make the UI easier to edit and review, the source is split into:
 - webui_src.html (HTML skeleton + placeholders)
 - webui.css      (CSS)
-- webui.js       (JavaScript)
+- webui_js/*.js  (JavaScript split into parts)
 
-This script inlines webui.css and webui.js into webui_src.html to produce webui.html.
+This script inlines webui.css and the JS bundle (from webui_js/*.js) into webui_src.html to produce webui.html.
 
 Usage (from repo root):
     python pythonista_job_runner/app/webui_build.py
@@ -44,6 +44,35 @@ def _default_paths() -> WebUiPaths:
     )
 
 
+
+def _read_js_bundle(p: WebUiPaths) -> str:
+    """Return the JavaScript bundle text from webui_js/*.js parts."""
+
+    parts_dir = p.js.with_name("webui_js")
+    if not parts_dir.is_dir():
+        raise RuntimeError(f"Web UI JavaScript parts directory not found: {parts_dir}")
+
+    parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
+    if not parts:
+        raise RuntimeError(f"No .js files found in {parts_dir}")
+
+    return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
+    """Return the JavaScript bundle text.
+
+    Reads and concatenates sources from webui_js/*.js (sorted lexicographically).
+    """
+
+    parts_dir = p.js.with_name("webui_js")
+    if not parts_dir.is_dir():
+        raise FileNotFoundError(f"JavaScript source directory not found: {parts_dir}")
+
+    parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
+    if not parts:
+        raise FileNotFoundError(f"No JavaScript source files found in {parts_dir}")
+
+    return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
+
+
 def build_webui(paths: WebUiPaths | None = None) -> str:
     """Return the bundled webui.html content as a string."""
 
@@ -51,8 +80,7 @@ def build_webui(paths: WebUiPaths | None = None) -> str:
 
     src = p.src_html.read_text(encoding="utf-8")
     css = p.css.read_text(encoding="utf-8").rstrip()
-    js = p.js.read_text(encoding="utf-8").rstrip()
-
+    js = _read_js_bundle(p)
     if "/*__WEBUI_CSS__*/" not in src:
         raise RuntimeError("webui_src.html missing /*__WEBUI_CSS__*/ placeholder")
     if "/*__WEBUI_JS__*/" not in src:

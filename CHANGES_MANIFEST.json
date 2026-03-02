@@ -1,34 +1,68 @@
 {
+  "schema_version": "1.0",
+  "repo": "WilliamRickard/ha-pythonista-job-runner",
   "base_branch": "main",
-  "changes": [
-    {
-      "path": "pythonista_job_runner/app/runner_core.py",
-      "review_comments_addressed": [
-        {
-          "reference": "Review 3873438901 / inline RC-0017",
-          "source": "coderabbitai[bot]",
-          "topic": "Use append+reverse (or reversed iteration) instead of repeated insert(0) while preserving newest-first semantics."
-        }
-      ],
-      "sha256": "06c984f0fc4c3098018f3b7908b6acf7d74a60e68318607868d40de0a478dd59",
-      "summary": "Optimise _load_jobs_from_disk job ordering rebuild to avoid O(n^2) insert(0) loop; preserve newest-first external ordering."
-    }
-  ],
-  "generated_utc": "2026-03-02 01:25:11Z",
   "head_branch": "fix/runner-core-stability-20260301",
   "head_sha": "0f65756a5191f56fdae22de819dcbec2687bb599",
-  "notes": [
-    "No functional behaviour change intended: /jobs.json ordering remains newest-first.",
-    "Change is startup-only (disk job index rebuild) and reduces list operations for large job directories."
+  "pr_number": 21,
+  "generated_utc": "2026-03-02 17:40:12Z",
+  "changes": [
+    {
+      "path": "pythonista_job_runner/app/webui_build.py",
+      "sha256": "3981e5be1191777e85d55074028dfe468615d7e5b024a3d52d2cfdc18d67cd53",
+      "summary": "Bundle JS from webui_js parts (fallback to webui.js) and rebuild webui.html as a single Ingress-safe artifact."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui.html",
+      "sha256": "e98dcaa3ffb64cc35f962cffb34c5ae9fb548b652baec02f4bc0e679542ff847",
+      "summary": "Regenerated bundled Web UI HTML (inline CSS/JS) from sources."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui.js",
+      "sha256": "8c05a3b2edf2634bda75710027245cf54e151edc851c25ea8f27e6e792e47f2c",
+      "summary": "Converted to thin wrapper/comment pointing contributors to modular sources; retains version marker."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui_src.html",
+      "sha256": "7d0fe0a37ce16dd7bf6b48de326db838665be57673ff2a033026fdcd451b27bd",
+      "summary": "Kept as the HTML source template used by the bundler."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui_js/00_core.js",
+      "sha256": "2676d97430ac46ce2c849ecc2d91181af855c4529e944eaed8001d7e1c8ffcce",
+      "summary": "Core state, helpers, constants, DOM cache, and utilities."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui_js/10_render_search.js",
+      "sha256": "9345bc8b0aa09771fcf885e423bdb79ed9b3cb79d859d5e72f627d62395a4bd3",
+      "summary": "Rendering functions and search/find-next behaviour (lineHeight based scrolling)."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui_js/20_detail_meta.js",
+      "sha256": "f45a2f460d7dc668a408745d5aa9041a6f0b19efbc7437070be21a3190ecd64c",
+      "summary": "Job detail meta rendering and action button state/visibility (includes cancel/delete caching)."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui_js/30_refresh_actions.js",
+      "sha256": "824bb5a9fa35450d0d06db26884b01f534557c0d85332ad2fc6fc6233a9888ee",
+      "summary": "Refresh/polling loop, pause semantics, tail fetching and offsets, overview updates."
+    },
+    {
+      "path": "pythonista_job_runner/app/webui_js/40_events_init.js",
+      "sha256": "97d1676cd0a6647d20125990a31e3b0cda208a9c251db28ef0b5e0dd2b83570a",
+      "summary": "Event bindings, DOMContentLoaded-safe init, and double-load guard."
+    }
   ],
-  "pr_number": 8,
-  "repo": "WilliamRickard/ha-pythonista-job-runner",
-  "schema_version": "1.0",
+  "notes": [
+    "Refactor Web UI sources: split monolithic webui.js into modular files under pythonista_job_runner/app/webui_js/ while keeping webui.html bundled for Ingress-safe deployment.",
+    "Fix Web UI bugs and harden behaviour (pause semantics, cancel/delete button caching, DOM-ready init guard, double-load guard, accurate search scrolling, broader WebView compatibility).",
+    "Regenerated bundled webui.html via webui_build.py."
+  ],
   "verification": {
     "commands": [
       {
         "cmd": "cd pythonista_job_runner && pytest -q",
-        "result": "75 passed"
+        "result": "........................................................................ [ 66%]\n.....................................                                    [100%]\n109 passed in 4.60s"
       }
     ]
   }

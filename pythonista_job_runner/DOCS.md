@@ -82,7 +82,7 @@ To make edits easier, the UI source is split into:
 
 - `pythonista_job_runner/app/webui_src.html`
 - `pythonista_job_runner/app/webui.css`
-- `pythonista_job_runner/app/webui.js`
+- `pythonista_job_runner/app/webui_js/*.js`
 
 After editing, regenerate `webui.html` by running from the repository root:
 
