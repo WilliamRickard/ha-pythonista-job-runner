@@ -76,10 +76,10 @@ class Handler(BaseHTTPRequestHandler):
 if not runner.token or not hmac.compare_digest(tok, runner.token):
     return False
 
-        cidrs = runner.api_allow_cidrs
-        if cidrs:
-            return ip_in_cidrs(self._get_client_ip(), list(cidrs))
-        return True
+    cidrs = runner.api_allow_cidrs
+    if cidrs:
+        return ip_in_cidrs(self._get_client_ip(), list(cidrs))
+    return True
 
     def _job_id_from_suffix(self, prefix: str, suffix: str) -> str:
         """Extract job_id from /<prefix>/<job_id><suffix> paths."""
