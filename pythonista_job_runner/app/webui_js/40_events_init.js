@@ -202,6 +202,8 @@
     els.btn_back = document.getElementById("btn_back");
     els.btn_cancel = document.getElementById("btn_cancel");
     els.btn_delete = document.getElementById("btn_delete");
+    els.logtools = document.getElementById("logtools");
+    els.findbar = document.getElementById("findbar");
   }
 
   async function init() {
