@@ -41,7 +41,7 @@ from utils import (
     utc_now,
 )
 
-ADDON_VERSION = "0.6.4"
+ADDON_VERSION = "0.6.6"
 print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")
@@ -60,7 +60,52 @@ def read_options() -> Dict[str, Any]:
         data = json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
     except Exception:
         return {}
-    return data if isinstance(data, dict) else {}
+    return _normalise_options(data) if isinstance(data, dict) else {}
+
+
+
+
+def _normalise_options(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalise options.json into the flat structure used by the Runner.
+
+    Home Assistant add-ons can present nested configuration groups in the UI. This
+    helper accepts both the legacy flat options and the newer grouped options.
+
+    The returned mapping is intentionally flat; grouped keys like `security:` are
+    not preserved in the output.
+    """
+    if not isinstance(data, dict):
+        return {}
+
+    groups = {
+        "security",
+        "runner",
+        "jobs",
+        "resources",
+        "python",
+        "notifications",
+        "artefacts",
+        "housekeeping",
+    }
+
+    flat: Dict[str, Any] = {}
+
+    # Preserve any legacy flat keys (top-level), excluding group containers.
+    for k, v in data.items():
+        if k in groups and isinstance(v, dict):
+            continue
+        flat[k] = v
+
+    # Merge known groups into the top level. Top-level keys take precedence.
+    for group in groups:
+        v = data.get(group)
+        if not isinstance(v, dict):
+            continue
+        for k, vv in v.items():
+            if k not in flat:
+                flat[k] = vv
+
+    return flat
 
 
 def _resolve_user_ids(username: str) -> tuple[Optional[int], Optional[int]]:

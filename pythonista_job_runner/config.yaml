@@ -1,7 +1,10 @@
 name: "Pythonista Job Runner"
-version: "0.6.5"
+version: "0.6.6"
 slug: "pythonista_job_runner"
-description: "Run Python jobs sent from Pythonista and return results as a zip."
+description: >-
+  Run Python jobs sent from Pythonista and return results as a zip.
+  Includes an Ingress Web UI for viewing job status and logs.
+  Most users only need to set the access token.
 url: "https://github.com/WilliamRickard/ha-pythonista-job-runner"
 arch:
   - amd64
@@ -11,6 +14,9 @@ init: false
 
 ingress: true
 ingress_port: 8787
+ingress_entry: /
+panel_title: "Pythonista Runner"
+panel_icon: "mdi:language-python"
 webui: "http://[HOST]:[PORT:8787]/"
 
 homeassistant_api: true
@@ -18,99 +24,97 @@ homeassistant_api: true
 ports:
   8787/tcp: 8787
 ports_description:
-  8787/tcp: "Runner HTTP API (POST /run, GET /tail/<id>.json, GET /result/<id>.zip)"
+  8787/tcp: "Runner HTTP API (direct access; Ingress uses its own internal proxy)"
 
 options:
-  token: ""
-  bind_host: "0.0.0.0"
-  bind_port: 8787
-  job_user: "jobrunner"
-  timeout_seconds: 3600
-  max_upload_mb: 50
-  install_requirements: false
-
-  max_concurrent_jobs: 1
-  queue_max_jobs: 10
-
-  default_cpu_percent: 25
-  max_cpu_percent: 50
-  default_mem_mb: 4096
-  max_mem_mb: 4096
-  max_threads: 1
-
-  tail_chars: 8000
-  job_retention_hours: 24
-
-  summary_head_chars: 4000
-  summary_tail_chars: 4000
-  manifest_sha256: false
-
-  cleanup_min_free_mb: 4096
-
-  pip_timeout_seconds: 120
-  pip_index_url: ""
-  pip_extra_index_url: ""
-  pip_trusted_hosts: []
-  allow_env: []
-  notify_on_completion: true
-  notification_mode: "latest"
-  notification_id_prefix: "pythonista_job_runner"
-  notification_excerpt_chars: 1200
-
-  ingress_strict: false
-  api_allow_cidrs: []
-  cpu_limit_mode: "single_core"
-
-  zip_max_members: 2000
-  zip_max_total_uncompressed: 209715200
-  zip_max_single_uncompressed: 52428800
+  security:
+    token: ""
+    ingress_strict: false
+    api_allow_cidrs: []
+  runner:
+    bind_host: "0.0.0.0"
+    bind_port: 8787
+    job_user: "jobrunner"
+  jobs:
+    timeout_seconds: 3600
+    max_upload_mb: 50
+    max_concurrent_jobs: 1
+    queue_max_jobs: 10
+    tail_chars: 8000
+    job_retention_hours: 24
+  resources:
+    cpu_limit_mode: "single_core"
+    default_cpu_percent: 25
+    max_cpu_percent: 50
+    default_mem_mb: 4096
+    max_mem_mb: 4096
+    max_threads: 1
+  python:
+    install_requirements: false
+    pip_timeout_seconds: 120
+    pip_index_url: ""
+    pip_extra_index_url: ""
+    pip_trusted_hosts: []
+    allow_env: []
+  notifications:
+    notify_on_completion: true
+    notification_mode: "latest"
+    notification_id_prefix: "pythonista_job_runner"
+    notification_excerpt_chars: 1200
+  artefacts:
+    summary_head_chars: 4000
+    summary_tail_chars: 4000
+    manifest_sha256: false
+    zip_max_members: 2000
+    zip_max_total_uncompressed: 209715200
+    zip_max_single_uncompressed: 52428800
+  housekeeping:
+    cleanup_min_free_mb: 4096
 
 schema:
-  token: str
-  bind_host: str
-  bind_port: int
-  job_user: str
-  timeout_seconds: int
-  max_upload_mb: int
-  install_requirements: bool
-
-  max_concurrent_jobs: int
-  queue_max_jobs: int
-
-  default_cpu_percent: int
-  max_cpu_percent: int
-  default_mem_mb: int
-  max_mem_mb: int
-  max_threads: int
-
-  tail_chars: int
-  job_retention_hours: int
-
-  summary_head_chars: int
-  summary_tail_chars: int
-  manifest_sha256: bool
-
-  cleanup_min_free_mb: int
-
-  pip_timeout_seconds: int
-  pip_index_url: str
-  pip_extra_index_url: str
-  pip_trusted_hosts:
-    - str
-  allow_env:
-    - str
-
-  notify_on_completion: bool
-  notification_mode: str
-  notification_id_prefix: str
-  notification_excerpt_chars: int
-
-  ingress_strict: bool
-  api_allow_cidrs:
-    - str
-  cpu_limit_mode: str
-
-  zip_max_members: int
-  zip_max_total_uncompressed: int
-  zip_max_single_uncompressed: int
-
+  security:
+    token: password
+    ingress_strict: bool
+    api_allow_cidrs:
+      - str
+  runner:
+    bind_host: str
+    bind_port: port
+    job_user: str
+  jobs:
+    timeout_seconds: "int(1,86400)"
+    max_upload_mb: "int(1,1024)"
+    max_concurrent_jobs: "int(1,32)"
+    queue_max_jobs: "int(1,1000)"
+    tail_chars: "int(0,1000000)"
+    job_retention_hours: "int(1,720)"
+  resources:
+    cpu_limit_mode: "list(single_core|total_machine)"
+    default_cpu_percent: "int(1,100)"
+    max_cpu_percent: "int(1,100)"
+    default_mem_mb: "int(256,262144)"
+    max_mem_mb: "int(256,262144)"
+    max_threads: "int(1,256)"
+  python:
+    install_requirements: bool
+    pip_timeout_seconds: "int(10,3600)"
+    pip_index_url: str
+    pip_extra_index_url: str
+    pip_trusted_hosts:
+      - str
+    allow_env:
+      - str
+  notifications:
+    notify_on_completion: bool
+    notification_mode: "list(latest|per_job)"
+    notification_id_prefix: str
+    notification_excerpt_chars: "int(0,10000)"
+  artefacts:
+    summary_head_chars: "int(0,1000000)"
+    summary_tail_chars: "int(0,1000000)"
+    manifest_sha256: bool
+    zip_max_members: "int(1,100000)"
+    zip_max_total_uncompressed: "int(1,2147483647)"
+    zip_max_single_uncompressed: "int(1,2147483647)"
+  housekeeping:
+    cleanup_min_free_mb: "int(0,262144)"
