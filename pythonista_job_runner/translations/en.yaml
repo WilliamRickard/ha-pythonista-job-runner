@@ -1,0 +1,148 @@
+configuration:
+  security:
+    name: Security
+    description: Access token and request filtering.
+    fields:
+      token:
+        name: Access token
+        description: Required. Set a strong random token. Pythonista must send it in the X-Runner-Token header.
+      ingress_strict:
+        name: Ingress only (recommended)
+        description: Only allow requests coming through the Home Assistant Ingress proxy.
+      api_allow_cidrs:
+        name: Allowed client CIDRs
+        description: Optional allowlist for direct (non-Ingress) access. Leave empty to allow all (when Ingress only is off).
+
+  runner:
+    name: Runner
+    description: Where the HTTP API binds inside the add-on container.
+    fields:
+      bind_host:
+        name: Bind host
+        description: Usually leave as 0.0.0.0. Only change if you know you need to.
+      bind_port:
+        name: Bind port
+        description: Internal port used by the add-on webserver. Leave as 8787 unless you have a specific reason.
+      job_user:
+        name: Job user
+        description: Linux user the submitted jobs run as (jobrunner by default).
+
+  jobs:
+    name: Job handling
+    description: Limits and retention for submitted jobs.
+    fields:
+      timeout_seconds:
+        name: Job timeout (seconds)
+        description: Maximum runtime for a job before it is terminated.
+      max_upload_mb:
+        name: Maximum upload size (MB)
+        description: Maximum size for a submitted job zip.
+      max_concurrent_jobs:
+        name: Concurrent jobs
+        description: Maximum number of jobs running at the same time.
+      queue_max_jobs:
+        name: Queue size
+        description: Maximum number of queued and running jobs combined.
+      tail_chars:
+        name: Tail size (characters)
+        description: Amount of stdout/stderr kept for the Web UI tail endpoint.
+      job_retention_hours:
+        name: Retention (hours)
+        description: How long finished jobs are kept before cleanup.
+
+  resources:
+    name: Resource limits
+    description: Default and maximum CPU and memory limits applied per job.
+    fields:
+      cpu_limit_mode:
+        name: CPU limit mode
+        description: single_core limits CPU percent against one core; total_machine scales by core count.
+      default_cpu_percent:
+        name: Default CPU percent
+        description: Default CPU limit used if Pythonista does not override it.
+      max_cpu_percent:
+        name: Maximum CPU percent
+        description: Maximum CPU percent that Pythonista may request.
+      default_mem_mb:
+        name: Default memory (MB)
+        description: Default memory limit used if Pythonista does not override it.
+      max_mem_mb:
+        name: Maximum memory (MB)
+        description: Maximum memory that Pythonista may request.
+      max_threads:
+        name: Maximum threads
+        description: Maximum thread count exposed to common numeric libraries.
+
+  python:
+    name: Python environment
+    description: Optional dependency installation and environment allowlist.
+    fields:
+      install_requirements:
+        name: Install requirements
+        description: If enabled, the runner will install requirements.txt into a per-job directory before running.
+      pip_timeout_seconds:
+        name: pip timeout (seconds)
+        description: Timeout for pip install operations.
+      pip_index_url:
+        name: pip index URL
+        description: Optional. Custom Python package index URL.
+      pip_extra_index_url:
+        name: pip extra index URL
+        description: Optional. Extra Python package index URL.
+      pip_trusted_hosts:
+        name: pip trusted hosts
+        description: Optional. Hosts to pass to pip as trusted-host.
+      allow_env:
+        name: Allowed environment variables
+        description: Optional allowlist of environment variables the job may inherit.
+
+  notifications:
+    name: Notifications
+    description: Optional Home Assistant notifications on job completion.
+    fields:
+      notify_on_completion:
+        name: Notify on completion
+        description: Send a Home Assistant notification when a job finishes.
+      notification_mode:
+        name: Notification mode
+        description: latest overwrites one notification; per_job creates a separate notification per job.
+      notification_id_prefix:
+        name: Notification ID prefix
+        description: Prefix used for the notification ID(s).
+      notification_excerpt_chars:
+        name: Excerpt length (characters)
+        description: How much of stdout/stderr to include in the notification.
+
+  artefacts:
+    name: Output and artefacts
+    description: Controls job summaries and zip safety limits.
+    fields:
+      summary_head_chars:
+        name: Summary head (characters)
+        description: Number of characters included from the start of stdout/stderr for the summary.
+      summary_tail_chars:
+        name: Summary tail (characters)
+        description: Number of characters included from the end of stdout/stderr for the summary.
+      manifest_sha256:
+        name: Add SHA256 manifest
+        description: Include SHA256 hashes for output files in the result zip.
+      zip_max_members:
+        name: Zip max members
+        description: Maximum number of files allowed inside an uploaded zip.
+      zip_max_total_uncompressed:
+        name: Zip max total uncompressed (bytes)
+        description: Maximum uncompressed size allowed for an uploaded zip (zip bomb protection).
+      zip_max_single_uncompressed:
+        name: Zip max single uncompressed (bytes)
+        description: Maximum uncompressed size for a single file inside an uploaded zip.
+
+  housekeeping:
+    name: Housekeeping
+    description: Disk space protection.
+    fields:
+      cleanup_min_free_mb:
+        name: Minimum free disk (MB)
+        description: If free disk falls below this, the add-on will delete oldest finished jobs.
+
+network:
+  8787/TCP: Runner HTTP API (not used for Ingress)

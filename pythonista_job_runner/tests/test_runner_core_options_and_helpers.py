@@ -19,6 +19,14 @@ def test_read_options_valid_json(temp_data_dir):
     assert runner_core.read_options() == {"token": "secret", "bind_port": 9090}
 
 
+def test_read_options_grouped_json(temp_data_dir):
+    runner_core.OPTIONS_PATH.write_text(
+        json.dumps({"security": {"token": "secret"}, "runner": {"bind_port": 9090}}),
+        encoding="utf-8",
+    )
+    assert runner_core.read_options() == {"token": "secret", "bind_port": 9090}
+
+
 def test_read_options_invalid_json(temp_data_dir):
     runner_core.OPTIONS_PATH.write_text("not json", encoding="utf-8")
     assert runner_core.read_options() == {}
