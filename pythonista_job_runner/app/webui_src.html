@@ -152,8 +152,8 @@
                 <button type="button" class="small primary" data-action="download-zip">Download zip</button>
                 <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
                 <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
-                <button type="button" class="small danger" data-action="cancel">Cancel</button>
-                <button type="button" class="small danger" data-action="delete">Delete</button>
+                <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
+                <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
               </div>
             </div>
 
@@ -162,8 +162,11 @@
             </div>
 
             <div id="overview" hidden style="margin-top:14px;">
-              <textarea id="curl_snippet" rows="7" readonly></textarea>
-              <div style="margin-top:8px;"><small id="overview_text"></small></div>
+              <div class="hint" id="overview_text"></div>
+              <details class="moreopts" style="margin-top:10px;">
+                <summary>API examples</summary>
+                <textarea id="curl_snippet" rows="9" readonly></textarea>
+              </details>
             </div>
 
             <div class="tabs" style="margin-top:14px;" aria-label="Output tabs">
@@ -172,7 +175,7 @@
               <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview">overview</button>
             </div>
 
-            <div class="logtools" style="margin-top:10px;">
+            <div class="logtools" id="logtools" style="margin-top:10px;">
               <label class="tog"><input type="checkbox" id="follow" checked/> follow</label>
               <label class="tog"><input type="checkbox" id="pause"/> pause</label>
               <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
@@ -187,7 +190,7 @@
               <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
             </div>
 
-            <div class="findbar">
+            <div class="findbar" id="findbar">
               <label class="sr-only" for="logsearch">Find in log</label>
               <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
               <button type="button" class="small" data-action="find-prev">Prev</button>

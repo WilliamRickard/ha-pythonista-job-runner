@@ -335,6 +335,50 @@ th{
 tr:hover{ background: rgba(120, 140, 180, 0.10); }
 tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 
+
+.jobcell{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.jobline{
+  display:flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.jobbtn{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copybtn{
+  flex: 0 0 auto;
+}
+
+.jobmeta{
+  display:none;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.jobmeta .meta{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
 .badge{
   display:inline-flex;
   gap: 6px;
@@ -655,125 +699,20 @@ summary::-webkit-details-marker{ display:none; }
   .page-header{ align-items: flex-start; }
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  /* Mobile-first table: turn rows into cards */
-  .tablewrap{ border: none; background: transparent; }
-  table{ min-width: unset; }
+  /* Compact mobile list: keep table rows and hide secondary columns */
+  table{ min-width: 0 !important; }
   thead{ display:none; }
-  table, tbody, tr, td{ display:block; width: 100%; }
-  tr{
-    margin: 0 0 12px 0;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel2);
-    overflow: hidden;
+
+  #jobtable th:nth-child(3), #jobtable td:nth-child(3),
+  #jobtable th:nth-child(4), #jobtable td:nth-child(4),
+  #jobtable th:nth-child(5), #jobtable td:nth-child(5){
+    display:none;
   }
-  td{
-    border-bottom: 1px solid var(--line);
-    display:flex;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 10px 12px;
-  }
-  td:last-child{ border-bottom: none; }
-  td::before{
-    content: attr(data-label);
-    color: var(--muted);
-    font-weight: 700;
-    flex: 0 0 110px;
-  }
-  td.actions{
-    justify-content: flex-start;
-  }
-}
 
+  #jobtable td{ padding: 10px 10px; }
+  #jobtable td.actions{ white-space: nowrap; }
 
-.muted{ color: var(--muted); font-size: var(--fs-sm); }
-
-.inputrow{
-  display:flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.iconbtn{
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 14px;
-  min-height: 44px;
-  font-size: var(--fs-sm);
-}
-
-.banner{
-  border: 1px solid rgba(255,92,92,0.45);
-  background: rgba(255,92,92,0.10);
-  border-radius: 12px;
-  padding: 12px 14px;
-  color: var(--text);
-  margin-bottom: 12px;
-}
-
-.adv-grid{
-  display:grid;
-  gap: 14px;
-}
-
-.adv-block{
-  background: rgba(255,255,255,0.02);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 12px;
-}
-
-.adv-title{
-  font-size: var(--fs-md);
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-
-.tog.big{
-  font-size: var(--fs-sm);
-}
-
-.toast_row{
-  display:flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.toast_action{
-  background: var(--chip2);
-  border-color: rgba(138,180,255,0.45);
-  min-height: 40px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-size: var(--fs-sm);
-}
-
-#logview .logline{
-  display:block;
-  padding: 0 2px;
-}
-
-#logview .logline.err{
-  background: rgba(255,92,92,0.14);
-  border-left: 3px solid rgba(255,92,92,0.45);
-  padding-left: 8px;
-}
-
-#logview .logline.warn{
-  background: rgba(241,196,15,0.12);
-  border-left: 3px solid rgba(241,196,15,0.45);
-  padding-left: 8px;
-}
-
-/* Mobile list-detail panes */
-@media (max-width: 720px){
-  body[data-pane="jobs"] #pane_detail{ display:none; }
-  body[data-pane="detail"] #pane_jobs{ display:none; }
-  body[data-pane="detail"] #stats{ display:none; }
-  body[data-pane="detail"] #btn_back{ display:inline-flex !important; }
+  .jobmeta{ display:flex; }
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }

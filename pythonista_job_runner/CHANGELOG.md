@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.6.11
+
+- Web UI: compact job list on mobile (reduce row height, keep key details).
+- Web UI: fix job age sorting and display for ISO timestamps.
+- Web UI: make Overview tab clearer and hide log controls when viewing Overview.
+- Web UI: add Copy job id button and show age/duration/user in the job row on mobile.
+
 ## 0.6.10
 
 - Web UI: mobile list-detail navigation (Jobs and Details panes) to reduce clutter.
