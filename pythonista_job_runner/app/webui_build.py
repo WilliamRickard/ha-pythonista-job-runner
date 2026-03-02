@@ -8,9 +8,9 @@ cleanly behind Home Assistant Ingress without requiring a static file server.
 To make the UI easier to edit and review, the source is split into:
 - webui_src.html (HTML skeleton + placeholders)
 - webui.css      (CSS)
-- webui.js       (JavaScript)
+- webui_js/*.js  (JavaScript split into parts)
 
-This script inlines webui.css and webui.js into webui_src.html to produce webui.html.
+This script inlines webui.css and the JS bundle (from webui_js/*.js) into webui_src.html to produce webui.html.
 
 Usage (from repo root):
     python pythonista_job_runner/app/webui_build.py
@@ -44,6 +44,23 @@ def _default_paths() -> WebUiPaths:
     )
 
 
+
+def _read_js_bundle(p: WebUiPaths) -> str:
+    """Return the JavaScript bundle text.
+
+    Prefer split sources in webui_js/*.js (sorted lexicographically). Fall back to
+    webui.js if the parts folder is missing.
+    """
+
+    parts_dir = p.js.with_name("webui_js")
+    if parts_dir.is_dir():
+        parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
+        if parts:
+            return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
+
+    return p.js.read_text(encoding="utf-8").rstrip()
+
+
 def build_webui(paths: WebUiPaths | None = None) -> str:
     """Return the bundled webui.html content as a string."""
 
@@ -51,8 +68,7 @@ def build_webui(paths: WebUiPaths | None = None) -> str:
 
     src = p.src_html.read_text(encoding="utf-8")
     css = p.css.read_text(encoding="utf-8").rstrip()
-    js = p.js.read_text(encoding="utf-8").rstrip()
-
+    js = _read_js_bundle(p)
     if "/*__WEBUI_CSS__*/" not in src:
         raise RuntimeError("webui_src.html missing /*__WEBUI_CSS__*/ placeholder")
     if "/*__WEBUI_JS__*/" not in src:

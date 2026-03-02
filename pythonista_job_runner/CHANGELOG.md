@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.12
+
+- Web UI: fix a JavaScript strict-mode startup error (stray initialTailForJob assignment).
+- Web UI: split JavaScript source into pythonista_job_runner/app/webui_js/*.js for maintainability (still bundles to a single ingress-safe webui.html).
+- Build: webui_build.py now bundles JS from webui_js/*.js (fallback to webui.js if parts folder is missing).
+
 ## 0.6.11
 
 - Web UI: compact job list on mobile (reduce row height, keep key details).

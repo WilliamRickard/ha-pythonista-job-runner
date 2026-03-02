@@ -4,7 +4,7 @@ from __future__ import annotations
 Web UI generator.
 
 The HTML template lives in a separate file (webui.html) so it is easier to edit and review.
-The template is generated from webui_src.html/webui.css/webui.js via webui_build.py.
+The template is generated from webui_src.html/webui.css/webui_js/*.js via webui_build.py.
 The template must only use relative URLs, because Home Assistant ingress proxies under a path prefix.
 """
 

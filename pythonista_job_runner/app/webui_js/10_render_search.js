@@ -1,0 +1,483 @@
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderLog(kind) {
+    if (kind === "overview") return;
+    const txt = buffers[kind] || "";
+    if (!hilite) {
+      els.logview.textContent = txt;
+      applyLogStyle();
+      return;
+    }
+
+    const MAX_RENDER = 200000;
+    const truncated = (txt.length > MAX_RENDER);
+    const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
+    const lines = slice.split("\n");
+    const out = [];
+    for (const line of lines) {
+      const esc = escapeHtml(line);
+      let cls = "logline";
+      const u = line.toUpperCase();
+      if (u.includes("TRACEBACK") || u.includes("ERROR") || u.includes("EXCEPTION")) cls += " err";
+      else if (u.includes("WARN")) cls += " warn";
+      out.push(`<span class="${cls}">${esc}</span>`);
+    }
+    els.logview.innerHTML = out.join("\n");
+    applyLogStyle();
+
+  }
+
+  function jumpToNextError() {
+    if (!currentJob) {
+      toast("err", "No job selected", "Select a job first");
+      return;
+    }
+    const kind = (currentTab === "stderr") ? "stderr" : "stdout";
+    const txt = buffers[kind] || "";
+    const re = /(Traceback|ERROR|Exception|FATAL|WARN(ING)?)/gi;
+    const start = (matches && matchIdx >= 0 && matchIdx < matches.length) ? matches[matchIdx] : 0;
+    re.lastIndex = start + 1;
+    const m = re.exec(txt) || re.exec(txt);
+    if (!m) {
+      toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
+      return;
+    }
+    // Use search machinery to scroll approximately.
+    logSearch = m[0];
+    els.logsearch.value = logSearch;
+    computeMatches();
+    matchIdx = Math.min(matches.length - 1, Math.max(0, matches.findIndex((x) => x >= m.index)));
+    scrollToMatch();
+  }
+
+function applyFilters() {
+    const q = (els.search.value || "").trim().toLowerCase();
+    let jobs = jobsCache.slice(0);
+
+    // Sort: running, queued, error, done, other; within each: newest first.
+    const order = { running: 0, queued: 1, error: 2, done: 3 };
+    jobs.sort((a, b) => {
+      const sa = order[a.state] ?? 9;
+      const sb = order[b.state] ?? 9;
+      if (sa !== sb) return sa - sb;
+      const ta = parseUtcSeconds(a.created_utc);
+      const tb = parseUtcSeconds(b.created_utc);
+      return tb - ta;
+    });
+
+    if (view !== "all") {
+      jobs = jobs.filter((j) => (j.state || "queued") === view);
+    }
+
+    if (q) {
+      jobs = jobs.filter((j) => {
+        const id = (j.job_id || "").toLowerCase();
+        const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name) || "").toLowerCase();
+        const st = (j.state || "queued").toLowerCase();
+        return id.includes(q) || user.includes(q) || st.includes(q);
+      });
+    }
+
+    renderJobs(jobs);
+  }
+
+  function renderJobs(jobs) {
+    const tbody = els.jobtable_tbody;
+    tbody.textContent = "";
+    els.empty.hidden = (jobs.length !== 0);
+
+    const frag = document.createDocumentFragment();
+
+    for (const j of jobs) {
+      const jobId = j.job_id || "";
+      const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
+      const state = j.state || "queued";
+      const age = fmtAge(j.created_utc);
+      const dur = fmtDuration(j.duration_seconds);
+
+      const tr = document.createElement("tr");
+      if (currentJob && jobId === currentJob) tr.classList.add("selected");
+
+      const tdJob = document.createElement("td");
+      tdJob.setAttribute("data-label", "Job");
+
+      const wrap = document.createElement("div");
+      wrap.className = "jobcell";
+
+      const line = document.createElement("div");
+      line.className = "jobline";
+
+      const btnJob = document.createElement("button");
+      btnJob.type = "button";
+      btnJob.className = "small jobbtn";
+      btnJob.textContent = jobId;
+      btnJob.title = jobId;
+      btnJob.addEventListener("click", () => selectJob(jobId));
+
+      const btnCopy = document.createElement("button");
+      btnCopy.type = "button";
+      btnCopy.className = "small copybtn";
+      btnCopy.textContent = "Copy";
+      btnCopy.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await copyTextToClipboard(jobId);
+        toast("ok", "Copied", "Job id copied");
+      });
+
+      line.append(btnJob, btnCopy);
+
+      const meta = document.createElement("div");
+      meta.className = "jobmeta";
+
+      const addMeta = (label, value) => {
+        const v = String(value || "");
+        if (!v) return;
+        const span = document.createElement("span");
+        span.className = "meta";
+        span.textContent = `${label}: ${v}`;
+        meta.appendChild(span);
+      };
+
+      addMeta("age", age);
+      addMeta("dur", dur);
+      addMeta("user", user);
+      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") {
+        addMeta("exit", String(j.exit_code));
+      }
+
+      wrap.append(line, meta);
+      tdJob.appendChild(wrap);
+
+      const tdState = document.createElement("td");
+      tdState.setAttribute("data-label", "State");
+      tdState.appendChild(badgeEl(state));
+
+      const tdAge = document.createElement("td");
+      tdAge.setAttribute("data-label", "Age");
+      tdAge.textContent = age;
+
+      const tdDur = document.createElement("td");
+      tdDur.setAttribute("data-label", "Duration");
+      tdDur.textContent = dur;
+
+      const tdUser = document.createElement("td");
+      tdUser.setAttribute("data-label", "User");
+      tdUser.textContent = user;
+
+      const tdActions = document.createElement("td");
+      tdActions.className = "actions";
+      tdActions.setAttribute("data-label", "Actions");
+
+      const btnView = document.createElement("button");
+      btnView.type = "button";
+      btnView.className = "small";
+      btnView.textContent = "View";
+      btnView.addEventListener("click", () => selectJob(jobId));
+
+      const zip = document.createElement("a");
+      zip.className = "linkbtn";
+      zip.textContent = "Zip";
+      zip.href = `result/${encodeURIComponent(jobId)}.zip`;
+      zip.target = "_blank";
+      zip.rel = "noopener noreferrer";
+
+      tdActions.append(btnView, document.createTextNode(" "), zip);
+
+      tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
+      frag.appendChild(tr);
+    }
+
+    tbody.appendChild(frag);
+  }
+
+  function renderStats(stats) {
+    const s = stats || {};
+    const running = Number(s.jobs_running) || 0;
+    const queued = Number(s.jobs_queued) || 0;
+    const done = Number(s.jobs_done) || 0;
+    const error = Number(s.jobs_error) || 0;
+    const total = Number(s.jobs_total) || 0;
+
+    els.kpi_running.textContent = String(running);
+    els.kpi_queued.textContent = String(queued);
+    els.kpi_done.textContent = String(done);
+    els.kpi_error.textContent = String(error);
+    els.kpi_total.textContent = String(total);
+
+    // Meta pills
+    els.stats_kv.textContent = "";
+    const pills = [];
+
+    if (s.runner_version) pills.push(`runner: ${s.runner_version}`);
+    if (Number.isFinite(Number(s.job_retention_hours))) pills.push(`retention: ${s.job_retention_hours}h`);
+
+    if (Number.isFinite(Number(s.disk_free_bytes)) && Number.isFinite(Number(s.disk_total_bytes)) && Number(s.disk_total_bytes) > 0) {
+      pills.push(`disk free: ${fmtBytes(s.disk_free_bytes)} of ${fmtBytes(s.disk_total_bytes)}`);
+    }
+    if (Number.isFinite(Number(s.jobs_dir_bytes))) pills.push(`jobs dir: ${fmtBytes(s.jobs_dir_bytes)}`);
+
+    for (const t of pills) {
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = t;
+      els.stats_kv.appendChild(span);
+    }
+
+    els.stats.hidden = false;
+  }
+
+  async function refreshStats() {
+    const s = await api("stats.json");
+    renderStats(s);
+  }
+
+  async function refreshJobs() {
+    if (els.jobs_loading) els.jobs_loading.hidden = false;
+    try {
+      const data = await api("jobs.json");
+      jobsCache = (data && data.jobs) ? data.jobs : [];
+      applyFilters();
+    } finally {
+      if (els.jobs_loading) els.jobs_loading.hidden = true;
+    }
+  }
+
+  async function purgeState(state) {
+    if (!state) return;
+    if (!window.confirm(`Purge ${state} jobs? This deletes job files.`)) return;
+    await api("purge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ state }),
+    });
+    toast("ok", "Purge complete", `Purged ${state} jobs`);
+    await refreshAll();
+  }
+
+  function parseEndpointPath(v) {
+    const s = String(v || "").trim();
+    if (!s) return "";
+    const parts = s.split(/\s+/, 2);
+    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/")) {
+      return parts[1];
+    }
+    if (s.startsWith("/")) return s;
+    return "";
+  }
+
+  function renderInfo(info) {
+    const i = info || {};
+    const service = i.service ? String(i.service) : "pythonista_job_runner";
+    const version = i.version ? String(i.version) : "";
+    els.about_sub.textContent = version ? `${service} v${version}` : service;
+
+    const endpoints = i.endpoints || {};
+    const keys = Object.keys(endpoints).sort();
+    els.about_api.textContent = "";
+
+    for (const k of keys) {
+      const raw = endpoints[k];
+      const row = document.createElement("div");
+      row.className = "api-row";
+
+      const left = document.createElement("div");
+      left.className = "api-left";
+
+      const name = document.createElement("div");
+      name.className = "api-name";
+      name.textContent = k;
+
+      const path = document.createElement("div");
+      path.className = "api-path";
+      path.textContent = String(raw);
+
+      left.append(name, path);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "small";
+      btn.textContent = "Copy";
+      btn.setAttribute("data-action", "copy-endpoint");
+      btn.setAttribute("data-endpoint", k);
+
+      const p = parseEndpointPath(raw);
+      if (p) {
+        btn.setAttribute("data-copy", apiUrl(p));
+      } else {
+        btn.disabled = true;
+        btn.title = "No URL available";
+      }
+
+      row.append(left, btn);
+      els.about_api.appendChild(row);
+    }
+
+    const base = baseUrl();
+    const curl = [
+      `# ${service} ${version ? `v${version}` : ""}`.trim(),
+      "# Direct access requires X-Runner-Token unless you are using Ingress",
+      `BASE=\"${base}\"`,
+      "TOKEN=\"YOUR_TOKEN_HERE\"",
+      "",
+      "curl \"$BASE/health\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/jobs.json\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/stats.json\"",
+      "curl -H \"X-Runner-Token: $TOKEN\" -X POST \"$BASE/purge\" -H \"content-type: application/json\" -d '{\"state\":\"done\"}'",
+      "# Run requires a zip payload; see DOCS.md for the Pythonista client",
+    ].join("\n");
+    els.about_curl.value = curl;
+  }
+
+  async function loadInfo() {
+    infoCache = await api("info.json");
+    renderInfo(infoCache);
+  }
+
+  async function openAbout() {
+    els.about_overlay.hidden = false;
+    els.about_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    try {
+      await loadInfo();
+    } catch (e) {
+      els.about_sub.textContent = "Help";
+      els.about_api.textContent = "";
+      els.about_curl.value = "";
+      toast("err", "Could not load info", e.message);
+    }
+  }
+
+  
+  function openAdvanced() {
+    els.adv_overlay.hidden = false;
+    els.adv_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+
+    if (els.auto) els.auto.checked = auto;
+    if (els.pollms) els.pollms.value = String(pollMs);
+  }
+
+  function closeAdvanced() {
+    els.adv_overlay.hidden = true;
+    els.adv_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+  }
+
+function closeAbout() {
+    els.about_overlay.hidden = true;
+    els.about_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+  }
+
+  function applyLogStyle() {
+    els.logview.classList.toggle("nowrap", !wrap);
+    els.logview.style.fontSize = `${fontSize}px`;
+  }
+
+  function resetSearch() {
+    matches = [];
+    matchIdx = -1;
+    els.matchcount.textContent = "";
+  }
+
+  function updateMatchCount() {
+    if (!logSearch) {
+      els.matchcount.textContent = "";
+      return;
+    }
+    if (!matches.length) {
+      els.matchcount.textContent = "0 matches";
+      return;
+    }
+    els.matchcount.textContent = `${matchIdx + 1} of ${matches.length}`;
+  }
+
+  function computeMatches() {
+    const txt = els.logview.textContent || "";
+    const needleRaw = logSearch;
+    if (!needleRaw) {
+      resetSearch();
+      return;
+    }
+
+    const haystack = txt.toLowerCase();
+    const needle = needleRaw.toLowerCase();
+
+    let idx = 0;
+    matches = [];
+    while (true) {
+      const found = haystack.indexOf(needle, idx);
+      if (found === -1) break;
+      matches.push(found);
+      idx = found + needle.length;
+      if (matches.length >= MAX_MATCHES) break;
+    }
+
+    matchIdx = matches.length ? 0 : -1;
+    updateMatchCount();
+  }
+
+  function scrollToMatch() {
+    if (matchIdx < 0 || matchIdx >= matches.length) {
+      updateMatchCount();
+      return;
+    }
+    const txt = els.logview.textContent || "";
+    const needle = logSearch;
+    if (!needle) return;
+
+    const start = matches[matchIdx];
+    const before = txt.slice(0, start);
+    const line = before.split("\n").length;
+        const style = window.getComputedStyle(els.logview);
+    const lh = Number.parseFloat(style.lineHeight) || 16;
+    els.logview.scrollTop = Math.max(0, (line - 5) * lh);
+    updateMatchCount();
+  }
+
+  function onLogSearchDebounced() {
+    if (logSearchTimer) window.clearTimeout(logSearchTimer);
+    logSearchTimer = window.setTimeout(() => {
+      logSearch = (els.logsearch.value || "").trim();
+      computeMatches();
+      scrollToMatch();
+    }, 180);
+  }
+
+  function findNext() {
+    if (!matches.length) return;
+    matchIdx = (matchIdx + 1) % matches.length;
+    scrollToMatch();
+  }
+
+  function findPrev() {
+    if (!matches.length) return;
+    matchIdx = (matchIdx - 1 + matches.length) % matches.length;
+    scrollToMatch();
+  }
+
+  function clearSearch() {
+    els.logsearch.value = "";
+    logSearch = "";
+    resetSearch();
+  }
