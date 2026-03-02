@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.6.10
+
+- Web UI: mobile list-detail navigation (Jobs and Details panes) to reduce clutter.
+- Web UI: move polling, auto refresh and purge actions into an Advanced dialog (progressive disclosure).
+- Web UI: add Undo to destructive actions (purge, cancel, delete) using delayed execution.
+- Web UI: improve typography scale and touch targets; add clearer loading and disconnected states.
+- Web UI: add pause and highlight controls for logs, plus quick navigation to the next error.
+- Web UI: persist UI settings (filters, search, refresh options, log options) using localStorage.
+
 ## 0.6.9
 
 - Web UI: fix Help modal Close button on mobile (improve click and touch handling).

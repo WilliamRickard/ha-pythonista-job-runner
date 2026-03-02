@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.8 -->
+<!doctype html><!-- VERSION: 0.6.10 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -20,6 +20,10 @@
             <span class="dot" aria-hidden="true"></span>
             <span id="statusline" role="status" aria-live="polite">Connecting…</span>
           </span>
+          <span class="pill" id="autopill" title="Auto refresh">
+            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
+            <span>Auto: <span id="autostate">on</span></span>
+          </span>
           <span class="pill" title="Last refresh">
             <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
             <span id="lastupdated">never</span>
@@ -27,7 +31,9 @@
         </div>
       </div>
       <div class="toplinks">
-        <button type="button" class="linkbtn" data-action="open-about">Help</button>
+        <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
+        <button type="button" class="linkbtn" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
       </div>
     </header>
 
@@ -35,9 +41,6 @@
       <section id="stats" class="card" hidden>
         <div class="card-header">
           <h2>Overview</h2>
-          <div class="actionsbar">
-            <button type="button" class="chip small" data-action="refresh">Refresh now</button>
-          </div>
         </div>
         <div class="card-body">
           <div class="kpis" id="kpis">
@@ -77,24 +80,24 @@
         </div>
       </section>
 
-      <section class="card">
+      <section id="pane_jobs" class="card">
         <div class="card-header">
           <h2>Jobs</h2>
           <div class="actionsbar right">
-            <button type="button" class="primary" data-action="refresh" id="btn_refresh">Refresh</button>
-            <button type="button" class="chip" data-action="toggle-auto" id="btn_auto">Auto refresh: <span id="autostate">on</span></button>
+            <span class="muted" id="jobs_hint">Search and filter jobs. Tap a job to view details.</span>
           </div>
         </div>
         <div class="card-body">
+          <div id="jobs_banner" class="banner" hidden></div>
+          <div id="jobs_loading" class="loading" hidden>Loading jobs…</div>
+
           <div class="fieldrow">
             <div class="field">
               <label for="search">Search</label>
-              <input id="search" type="search" placeholder="Job id, user, state…" autocomplete="off"/>
-            </div>
-            <div class="field small">
-              <label for="pollms">Poll</label>
-              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-              <div style="color:var(--muted);font-size:12px;margin-top:6px;">milliseconds</div>
+              <div class="inputrow">
+                <input id="search" type="search" placeholder="Job id, user, state…" autocomplete="off"/>
+                <button type="button" class="iconbtn" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
+              </div>
             </div>
           </div>
 
@@ -104,11 +107,6 @@
             <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
             <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
             <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
-
-            <span style="flex:1 1 140px;"></span>
-
-            <button type="button" class="small" data-action="purge" data-state="done">Purge done</button>
-            <button type="button" class="small" data-action="purge" data-state="error">Purge errors</button>
           </div>
 
           <div class="tablewrap" style="margin-top:12px;">
@@ -135,10 +133,11 @@
         </div>
       </section>
 
-      <section class="card" style="margin-top:14px;">
+      <section id="pane_detail" class="card" style="margin-top:14px;">
         <div class="card-header">
           <h2>Job details</h2>
           <div class="actionsbar right">
+            <button type="button" class="small" id="btn_back" data-action="back-to-jobs" hidden>Back</button>
             <button type="button" class="small" data-action="copy-curl">Copy curl</button>
           </div>
         </div>
@@ -175,11 +174,14 @@
 
             <div class="logtools" style="margin-top:10px;">
               <label class="tog"><input type="checkbox" id="follow" checked/> follow</label>
+              <label class="tog"><input type="checkbox" id="pause"/> pause</label>
               <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
+              <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
               <label class="tog" style="gap:10px;">
                 font
                 <input type="range" id="font" min="11" max="18" value="13"/>
               </label>
+              <button type="button" class="small" data-action="jump-error">Next error</button>
               <span style="flex:1 1 140px;"></span>
               <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
               <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
@@ -203,7 +205,45 @@
     </main>
   </div>
 
-  <div id="about_overlay" class="overlay" hidden aria-hidden="true">
+  
+  <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Advanced settings">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Advanced</div>
+          <div class="modal-sub">Refresh, polling, and maintenance</div>
+        </div>
+        <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="adv-grid">
+          <div class="adv-block">
+            <div class="adv-title">Refresh</div>
+            <label class="tog big"><input type="checkbox" id="auto"/> auto refresh</label>
+            <div class="field" style="margin-top:10px;">
+              <label for="pollms">Poll interval (milliseconds)</label>
+              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
+              <div class="hint" style="margin-top:8px;">Lower values update more often but can use more battery.</div>
+            </div>
+          </div>
+
+          <div class="adv-block">
+            <div class="adv-title">Maintenance</div>
+            <div class="actionsbar" style="margin-top:8px;">
+              <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+              <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
+            </div>
+            <div class="hint" style="margin-top:10px;">Purge removes job files from disk. You can Undo for a few seconds after tapping.</div>
+            <div class="actionsbar" style="margin-top:10px;">
+              <button type="button" class="small" data-action="reset-ui">Reset UI settings</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div id="about_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Help and API information">
       <div class="modal-header">
         <div>
@@ -216,12 +256,12 @@
         <details open>
           <summary>Quick start</summary>
           <ol class="steps">
-            <li>Set a token in the add-on Configuration. Keep it private.</li>
-            <li>From Pythonista, submit a job to the runner (POST /run). Your client script should add the X-Runner-Token header for direct access.</li>
-            <li>Use this Web UI to watch the job, view logs, and download the result zip.</li>
+            <li>Set an access token in the add-on Configuration.</li>
+            <li>From Pythonista, submit a job by sending a zip file to <code>POST /run</code>.</li>
+            <li>Watch progress here, then download the result zip from the job details view.</li>
           </ol>
           <div class="hint">
-            Tip: If you are using Home Assistant Ingress, the Web UI is trusted and you usually do not need to add headers in your browser.
+            If you call the runner directly (not via Home Assistant Ingress), your client must send the <code>X-Runner-Token</code> header.
           </div>
         </details>
 
@@ -242,9 +282,9 @@
         <details>
           <summary>Troubleshooting</summary>
           <ul class="steps" style="list-style:disc;padding-left:18px;">
-            <li>If the status shows Disconnected, check the add-on logs and confirm the add-on is running.</li>
-            <li>If you see unauthorised, you are probably calling the runner directly without <code>X-Runner-Token</code>, or the token does not match the add-on Configuration.</li>
-            <li>If jobs never appear, confirm your Pythonista script posts a zip to <code>/run</code>, and that it is not exceeding <code>max_upload_mb</code>.</li>
+            <li>If the status shows Disconnected, open the add-on Log tab and check for errors.</li>
+            <li>If you see unauthorised, you are likely using direct access without <code>X-Runner-Token</code>, or the token does not match the add-on Configuration.</li>
+            <li>If jobs never appear, confirm your Pythonista script uploads a zip to <code>/run</code> and stays under <code>max_upload_mb</code>.</li>
           </ul>
         </details>
       </div>
@@ -252,8 +292,13 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite">
-    <div class="title" id="toast_title"></div>
-    <div class="msg" id="toast_msg"></div>
+    <div class="toast_row">
+      <div>
+        <div class="title" id="toast_title"></div>
+        <div class="msg" id="toast_msg"></div>
+      </div>
+      <button type="button" class="toast_action" id="toast_action" hidden></button>
+    </div>
   </div>
 
   <script>
