@@ -44,7 +44,7 @@ class Handler(BaseHTTPRequestHandler):
         self._write_bytes(data)
 
     def _json(self, code: int, obj: Any) -> None:
-        # Compact JSON to reduce bandwidth and avoid unnecessary whitespace.
+        """Send a JSON response with compact encoding."""
         b = json.dumps(obj, separators=(",", ":")).encode("utf-8")
         self._send_bytes(code, "application/json; charset=utf-8", b)
 
@@ -75,7 +75,6 @@ class Handler(BaseHTTPRequestHandler):
         tok = self.headers.get("X-Runner-Token", "")
         if not runner.token or not hmac.compare_digest(tok, runner.token):
             return False
-            return False
 
         cidrs = runner.api_allow_cidrs
         if cidrs:
@@ -83,10 +82,17 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def _job_id_from_suffix(self, prefix: str, suffix: str) -> str:
+        """Extract job_id from /<prefix>/<job_id><suffix> paths."""
         path = urlparse(self.path).path
-        if not (path.startswith(prefix) and path.endswith(suffix)):
+        if not path.startswith(prefix):
             return ""
-        return path.split("/")[-1][: -len(suffix)]
+        if suffix and not path.endswith(suffix):
+            return ""
+
+        tail = path[len(prefix) :]
+        if suffix:
+            tail = tail[: -len(suffix)]
+        return tail.strip("/")
 
     @staticmethod
     def _parse_int(value: str | None, default: int) -> int:
@@ -129,6 +135,8 @@ class Handler(BaseHTTPRequestHandler):
                         "stderr": "/stderr/<job_id>.txt",
                         "stats": "/stats.json",
                         "purge": "POST /purge",
+                        "cancel": "POST /cancel/<job_id>",
+                        "delete": "DELETE /job/<job_id>",
                     },
                 },
             )
@@ -176,7 +184,10 @@ class Handler(BaseHTTPRequestHandler):
             stderr_from = self._parse_int((q.get("stderr_from") or [None])[0], -1)
 
             max_bytes_default = runner.tail_chars * 2
-            max_bytes = self._parse_int((q.get("max_bytes") or [str(max_bytes_default)])[0], max_bytes_default)
+            max_bytes = self._parse_int(
+                (q.get("max_bytes") or [str(max_bytes_default)])[0],
+                max_bytes_default,
+            )
             if max_bytes <= 0:
                 max_bytes = max_bytes_default
             if max_bytes > 1024 * 1024:
@@ -188,7 +199,7 @@ class Handler(BaseHTTPRequestHandler):
                 if stderr_from < 0:
                     stderr_from = 0
 
-                # max_bytes is applied per stream; consider lowering the cap if clients request both streams.
+                # max_bytes is applied per stream.
                 out_txt, out_next, out_size = read_file_delta(j.stdout_path, stdout_from, max_bytes)
                 err_txt, err_next, err_size = read_file_delta(j.stderr_path, stderr_from, max_bytes)
                 self._json(
@@ -295,107 +306,107 @@ class Handler(BaseHTTPRequestHandler):
 
         self._json(404, {"error": "not_found"})
 
-def do_POST(self) -> None:  # noqa: N802
-    path = urlparse(self.path).path
-    runner = self.server.runner
+    def do_POST(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        runner = self.server.runner
 
-    if path.startswith("/cancel/"):
-        if not self._auth_ok():
-            self._json(401, {"error": "unauthorised"})
+        if path.startswith("/cancel/"):
+            if not self._auth_ok():
+                self._json(401, {"error": "unauthorised"})
+                return
+            job_id = self._job_id_from_suffix("/cancel/", "")
+            ok = runner.cancel(job_id)
+            self._json(200, {"ok": ok})
             return
-        job_id = self._job_id_from_suffix("/cancel/", "")
-        ok = runner.cancel(job_id)
-        self._json(200, {"ok": ok})
-        return
 
-    if path == "/purge":
+        if path == "/purge":
+            if not self._auth_ok():
+                self._json(401, {"error": "unauthorised"})
+                return
+
+            cl = self.headers.get("Content-Length")
+            ln = self._parse_int(cl, 0) if cl else 0
+
+            # Purge payload is tiny JSON; cap it defensively.
+            if ln < 0 or ln > 16 * 1024:
+                self._json(413, {"error": "payload_too_large"})
+                return
+
+            body = self.rfile.read(ln) if ln > 0 else b"{}"
+            try:
+                payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+            except Exception:
+                payload = {}
+
+            raw_states = payload.get("states")
+            if raw_states is None:
+                raw_states = payload.get("state")
+
+            states: Any = raw_states or []
+            if isinstance(states, str):
+                states = [states]
+            if not isinstance(states, list):
+                states = []
+
+            older_hours = payload.get("older_than_hours")
+            older_hours_i = self._parse_int(str(older_hours) if older_hours is not None else None, 0)
+            dry_run = bool(payload.get("dry_run", False))
+
+            res = runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run)
+            self._json(200, res)
+            return
+
+        if path != "/run":
+            self._json(404, {"error": "not_found"})
+            return
+
         if not self._auth_ok():
             self._json(401, {"error": "unauthorised"})
             return
 
         cl = self.headers.get("Content-Length")
-        ln = self._parse_int(cl, 0) if cl else 0
-
-        # Purge payload is tiny JSON; cap it defensively.
-        if ln < 0 or ln > 16 * 1024:
-            self._json(413, {"error": "payload_too_large"})
+        if not cl:
+            self._json(411, {"error": "length_required"})
             return
 
-        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        ln = self._parse_int(cl, -1)
+        if ln <= 0:
+            self._json(400, {"error": "bad_content_length"})
+            return
+
+        max_bytes = int(runner.max_upload_mb) * 1024 * 1024
+        if ln > max_bytes:
+            self._json(413, {"error": "upload_too_large"})
+            return
+
+        body = self.rfile.read(ln)
+        if len(body) != ln:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+
         try:
-            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
-        except Exception:
-            payload = {}
+            j = runner.new_job(body, self.headers, self._get_client_ip())
+        except Exception as e:
+            # Avoid leaking internal details in errors. The server log still shows the exception.
+            self.log_error("Error creating job: %r", e)
 
-        raw_states = payload.get("states")
-        if raw_states is None:
-            raw_states = payload.get("state")
+            err = str(e).strip()
+            safe = "job_creation_failed"
+            if isinstance(e, RuntimeError) and re.fullmatch(r"[a-z0-9_]+", err):
+                safe = err
 
-        states = raw_states or []
-        if isinstance(states, str):
-            states = [states]
-        if not isinstance(states, list):
-            states = []
+            self._json(400, {"error": safe})
+            return
 
-        older_hours = payload.get("older_than_hours")
-        older_hours_i = self._parse_int(str(older_hours) if older_hours is not None else None, 0)
-        dry_run = bool(payload.get("dry_run", False))
-
-        res = runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run)
-        self._json(200, res)
-        return
-
-    if path != "/run":
-        self._json(404, {"error": "not_found"})
-        return
-
-    if not self._auth_ok():
-        self._json(401, {"error": "unauthorised"})
-        return
-
-    cl = self.headers.get("Content-Length")
-    if not cl:
-        self._json(411, {"error": "length_required"})
-        return
-
-    ln = self._parse_int(cl, -1)
-    if ln <= 0:
-        self._json(400, {"error": "bad_content_length"})
-        return
-
-    max_bytes = int(runner.max_upload_mb) * 1024 * 1024
-    if ln > max_bytes:
-        self._json(413, {"error": "upload_too_large"})
-        return
-
-    body = self.rfile.read(ln)
-    if len(body) != ln:
-        self._json(400, {"error": "incomplete_upload"})
-        return
-
-    try:
-        j = runner.new_job(body, self.headers, self._get_client_ip())
-    except Exception as e:
-        # Avoid leaking internal details in errors. The server log still shows the exception.
-        self.log_error("Error creating job: %r", e)
-
-        err = str(e).strip()
-        safe = "job_creation_failed"
-        if isinstance(e, RuntimeError) and re.fullmatch(r"[a-z0-9_]+", err):
-            safe = err
-
-        self._json(400, {"error": safe})
-        return
-
-    self._json(
-        202,
-        {
-            "job_id": j.job_id,
-            "tail_url": f"/tail/{j.job_id}.json",
-            "result_url": f"/result/{j.job_id}.zip",
-            "jobs_url": "/jobs.json",
-        },
-    )
+        self._json(
+            202,
+            {
+                "job_id": j.job_id,
+                "tail_url": f"/tail/{j.job_id}.json",
+                "result_url": f"/result/{j.job_id}.zip",
+                "jobs_url": "/jobs.json",
+            },
+        )
 
     def do_DELETE(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
@@ -414,6 +425,7 @@ def do_POST(self) -> None:  # noqa: N802
 
 
 def serve() -> None:
+    """Load options, create a Runner, and serve the HTTP API."""
     opts = read_options()
     runner = Runner(opts)
     httpd = RunnerHTTPServer((runner.bind_host, runner.bind_port), Handler)
