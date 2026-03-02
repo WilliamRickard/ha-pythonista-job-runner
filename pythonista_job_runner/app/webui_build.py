@@ -46,6 +46,17 @@ def _default_paths() -> WebUiPaths:
 
 
 def _read_js_bundle(p: WebUiPaths) -> str:
+    """Return the JavaScript bundle text from webui_js/*.js parts."""
+
+    parts_dir = p.js.with_name("webui_js")
+    if not parts_dir.is_dir():
+        raise RuntimeError(f"Web UI JavaScript parts directory not found: {parts_dir}")
+
+    parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
+    if not parts:
+        raise RuntimeError(f"No .js files found in {parts_dir}")
+
+    return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
     """Return the JavaScript bundle text.
 
     Reads and concatenates sources from webui_js/*.js (sorted lexicographically).
