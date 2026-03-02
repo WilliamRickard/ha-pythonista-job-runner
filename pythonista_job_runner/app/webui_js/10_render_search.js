@@ -128,8 +128,12 @@ function applyFilters() {
       btnCopy.addEventListener("click", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        await copyTextToClipboard(jobId);
-        toast("ok", "Copied", "Job id copied");
+        try {
+          await copyTextToClipboard(jobId);
+          toast("ok", "Copied", "Job id copied");
+        } catch (err) {
+          toast("err", "Copy failed", String(err && err.message ? err.message : err));
+        }
       });
 
       line.append(btnJob, btnCopy);
