@@ -1,4 +1,4 @@
-/* VERSION: 0.6.8 */
+/* VERSION: 0.6.9 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -454,6 +454,9 @@
     els.about_overlay.hidden = false;
     els.about_overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
     try {
       await loadInfo();
     } catch (e) {
@@ -468,6 +471,9 @@
     els.about_overlay.hidden = true;
     els.about_overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
   }
 
   function applyLogStyle() {
@@ -792,7 +798,10 @@
 
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
-      const btn = ev.target.closest("button[data-action]");
+      const t = ev.target;
+      const el = (t instanceof Element) ? t : (t && t.parentElement);
+      if (!el) return;
+      const btn = el.closest("button[data-action]");
       if (!btn) return;
 
       const action = btn.getAttribute("data-action");
@@ -819,6 +828,17 @@
     els.about_overlay.addEventListener("click", (ev) => {
       if (ev.target === els.about_overlay) closeAbout();
     });
+
+
+    if (els.about_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeAbout();
+      };
+      els.about_close.addEventListener("click", close);
+      els.about_close.addEventListener("touchend", close, { passive: false });
+    }
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape" && !els.about_overlay.hidden) closeAbout();
@@ -888,6 +908,7 @@
     els.toast_msg = document.getElementById("toast_msg");
 
     els.about_overlay = document.getElementById("about_overlay");
+    els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
     els.about_curl = document.getElementById("about_curl");

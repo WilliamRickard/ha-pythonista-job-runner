@@ -6,7 +6,7 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.8 */
+/* VERSION: 0.6.9 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -27,6 +27,13 @@
   --shadow: 0 6px 24px rgba(0,0,0,0.20);
 
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Typography */
+  --fs-xs: 13px;
+  --fs-sm: 14px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
 }
 
 @media (prefers-color-scheme: light){
@@ -55,8 +62,12 @@
 
 *{ box-sizing: border-box; }
 
+html{ font-size: var(--fs-md); }
+
 body{
   font-family: -apple-system, system-ui, sans-serif;
+  font-size: var(--fs-sm);
+  line-height: 1.45;
   margin: 0;
   padding: 16px;
   background:
@@ -95,7 +106,7 @@ a:hover{ text-decoration: underline; }
   align-items: center;
   margin-top: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .pill{
@@ -155,6 +166,7 @@ a:hover{ text-decoration: underline; }
 
 button, .linkbtn{
   appearance: none;
+  touch-action: manipulation;
   background: var(--chip);
   color: var(--text);
   border: 1px solid var(--line);
@@ -178,9 +190,9 @@ button.danger{
 }
 
 button.small{
-  padding: 7px 10px;
-  border-radius: 10px;
-  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: var(--fs-sm);
 }
 
 button.chip{
@@ -511,7 +523,11 @@ pre.nowrap{ white-space: pre; }
   align-items: flex-start;
   justify-content: center;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
+
+.overlay[hidden]{ display:none !important; }
 
 .modal{
   width: 100%;
@@ -524,6 +540,10 @@ pre.nowrap{ white-space: pre; }
 }
 
 .modal-header{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel);
   display:flex;
   justify-content: space-between;
   align-items: center;
@@ -533,18 +553,20 @@ pre.nowrap{ white-space: pre; }
 }
 
 .modal-title{
-  font-size: 16px;
+  font-size: var(--fs-lg);
   font-weight: 800;
 }
 
 .modal-sub{
   margin-top: 4px;
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
 .modal-body{
   padding: 14px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
 }
 
 details{
@@ -558,6 +580,7 @@ details + details{ margin-top: 10px; }
 
 summary{
   cursor: pointer;
+  font-size: var(--fs-md);
   font-weight: 800;
   color: var(--text);
   list-style: none;
@@ -580,7 +603,7 @@ summary::-webkit-details-marker{ display:none; }
   border: 1px solid var(--line);
   background: rgba(138,180,255,0.08);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .api-grid{
@@ -606,7 +629,7 @@ summary::-webkit-details-marker{ display:none; }
 
 .api-name{
   font-weight: 800;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .api-path{
@@ -864,7 +887,7 @@ summary::-webkit-details-marker{ display:none; }
           <div class="modal-title">Help</div>
           <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
         </div>
-        <button type="button" class="small" data-action="close-about" aria-label="Close help">Close</button>
+        <button type="button" id="about_close" class="small" data-action="close-about" aria-label="Close help">Close</button>
       </div>
       <div class="modal-body">
         <details open>
@@ -896,9 +919,9 @@ summary::-webkit-details-marker{ display:none; }
         <details>
           <summary>Troubleshooting</summary>
           <ul class="steps" style="list-style:disc;padding-left:18px;">
-            <li>If the status shows Disconnected, check the add-on logs and confirm the token matches your client.</li>
-            <li>If you see unauthorised, you are likely using direct access without the X-Runner-Token header.</li>
-            <li>If jobs never appear, confirm your Pythonista script posts a zip to /run with Content-Length set.</li>
+            <li>If the status shows Disconnected, check the add-on logs and confirm the add-on is running.</li>
+            <li>If you see unauthorised, you are probably calling the runner directly without <code>X-Runner-Token</code>, or the token does not match the add-on Configuration.</li>
+            <li>If jobs never appear, confirm your Pythonista script posts a zip to <code>/run</code>, and that it is not exceeding <code>max_upload_mb</code>.</li>
           </ul>
         </details>
       </div>
@@ -911,7 +934,7 @@ summary::-webkit-details-marker{ display:none; }
   </div>
 
   <script>
-/* VERSION: 0.6.8 */
+/* VERSION: 0.6.9 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -1367,6 +1390,9 @@ summary::-webkit-details-marker{ display:none; }
     els.about_overlay.hidden = false;
     els.about_overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
     try {
       await loadInfo();
     } catch (e) {
@@ -1381,6 +1407,9 @@ summary::-webkit-details-marker{ display:none; }
     els.about_overlay.hidden = true;
     els.about_overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
   }
 
   function applyLogStyle() {
@@ -1705,7 +1734,10 @@ summary::-webkit-details-marker{ display:none; }
 
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
-      const btn = ev.target.closest("button[data-action]");
+      const t = ev.target;
+      const el = (t instanceof Element) ? t : (t && t.parentElement);
+      if (!el) return;
+      const btn = el.closest("button[data-action]");
       if (!btn) return;
 
       const action = btn.getAttribute("data-action");
@@ -1732,6 +1764,17 @@ summary::-webkit-details-marker{ display:none; }
     els.about_overlay.addEventListener("click", (ev) => {
       if (ev.target === els.about_overlay) closeAbout();
     });
+
+
+    if (els.about_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeAbout();
+      };
+      els.about_close.addEventListener("click", close);
+      els.about_close.addEventListener("touchend", close, { passive: false });
+    }
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape" && !els.about_overlay.hidden) closeAbout();
@@ -1801,6 +1844,7 @@ summary::-webkit-details-marker{ display:none; }
     els.toast_msg = document.getElementById("toast_msg");
 
     els.about_overlay = document.getElementById("about_overlay");
+    els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
     els.about_curl = document.getElementById("about_curl");
