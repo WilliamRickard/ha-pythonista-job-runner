@@ -41,7 +41,7 @@ from utils import (
     utc_now,
 )
 
-ADDON_VERSION = "0.6.5"
+ADDON_VERSION = "0.6.4"
 print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")
@@ -1078,9 +1078,8 @@ class Runner:
 
         items.sort(key=sort_key, reverse=False)
 
-        with self._lock:
-            self._jobs.clear()
-            self._job_order.clear()
+        loaded_jobs: Dict[str, Job] = {}
+        loaded_order: List[str] = []
 
         for p in items:
             try:
@@ -1145,9 +1144,17 @@ class Runner:
                 else:
                     j.error = msg
 
-            with self._lock:
-                self._jobs[j.job_id] = j
-                self._job_order.insert(0, j.job_id)
+            loaded_jobs[j.job_id] = j
+            loaded_order.append(j.job_id)
+
+        # items are oldest->newest; keep newest-first semantics for API consumers.
+        loaded_order.reverse()
+
+        with self._lock:
+            self._jobs.clear()
+            self._jobs.update(loaded_jobs)
+            self._job_order.clear()
+            self._job_order.extend(loaded_order)
 
         # rewrite status for normalisation
         with self._lock:

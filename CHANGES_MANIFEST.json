@@ -1,0 +1,35 @@
+{
+  "base_branch": "main",
+  "changes": [
+    {
+      "path": "pythonista_job_runner/app/runner_core.py",
+      "review_comments_addressed": [
+        {
+          "reference": "Review 3873438901 / inline RC-0017",
+          "source": "coderabbitai[bot]",
+          "topic": "Use append+reverse (or reversed iteration) instead of repeated insert(0) while preserving newest-first semantics."
+        }
+      ],
+      "sha256": "06c984f0fc4c3098018f3b7908b6acf7d74a60e68318607868d40de0a478dd59",
+      "summary": "Optimise _load_jobs_from_disk job ordering rebuild to avoid O(n^2) insert(0) loop; preserve newest-first external ordering."
+    }
+  ],
+  "generated_utc": "2026-03-02 01:25:11Z",
+  "head_branch": "fix/runner-core-stability-20260301",
+  "head_sha": "0f65756a5191f56fdae22de819dcbec2687bb599",
+  "notes": [
+    "No functional behaviour change intended: /jobs.json ordering remains newest-first.",
+    "Change is startup-only (disk job index rebuild) and reduces list operations for large job directories."
+  ],
+  "pr_number": 8,
+  "repo": "WilliamRickard/ha-pythonista-job-runner",
+  "schema_version": "1.0",
+  "verification": {
+    "commands": [
+      {
+        "cmd": "cd pythonista_job_runner && pytest -q",
+        "result": "75 passed"
+      }
+    ]
+  }
+}
