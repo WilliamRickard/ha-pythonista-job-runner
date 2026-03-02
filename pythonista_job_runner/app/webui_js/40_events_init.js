@@ -42,13 +42,17 @@
       }
     });
 
-    els.about_overlay.addEventListener("click", (ev) => {
-      if (ev.target === els.about_overlay) closeAbout();
-    });
+    if (els.about_overlay) {
+      els.about_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.about_overlay) closeAbout();
+      });
+    }
 
-    els.adv_overlay.addEventListener("click", (ev) => {
-      if (ev.target === els.adv_overlay) closeAdvanced();
-    });
+    if (els.adv_overlay) {
+      els.adv_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.adv_overlay) closeAdvanced();
+      });
+    }
 
 
     if (els.about_close) {
