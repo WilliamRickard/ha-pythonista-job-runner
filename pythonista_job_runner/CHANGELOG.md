@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.9
+
+- Web UI: fix Help modal Close button on mobile (improve click and touch handling).
+- Web UI: make Help modal typography consistent and improve wording for Quick start and Troubleshooting.
+
 ## 0.6.8
 
 - Web UI: add an in-app Help panel with a quick start guide and a human-friendly API endpoint list (copy buttons and curl examples).
