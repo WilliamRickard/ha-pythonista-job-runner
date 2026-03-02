@@ -1,4 +1,4 @@
-/* VERSION: 0.6.9 */
+/* VERSION: 0.6.10 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -148,10 +148,10 @@ a:hover{ text-decoration: underline; }
 
 .card-header h2{
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
+  font-weight: 750;
   letter-spacing: 0.2px;
-  color: var(--muted);
-  text-transform: uppercase;
+  color: var(--text);
 }
 
 .card-body{ padding: 14px; }
@@ -163,10 +163,12 @@ button, .linkbtn{
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 1;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: var(--fs-sm);
+  line-height: 1.1;
 }
+
 
 button:hover, .linkbtn:hover{ filter: brightness(1.05); }
 button:active, .linkbtn:active{ transform: translateY(1px); }
@@ -182,15 +184,19 @@ button.danger{
 }
 
 button.small{
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 12px;
   font-size: var(--fs-sm);
+  min-height: 44px;
 }
 
+
 button.chip{
-  padding: 8px 10px;
+  padding: 10px 14px;
   border-radius: 999px;
+  min-height: 44px;
 }
+
 
 button.chip.active{
   background: var(--chip2);
@@ -200,12 +206,14 @@ button.chip.active{
 input[type="text"], input[type="search"], input[type="number"], textarea{
   width: 100%;
   padding: 11px 12px;
+  min-height: 44px;
   border-radius: 12px;
   border: 1px solid var(--line);
   background: var(--panel2);
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
+
 
 textarea{
   font-family: var(--mono);
@@ -489,6 +497,7 @@ pre.nowrap{ white-space: pre; }
 .toast.show{ display:block; }
 .toast.ok{ border-color: rgba(46,204,113,0.45); }
 .toast.err{ border-color: rgba(255,92,92,0.45); }
+.toast.warn{ border-color: rgba(241,196,15,0.55); }
 .toast .title{ font-weight: 700; }
 .toast .msg{ margin-top: 4px; color: var(--muted); }
 
@@ -676,3 +685,95 @@ summary::-webkit-details-marker{ display:none; }
     justify-content: flex-start;
   }
 }
+
+
+.muted{ color: var(--muted); font-size: var(--fs-sm); }
+
+.inputrow{
+  display:flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.iconbtn{
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: var(--fs-sm);
+}
+
+.banner{
+  border: 1px solid rgba(255,92,92,0.45);
+  background: rgba(255,92,92,0.10);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.adv-grid{
+  display:grid;
+  gap: 14px;
+}
+
+.adv-block{
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 12px;
+}
+
+.adv-title{
+  font-size: var(--fs-md);
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.tog.big{
+  font-size: var(--fs-sm);
+}
+
+.toast_row{
+  display:flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toast_action{
+  background: var(--chip2);
+  border-color: rgba(138,180,255,0.45);
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: var(--fs-sm);
+}
+
+#logview .logline{
+  display:block;
+  padding: 0 2px;
+}
+
+#logview .logline.err{
+  background: rgba(255,92,92,0.14);
+  border-left: 3px solid rgba(255,92,92,0.45);
+  padding-left: 8px;
+}
+
+#logview .logline.warn{
+  background: rgba(241,196,15,0.12);
+  border-left: 3px solid rgba(241,196,15,0.45);
+  padding-left: 8px;
+}
+
+/* Mobile list-detail panes */
+@media (max-width: 720px){
+  body[data-pane="jobs"] #pane_detail{ display:none; }
+  body[data-pane="detail"] #pane_jobs{ display:none; }
+  body[data-pane="detail"] #stats{ display:none; }
+  body[data-pane="detail"] #btn_back{ display:inline-flex !important; }
+}
+
+.loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }

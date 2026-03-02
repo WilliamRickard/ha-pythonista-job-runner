@@ -193,8 +193,8 @@
       return;
     }
 
-    els.logview.textContent = buffers[next] || "";
-    applyLogStyle();
+    renderLog(next);
+
 
     if (follow) {
       els.logview.scrollTop = els.logview.scrollHeight;
@@ -213,7 +213,84 @@
     return span;
   }
 
-  function applyFilters() {
+  
+  function clearFilters() {
+    els.search.value = "";
+    setView("all");
+    localStorage.setItem("pjr_search", "");
+    applyFilters();
+  }
+
+  function resetUi() {
+    const keys = [
+      "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_pane"
+    ];
+    for (const k of keys) localStorage.removeItem(k);
+    toast("ok", "Reset", "UI settings cleared");
+    window.setTimeout(() => window.location.reload(), 500);
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function renderLog(kind) {
+    if (kind === "overview") return;
+    const txt = buffers[kind] || "";
+    if (!hilite) {
+      els.logview.textContent = txt;
+      applyLogStyle();
+      return;
+    }
+
+    const MAX_RENDER = 200_000;
+    const truncated = (txt.length > MAX_RENDER);
+    const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
+    const lines = slice.split("\n");
+    const out = [];
+    for (const line of lines) {
+      const esc = escapeHtml(line);
+      let cls = "logline";
+      const u = line.toUpperCase();
+      if (u.includes("TRACEBACK") || u.includes("ERROR") || u.includes("EXCEPTION")) cls += " err";
+      else if (u.includes("WARN")) cls += " warn";
+      out.push(`<span class="${cls}">${esc}</span>`);
+    }
+    els.logview.innerHTML = out.join("\n");
+    applyLogStyle();
+
+  }
+
+  function jumpToNextError() {
+    if (!currentJob) {
+      toast("err", "No job selected", "Select a job first");
+      return;
+    }
+    const kind = (currentTab === "stderr") ? "stderr" : "stdout";
+    const txt = buffers[kind] || "";
+    const re = /(Traceback|ERROR|Exception|FATAL|WARN(ING)?)/gi;
+    const start = (matches && matchIdx >= 0 && matchIdx < matches.length) ? matches[matchIdx] : 0;
+    re.lastIndex = start + 1;
+    const m = re.exec(txt) || re.exec(txt);
+    if (!m) {
+      toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
+      return;
+    }
+    // Use search machinery to scroll approximately.
+    logSearch = m[0];
+    els.logsearch.value = logSearch;
+    computeMatches();
+    matchIdx = Math.min(matches.length - 1, Math.max(0, matches.findIndex((x) => x >= m.index)));
+    scrollToMatch();
+  }
+
+function applyFilters() {
     const q = (els.search.value || "").trim().toLowerCase();
     let jobs = jobsCache.slice(0);
 
@@ -467,7 +544,29 @@
     }
   }
 
-  function closeAbout() {
+  
+  function openAdvanced() {
+    els.adv_overlay.hidden = false;
+    els.adv_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+
+    if (els.auto) els.auto.checked = auto;
+    if (els.pollms) els.pollms.value = String(pollMs);
+  }
+
+  function closeAdvanced() {
+    els.adv_overlay.hidden = true;
+    els.adv_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+  }
+
+function closeAbout() {
     els.about_overlay.hidden = true;
     els.about_overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
@@ -625,6 +724,7 @@
     els.detail_empty.hidden = true;
     els.detail.hidden = false;
     els.jobid.textContent = jobId;
+    if (isNarrow()) setPane("detail");
 
     // Update URL (Ingress-safe: keep relative)
     const u = new URL(window.location.href);
@@ -676,6 +776,7 @@
 
   async function refreshMetaAndTail() {
     if (!currentJob) return;
+    if (paused && currentTab !== "overview") return;
 
     try {
       const data = await api(
@@ -806,7 +907,12 @@
 
       const action = btn.getAttribute("data-action");
       if (action === "refresh") await refreshAll();
-      if (action === "toggle-auto") toggleAuto();
+      if (action === "open-advanced") openAdvanced();
+      if (action === "close-advanced") closeAdvanced();
+      if (action === "back-to-jobs") setPane("jobs");
+      if (action === "clear-filters") clearFilters();
+      if (action === "reset-ui") resetUi();
+      if (action === "jump-error") jumpToNextError();
       if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
       if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
       if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
@@ -829,6 +935,10 @@
       if (ev.target === els.about_overlay) closeAbout();
     });
 
+    els.adv_overlay.addEventListener("click", (ev) => {
+      if (ev.target === els.adv_overlay) closeAdvanced();
+    });
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -840,28 +950,85 @@
       els.about_close.addEventListener("touchend", close, { passive: false });
     }
 
+
+    if (els.adv_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeAdvanced();
+      };
+      els.adv_close.addEventListener("click", close);
+      els.adv_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape" && !els.about_overlay.hidden) closeAbout();
+      if (ev.key !== "Escape") return;
+      if (!els.about_overlay.hidden) closeAbout();
+      if (!els.adv_overlay.hidden) closeAdvanced();
     });
 
-    els.pollms.addEventListener("change", setPollMsFromInput);
-    els.search.addEventListener("input", applyFilters);
+    els.pollms.addEventListener("change", () => {
+      setPollMsFromInput();
+      localStorage.setItem("pjr_pollms", String(pollMs));
+    });
+    els.search.addEventListener("input", () => {
+      localStorage.setItem("pjr_search", String(els.search.value || ""));
+      applyFilters();
+    });
+    if (els.auto) {
+      els.auto.addEventListener("change", () => {
+        auto = !!els.auto.checked;
+        localStorage.setItem("pjr_auto", auto ? "1" : "0");
+        els.autostate.textContent = auto ? "on" : "off";
+      });
+    }
 
     els.follow.addEventListener("change", () => {
       follow = !!els.follow.checked;
+      localStorage.setItem("pjr_follow", follow ? "1" : "0");
     });
 
     els.wrap.addEventListener("change", () => {
       wrap = !!els.wrap.checked;
+      localStorage.setItem("pjr_wrap", wrap ? "1" : "0");
       applyLogStyle();
+      renderLog(currentTab);
     });
 
     els.font.addEventListener("input", () => {
       fontSize = clampInt(els.font.value, 11, 18, fontSize);
+      localStorage.setItem("pjr_font", String(fontSize));
       applyLogStyle();
     });
 
+    if (els.pause) {
+      els.pause.addEventListener("change", () => {
+        paused = !!els.pause.checked;
+        localStorage.setItem("pjr_pause", paused ? "1" : "0");
+      });
+    }
+    if (els.hilite) {
+      els.hilite.addEventListener("change", () => {
+        hilite = !!els.hilite.checked;
+        localStorage.setItem("pjr_hilite", hilite ? "1" : "0");
+        renderLog(currentTab);
+      });
+    }
+
     els.logsearch.addEventListener("input", onLogSearchDebounced);
+    if (els.toast_action) {
+      els.toast_action.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (typeof toastActionHandler === "function") {
+          const fn = toastActionHandler;
+          toastActionHandler = null;
+          fn();
+          els.toast.classList.remove("show");
+        }
+      });
+    }
+    window.addEventListener("resize", ensurePaneForViewport);
   }
 
   function cacheEls() {
@@ -881,6 +1048,9 @@
     els.jobtable_tbody = document.querySelector("#jobtable tbody");
     els.empty = document.getElementById("empty");
 
+    els.jobs_banner = document.getElementById("jobs_banner");
+    els.jobs_loading = document.getElementById("jobs_loading");
+
     els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
@@ -892,6 +1062,8 @@
 
     els.follow = document.getElementById("follow");
     els.wrap = document.getElementById("wrap");
+    els.pause = document.getElementById("pause");
+    els.hilite = document.getElementById("hilite");
     els.font = document.getElementById("font");
 
     els.logsearch = document.getElementById("logsearch");
@@ -906,12 +1078,18 @@
     els.toast = document.getElementById("toast");
     els.toast_title = document.getElementById("toast_title");
     els.toast_msg = document.getElementById("toast_msg");
+    els.toast_action = document.getElementById("toast_action");
 
     els.about_overlay = document.getElementById("about_overlay");
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
     els.about_curl = document.getElementById("about_curl");
+
+    els.adv_overlay = document.getElementById("adv_overlay");
+    els.adv_close = document.getElementById("adv_close");
+    els.auto = document.getElementById("auto");
+    els.btn_back = document.getElementById("btn_back");
   }
 
   async function init() {
@@ -928,7 +1106,38 @@
     if (savedPoll) pollMs = clampInt(savedPoll, 250, 10_000, pollMs);
     els.pollms.value = String(pollMs);
 
+    const savedAuto = localStorage.getItem("pjr_auto");
+    if (savedAuto !== null) auto = (savedAuto === "1");
     els.autostate.textContent = auto ? "on" : "off";
+    if (els.auto) els.auto.checked = auto;
+
+    const savedSearch = localStorage.getItem("pjr_search");
+    if (savedSearch !== null) els.search.value = savedSearch;
+
+    const savedFollow = localStorage.getItem("pjr_follow");
+    if (savedFollow !== null) follow = (savedFollow === "1");
+    els.follow.checked = follow;
+
+    const savedWrap = localStorage.getItem("pjr_wrap");
+    if (savedWrap !== null) wrap = (savedWrap === "1");
+    els.wrap.checked = wrap;
+
+    const savedFont = localStorage.getItem("pjr_font");
+    if (savedFont) fontSize = clampInt(savedFont, 11, 18, fontSize);
+    els.font.value = String(fontSize);
+
+    const savedPause = localStorage.getItem("pjr_pause");
+    if (savedPause !== null) paused = (savedPause === "1");
+    if (els.pause) els.pause.checked = paused;
+
+    const savedHilite = localStorage.getItem("pjr_hilite");
+    if (savedHilite !== null) hilite = (savedHilite === "1");
+    if (els.hilite) els.hilite.checked = hilite;
+
+    const savedPane = localStorage.getItem("pjr_pane");
+    if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";
+    setPane(pane);
+    ensurePaneForViewport();
 
     applyLogStyle();
 

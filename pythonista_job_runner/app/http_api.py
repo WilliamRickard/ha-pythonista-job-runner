@@ -34,6 +34,28 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             return
 
+    def _drain_request_body(self, nbytes: int, max_drain: int = 16 * 1024 * 1024) -> None:
+        """Read and discard request bytes to avoid client-side BrokenPipe errors.
+
+        For very large bodies, we cap draining to avoid wasting too much time.
+        """
+        try:
+            n = int(nbytes)
+        except Exception:
+            return
+        if n <= 0:
+            return
+        if n > max_drain:
+            # Too large to sensibly drain; leave it and let the connection close.
+            return
+        remaining = n
+        while remaining > 0:
+            chunk = self.rfile.read(min(65536, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+
+
     def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -407,6 +429,8 @@ class Handler(BaseHTTPRequestHandler):
 
         max_bytes = int(runner.max_upload_mb) * 1024 * 1024
         if ln > max_bytes:
+            # Drain modest bodies so simple clients (http.client) do not hit BrokenPipe while sending.
+            self._drain_request_body(ln)
             self._json(413, {"error": "upload_too_large"})
             return
 
