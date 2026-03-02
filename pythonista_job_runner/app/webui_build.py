@@ -48,17 +48,18 @@ def _default_paths() -> WebUiPaths:
 def _read_js_bundle(p: WebUiPaths) -> str:
     """Return the JavaScript bundle text.
 
-    Prefer split sources in webui_js/*.js (sorted lexicographically). Fall back to
-    webui.js if the parts folder is missing.
+    Reads and concatenates sources from webui_js/*.js (sorted lexicographically).
     """
 
     parts_dir = p.js.with_name("webui_js")
-    if parts_dir.is_dir():
-        parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
-        if parts:
-            return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
+    if not parts_dir.is_dir():
+        raise FileNotFoundError(f"JavaScript source directory not found: {parts_dir}")
 
-    return p.js.read_text(encoding="utf-8").rstrip()
+    parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
+    if not parts:
+        raise FileNotFoundError(f"No JavaScript source files found in {parts_dir}")
+
+    return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
 
 
 def build_webui(paths: WebUiPaths | None = None) -> str:
