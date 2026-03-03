@@ -269,6 +269,7 @@ def safe_extract_zip_bytes(
             )
 
         total = 0
+        total_actual = 0
         for zi in infos:
             if _is_symlink_member(zi):
                 raise RuntimeError("zip_symlink_not_allowed")
@@ -310,10 +311,17 @@ def safe_extract_zip_bytes(
 
             out_path.parent.mkdir(parents=True, exist_ok=True)
             with zf.open(zi, "r") as src, out_path.open("wb") as dst:
+                written = 0
                 while True:
                     b = src.read(_COPY_CHUNK_SIZE)
                     if not b:
                         break
+                    written += len(b)
+                    total_actual += len(b)
+                    if written > limits.max_single_uncompressed:
+                        raise RuntimeError(f"zip_member_too_large: {zi.filename}")
+                    if total_actual > limits.max_total_uncompressed:
+                        raise RuntimeError("zip_total_uncompressed_too_large")
                     dst.write(b)
 
 

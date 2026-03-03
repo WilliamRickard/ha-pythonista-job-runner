@@ -145,11 +145,11 @@ class Handler(BaseHTTPRequestHandler):
             return ""
 
         # Only allow a single path segment as job_id.
-        # Take the last non-empty segment to avoid matching extra path parts.
-        segments = [seg for seg in tail.split("/") if seg]
-        if not segments:
+        # (Reject /prefix/a/b... to avoid surprising matches.)
+        if "/" in tail:
             return ""
-        job_id = segments[-1]
+        job_id = tail
+
 
         # Reject suspicious or traversal-like job_ids.
         if job_id in (".", "..") or "/" in job_id:

@@ -133,3 +133,29 @@ def test_run_rejects_oversize_upload(temp_data_dir, monkeypatch):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_stdout_rejects_multi_segment_job_id(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+
+    # Seed a real job "b" with a stdout file, then request /stdout/a/b.txt which should be rejected.
+    job_id = "b"
+    job_dir = runner_core.JOBS_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = job_dir / "stdout.txt"
+    stdout_path.write_text("ok\n", encoding="utf-8")
+
+    j = runner_core.Job(job_id=job_id, job_dir=job_dir, stdout_path=stdout_path)
+    with runner._lock:
+        runner._jobs[job_id] = j
+        runner._job_order.insert(0, job_id)
+
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request("GET", host, port, "/stdout/a/b.txt", None, {"X-Runner-Token": "t"})
+        assert status == 404
+        payload = json.loads(data.decode("utf-8"))
+        assert payload.get("error") == "unknown_job"
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
