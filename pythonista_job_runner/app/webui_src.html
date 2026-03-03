@@ -176,8 +176,19 @@
             </div>
 
             <div class="logtools" id="logtools" style="margin-top:10px;">
-              <label class="tog"><input type="checkbox" id="follow" checked/> follow</label>
-              <label class="tog"><input type="checkbox" id="pause"/> pause</label>
+              <div class="livebar" role="group" aria-label="Live tail controls">
+                <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
+                <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
+                <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
+                <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
+                <span class="pill" id="livepill" title="Live tail state">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span id="livestate">Live</span>
+                </span>
+                <input type="checkbox" id="follow" checked hidden/>
+                <input type="checkbox" id="pause" hidden/>
+              </div>
+
               <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
               <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
               <label class="tog" style="gap:10px;">
@@ -188,6 +199,18 @@
               <span style="flex:1 1 140px;"></span>
               <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
               <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+            </div>
+
+            <div class="hilitebar" id="hilitebar" aria-label="Highlight terms">
+              <span class="hilite-label">Highlight</span>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
+              <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
+              <span style="flex:1 1 140px;"></span>
+              <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
+              <button type="button" class="small" data-action="add-hterm">Add</button>
+              <button type="button" class="small" data-action="clear-hterms">Clear</button>
             </div>
 
             <div class="findbar" id="findbar">

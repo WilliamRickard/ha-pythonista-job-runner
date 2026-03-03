@@ -497,6 +497,102 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 
 .logtools input[type="checkbox"]{ transform: scale(1.1); }
 
+.livebar{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#livepill{
+  background: var(--panel2);
+}
+
+#livepill.ok{ border-color: rgba(46,204,113,0.45); }
+#livepill.ok .dot{ background: var(--ok); }
+#livepill.warn{ border-color: rgba(241,196,15,0.55); }
+#livepill.warn .dot{ background: var(--warn); }
+#livepill.err{ border-color: rgba(255,92,92,0.45); }
+#livepill.err .dot{ background: var(--err); }
+
+.hilitebar{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.hilitebar .hilite-label{
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.hilitebar input[type="text"]{
+  width: 160px;
+  flex: 0 0 auto;
+}
+
+.hterms_custom{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#logpanel{
+  position: relative;
+}
+
+#logpanel.newflash::after{
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  height: 24px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, transparent, rgba(138,180,255,0.18));
+  pointer-events: none;
+  animation: pjrFlashFade 900ms ease-out forwards;
+}
+
+@keyframes pjrFlashFade{
+  from{ opacity: 1; }
+  to{ opacity: 0; }
+}
+
+#logview .logline{
+  display:block;
+  padding: 0 2px;
+  border-radius: 6px;
+}
+
+#logview .logline.err{
+  background: rgba(255,92,92,0.10);
+  color: var(--text);
+}
+
+#logview .logline.warn{
+  background: rgba(241,196,15,0.10);
+  color: var(--text);
+}
+
+#logview .logline.hit{
+  outline: 1px solid rgba(138,180,255,0.35);
+  background: rgba(138,180,255,0.08);
+}
+
+#logview .logline.new{
+  animation: pjrNewLine 2000ms ease-out forwards;
+}
+
+@keyframes pjrNewLine{
+  from{ background: rgba(46,204,113,0.14); }
+  to{ background: transparent; }
+}
+
 pre{
   margin: 10px 0 0 0;
   background: var(--panel2);
@@ -921,8 +1017,19 @@ details[open] summary::after{ transform: rotate(0deg); }
             </div>
 
             <div class="logtools" id="logtools" style="margin-top:10px;">
-              <label class="tog"><input type="checkbox" id="follow" checked/> follow</label>
-              <label class="tog"><input type="checkbox" id="pause"/> pause</label>
+              <div class="livebar" role="group" aria-label="Live tail controls">
+                <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
+                <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
+                <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
+                <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
+                <span class="pill" id="livepill" title="Live tail state">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span id="livestate">Live</span>
+                </span>
+                <input type="checkbox" id="follow" checked hidden/>
+                <input type="checkbox" id="pause" hidden/>
+              </div>
+
               <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
               <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
               <label class="tog" style="gap:10px;">
@@ -933,6 +1040,18 @@ details[open] summary::after{ transform: rotate(0deg); }
               <span style="flex:1 1 140px;"></span>
               <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
               <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+            </div>
+
+            <div class="hilitebar" id="hilitebar" aria-label="Highlight terms">
+              <span class="hilite-label">Highlight</span>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
+              <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
+              <span style="flex:1 1 140px;"></span>
+              <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
+              <button type="button" class="small" data-action="add-hterm">Add</button>
+              <button type="button" class="small" data-action="clear-hterms">Clear</button>
             </div>
 
             <div class="findbar" id="findbar">
@@ -1078,6 +1197,12 @@ details[open] summary::after{ transform: rotate(0deg); }
 
   let paused = false;
   let hilite = false;
+  let highlightTerms = [];
+  let autoPauseReason = "";
+
+  const lastAppend = { stdout: { at: 0, from: 0 }, stderr: { at: 0, from: 0 } };
+  let newFlashTimer = null;
+  let programmaticScrollAt = 0;
   let pane = "jobs"; // "jobs" or "detail" on narrow screens
   let refreshing = false;
   let toastActionHandler = null;
@@ -1234,6 +1359,147 @@ function parseUtcSeconds(v) {
     els.lastupdated.textContent = ts;
   }
 
+  function updateLiveUi() {
+    if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
+
+    const isLive = (follow && !paused);
+    els.btn_live.classList.toggle("active", isLive);
+    els.btn_live.setAttribute("aria-pressed", isLive ? "true" : "false");
+
+    const isPaused = !!paused;
+    els.btn_pause_resume.classList.toggle("active", isPaused);
+    els.btn_pause_resume.setAttribute("aria-pressed", isPaused ? "true" : "false");
+    els.btn_pause_resume.textContent = isPaused ? "Resume" : "Pause";
+
+    if (els.btn_jump_latest) {
+      els.btn_jump_latest.hidden = !isPaused;
+    }
+
+    els.livepill.classList.remove("ok", "warn", "err");
+    if (isPaused) {
+      els.livepill.classList.add("warn");
+      els.livestate.textContent = "Paused";
+    } else if (isLive) {
+      els.livepill.classList.add("ok");
+      els.livestate.textContent = "Live";
+    } else {
+      els.livestate.textContent = "Scroll";
+    }
+  }
+
+  function setFollow(next) {
+    follow = !!next;
+    if (els.follow) els.follow.checked = follow;
+    localStorage.setItem("pjr_follow", follow ? "1" : "0");
+    updateLiveUi();
+  }
+
+  function setPaused(next, reason) {
+    paused = !!next;
+    autoPauseReason = paused ? String(reason || "") : "";
+    if (els.pause) els.pause.checked = paused;
+    localStorage.setItem("pjr_pause", paused ? "1" : "0");
+    updateLiveUi();
+  }
+
+  function flashNewLines() {
+    if (!els.logpanel) return;
+    els.logpanel.classList.add("newflash");
+    if (newFlashTimer) window.clearTimeout(newFlashTimer);
+    newFlashTimer = window.setTimeout(() => {
+      if (els.logpanel) els.logpanel.classList.remove("newflash");
+    }, 950);
+  }
+
+  function _normTerm(t) {
+    const s = String(t || "").trim();
+    if (!s) return "";
+    if (s.length > 64) return s.slice(0, 64);
+    return s;
+  }
+
+  function _saveHighlightTerms() {
+    try {
+      localStorage.setItem("pjr_hterms", JSON.stringify(highlightTerms));
+    } catch (_e) {}
+  }
+
+  function _loadHighlightTerms() {
+    try {
+      const raw = localStorage.getItem("pjr_hterms");
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        highlightTerms = arr.map(_normTerm).filter(Boolean);
+      }
+    } catch (_e) {}
+  }
+
+  function hasHighlightTerms() {
+    return Array.isArray(highlightTerms) && highlightTerms.length > 0;
+  }
+
+  function toggleHighlightTerm(term) {
+    const t = _normTerm(term);
+    if (!t) return;
+    const idx = highlightTerms.findIndex((x) => x.toLowerCase() === t.toLowerCase());
+    if (idx >= 0) highlightTerms.splice(idx, 1);
+    else highlightTerms.push(t);
+    _saveHighlightTerms();
+    updateHighlightUi();
+    renderLog(currentTab);
+  }
+
+  function clearHighlightTerms() {
+    highlightTerms = [];
+    _saveHighlightTerms();
+    updateHighlightUi();
+    renderLog(currentTab);
+  }
+
+  function addHighlightTermFromInput() {
+    if (!els.hterm_input) return;
+    const t = _normTerm(els.hterm_input.value);
+    if (!t) return;
+    els.hterm_input.value = "";
+    const exists = highlightTerms.some((x) => x.toLowerCase() === t.toLowerCase());
+    if (!exists) highlightTerms.push(t);
+    _saveHighlightTerms();
+    updateHighlightUi();
+    renderLog(currentTab);
+  }
+
+  function updateHighlightUi() {
+    const setPressed = (id, term) => {
+      const b = document.getElementById(id);
+      if (!b) return;
+      const on = highlightTerms.some((x) => x.toLowerCase() === String(term).toLowerCase());
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    };
+
+    setPressed("hterm_error", "ERROR");
+    setPressed("hterm_warn", "WARN");
+    setPressed("hterm_traceback", "Traceback");
+
+    if (!els.hterms_custom) return;
+    els.hterms_custom.textContent = "";
+
+    const builtins = ["ERROR", "WARN", "Traceback"];
+    const custom = highlightTerms.filter((t) => !builtins.some((b) => b.toLowerCase() === t.toLowerCase()));
+
+    for (const t of custom) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip small active";
+      btn.textContent = t;
+      btn.setAttribute("data-action", "toggle-hterm");
+      btn.setAttribute("data-term", t);
+      btn.setAttribute("aria-pressed", "true");
+      els.hterms_custom.appendChild(btn);
+    }
+  }
+
   async function copyTextToClipboard(text) {
     const t = String(text || "");
     if (!t) return;
@@ -1323,6 +1589,7 @@ function parseUtcSeconds(v) {
     els.overview.hidden = showLogs;
     els.logpanel.style.display = showLogs ? "block" : "none";
     if (els.logtools) els.logtools.style.display = showLogs ? "flex" : "none";
+    if (els.hilitebar) els.hilitebar.style.display = showLogs ? "flex" : "none";
     if (els.findbar) els.findbar.style.display = showLogs ? "flex" : "none";
 
     // Keep tabpanel ARIA state aligned with what is shown.
@@ -1370,7 +1637,7 @@ function parseUtcSeconds(v) {
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_pane"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane"
     ];
     for (const k of keys) localStorage.removeItem(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -1425,6 +1692,75 @@ function parseUtcSeconds(v) {
       ev.preventDefault();
     }
   }
+
+
+
+  async function goLive() {
+    setPaused(false);
+    setFollow(true);
+    updateLiveUi();
+    if (currentJob) {
+      try {
+        await refreshMetaAndTail({ forceTail: true });
+      } catch (_e) {}
+    }
+    if (els.logview) {
+      programmaticScrollAt = Date.now();
+      els.logview.scrollTop = els.logview.scrollHeight;
+    }
+  }
+
+  async function togglePauseResume() {
+    if (paused) {
+      await goLive();
+      return;
+    }
+    // Pause means stop consuming new bytes and stop auto-follow.
+    setFollow(false);
+    setPaused(true, "manual");
+  }
+
+  async function jumpLatest() {
+    await goLive();
+  }
+
+  function clearCurrentLog() {
+    const kind = (currentTab === "stderr") ? "stderr" : (currentTab === "stdout" ? "stdout" : "");
+    if (!kind) return;
+
+    buffers[kind] = "";
+    lastAppend[kind].at = 0;
+    lastAppend[kind].from = 0;
+
+    // Keep offsets as-is so we continue from the current tail position.
+    els.logview.textContent = "";
+
+    logSearch = "";
+    if (els.logsearch) els.logsearch.value = "";
+    resetSearch();
+
+    renderLog(kind);
+  }
+
+  function isNearBottom(el) {
+    const gap = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    return gap <= 30;
+  }
+
+  function onLogScrollAutoPause() {
+    if (!els.logview) return;
+    if (paused) return;
+    if (!follow) return;
+    if (currentTab === "overview") return;
+
+    // Ignore programmatic scrolls.
+    if (Date.now() - programmaticScrollAt < 250) return;
+
+    if (!isNearBottom(els.logview)) {
+      setFollow(false);
+      setPaused(true, "scroll");
+    }
+  }
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
@@ -1437,7 +1773,9 @@ function parseUtcSeconds(v) {
   function renderLog(kind) {
     if (kind === "overview") return;
     const txt = buffers[kind] || "";
-    if (!hilite) {
+
+    const needHtml = !!hilite || hasHighlightTerms();
+    if (!needHtml) {
       els.logview.textContent = txt;
       applyLogStyle();
       return;
@@ -1445,20 +1783,55 @@ function parseUtcSeconds(v) {
 
     const MAX_RENDER = 200000;
     const truncated = (txt.length > MAX_RENDER);
+    const sliceStart = truncated ? (txt.length - MAX_RENDER) : 0;
     const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
-    const lines = slice.split("\n");
+
+    const lines = slice.split("
+");
     const out = [];
+
+    // New line window: mark recently appended lines for a short period.
+    const meta = (lastAppend && lastAppend[kind]) ? lastAppend[kind] : null;
+    const showNew = !!(meta && meta.at && (Date.now() - meta.at) < 2500);
+    const newFrom = showNew ? Math.max(0, (meta.from || 0) - sliceStart) : 1e12;
+
+    const terms = Array.isArray(highlightTerms) ? highlightTerms.slice(0) : [];
+    const termsUpper = terms.map((t) => String(t || "").toUpperCase()).filter(Boolean);
+
+    let pos = 0;
     for (const line of lines) {
+      const lineStart = pos;
+      pos += line.length + 1;
+
       const esc = escapeHtml(line);
       let cls = "logline";
+
       const u = line.toUpperCase();
-      if (u.includes("TRACEBACK") || u.includes("ERROR") || u.includes("EXCEPTION")) cls += " err";
-      else if (u.includes("WARN")) cls += " warn";
+
+      if (hilite) {
+        if (u.includes("TRACEBACK") || u.includes("ERROR") || u.includes("EXCEPTION")) cls += " err";
+        else if (u.includes("WARN")) cls += " warn";
+      }
+
+      if (termsUpper.length) {
+        for (const t of termsUpper) {
+          if (t && u.includes(t)) {
+            cls += " hit";
+            break;
+          }
+        }
+      }
+
+      if (showNew && lineStart >= newFrom) {
+        cls += " new";
+      }
+
       out.push(`<span class="${cls}">${esc}</span>`);
     }
-    els.logview.innerHTML = out.join("\n");
-    applyLogStyle();
 
+    els.logview.innerHTML = out.join("
+");
+    applyLogStyle();
   }
 
   function jumpToNextError() {
@@ -1956,9 +2329,24 @@ function closeAbout() {
 
   function appendBuffer(which, chunk) {
     if (!chunk) return;
-    buffers[which] = (buffers[which] || "") + chunk;
-    if (buffers[which].length > LOG_MAX_CHARS) {
-      buffers[which] = buffers[which].slice(-LOG_MAX_CHARS);
+
+    const before = buffers[which] || "";
+    const combined = before + chunk;
+
+    let dropped = 0;
+    let final = combined;
+    if (combined.length > LOG_MAX_CHARS) {
+      dropped = combined.length - LOG_MAX_CHARS;
+      final = combined.slice(-LOG_MAX_CHARS);
+    }
+
+    buffers[which] = final;
+
+    // Track where new content starts in the current buffer so renderLog() can mark new lines.
+    const from = Math.max(0, before.length - dropped);
+    if (lastAppend && lastAppend[which]) {
+      lastAppend[which].at = Date.now();
+      lastAppend[which].from = from;
     }
   }
 
@@ -2109,9 +2497,15 @@ Client IP: ${ip || ""}`;
 
       initialTailForJob = currentJob;
 
+      const hadNew = (currentTab === "stdout" && (tail.stdout || "")) || (currentTab === "stderr" && (tail.stderr || ""));
+
       if (currentTab !== "overview") {
         renderLog(currentTab);
+        if (hadNew) {
+          flashNewLines();
+        }
         if (follow) {
+          programmaticScrollAt = Date.now();
           els.logview.scrollTop = els.logview.scrollHeight;
         }
       }
@@ -2247,6 +2641,13 @@ Client IP: ${ip || ""}`;
         if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
         if (action === "cancel") await cancelJob();
         if (action === "delete") await deleteJob();
+        if (action === "go-live") await goLive();
+        if (action === "toggle-pause") await togglePauseResume();
+        if (action === "jump-latest") await jumpLatest();
+        if (action === "clear-log") clearCurrentLog();
+        if (action === "toggle-hterm") toggleHighlightTerm(btn.getAttribute("data-term") || "");
+        if (action === "add-hterm") addHighlightTermFromInput();
+        if (action === "clear-hterms") clearHighlightTerms();
       } catch (e) {
         toast("err", "Action failed", e && e.message ? e.message : String(e));
       }
@@ -2347,6 +2748,11 @@ Client IP: ${ip || ""}`;
     }
 
     els.logsearch.addEventListener("input", onLogSearchDebounced);
+    if (els.logview) {
+      els.logview.addEventListener("scroll", () => {
+        onLogScrollAutoPause();
+      }, { passive: true });
+    }
     if (els.toast_action) {
       els.toast_action.addEventListener("click", (ev) => {
         ev.preventDefault();
@@ -2395,6 +2801,15 @@ Client IP: ${ip || ""}`;
     els.meta = document.getElementById("meta");
 
     els.follow = document.getElementById("follow");
+    els.btn_live = document.getElementById("btn_live");
+    els.btn_pause_resume = document.getElementById("btn_pause_resume");
+    els.btn_jump_latest = document.getElementById("btn_jump_latest");
+    els.btn_clear_log = document.getElementById("btn_clear_log");
+    els.livepill = document.getElementById("livepill");
+    els.livestate = document.getElementById("livestate");
+
+    els.hterm_input = document.getElementById("hterm_input");
+    els.hterms_custom = document.getElementById("hterms_custom");
     els.wrap = document.getElementById("wrap");
     els.pause = document.getElementById("pause");
     els.hilite = document.getElementById("hilite");
@@ -2429,6 +2844,7 @@ Client IP: ${ip || ""}`;
     els.btn_cancel = document.getElementById("btn_cancel");
     els.btn_delete = document.getElementById("btn_delete");
     els.logtools = document.getElementById("logtools");
+    els.hilitebar = document.getElementById("hilitebar");
     els.findbar = document.getElementById("findbar");
   }
 
@@ -2469,10 +2885,14 @@ Client IP: ${ip || ""}`;
     const savedPause = localStorage.getItem("pjr_pause");
     if (savedPause !== null) paused = (savedPause === "1");
     if (els.pause) els.pause.checked = paused;
+    updateLiveUi();
 
     const savedHilite = localStorage.getItem("pjr_hilite");
     if (savedHilite !== null) hilite = (savedHilite === "1");
     if (els.hilite) els.hilite.checked = hilite;
+
+    _loadHighlightTerms();
+    updateHighlightUi();
 
     const savedPane = localStorage.getItem("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";

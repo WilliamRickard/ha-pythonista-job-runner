@@ -38,11 +38,17 @@ All endpoints are served by the add-on.
 - `GET /jobs.json`  
   Job list.
 
-- `GET /status/<job_id>.json`  
+- `GET /job/<job_id>.json`  
   Job status.
 
-- `GET /tail/<job_id>.json?stdout_offset=<n>&stderr_offset=<n>`  
-  Incremental stdout/stderr tail.
+- `GET /tail/<job_id>.json?stdout_from=<n>&stderr_from=<n>&max_bytes=<n>`  
+  Incremental stdout/stderr tail (byte offsets).
+
+- `GET /stdout/<job_id>.txt?from=<n>&max_bytes=<n>`  
+  Download stdout. If `from`/`max_bytes` are provided, returns a bounded slice and includes `X-Next-Offset` headers.
+
+- `GET /stderr/<job_id>.txt?from=<n>&max_bytes=<n>`  
+  Download stderr. Supports the same bounded-slice query parameters as stdout.
 
 - `GET /result/<job_id>.zip`  
   Download results for a completed job.
@@ -73,6 +79,7 @@ Everything else is tuning. If you are not sure, leave the defaults.
 - Web UI loads but submissions fail: confirm Pythonista is sending `X-Runner-Token` and you set the token in the add-on config.
 - Jobs fail immediately with `zip_missing_run_py`: your zip must contain `run.py` at the root.
 - Disk space issues: reduce retention or enable housekeeping cleanup.
+- Outputs missing from result zip: the runner caps packaged `work/outputs/` by `artefacts.outputs_max_files` and `artefacts.outputs_max_bytes`. Increase those if you need larger artefacts.
 
 ## Editing the Web UI
 

@@ -77,9 +77,15 @@ Client IP: ${ip || ""}`;
 
       initialTailForJob = currentJob;
 
+      const hadNew = (currentTab === "stdout" && (tail.stdout || "")) || (currentTab === "stderr" && (tail.stderr || ""));
+
       if (currentTab !== "overview") {
         renderLog(currentTab);
+        if (hadNew) {
+          flashNewLines();
+        }
         if (follow) {
+          programmaticScrollAt = Date.now();
           els.logview.scrollTop = els.logview.scrollHeight;
         }
       }

@@ -37,6 +37,13 @@
         if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
         if (action === "cancel") await cancelJob();
         if (action === "delete") await deleteJob();
+        if (action === "go-live") await goLive();
+        if (action === "toggle-pause") await togglePauseResume();
+        if (action === "jump-latest") await jumpLatest();
+        if (action === "clear-log") clearCurrentLog();
+        if (action === "toggle-hterm") toggleHighlightTerm(btn.getAttribute("data-term") || "");
+        if (action === "add-hterm") addHighlightTermFromInput();
+        if (action === "clear-hterms") clearHighlightTerms();
       } catch (e) {
         toast("err", "Action failed", e && e.message ? e.message : String(e));
       }
@@ -137,6 +144,11 @@
     }
 
     els.logsearch.addEventListener("input", onLogSearchDebounced);
+    if (els.logview) {
+      els.logview.addEventListener("scroll", () => {
+        onLogScrollAutoPause();
+      }, { passive: true });
+    }
     if (els.toast_action) {
       els.toast_action.addEventListener("click", (ev) => {
         ev.preventDefault();
@@ -185,6 +197,15 @@
     els.meta = document.getElementById("meta");
 
     els.follow = document.getElementById("follow");
+    els.btn_live = document.getElementById("btn_live");
+    els.btn_pause_resume = document.getElementById("btn_pause_resume");
+    els.btn_jump_latest = document.getElementById("btn_jump_latest");
+    els.btn_clear_log = document.getElementById("btn_clear_log");
+    els.livepill = document.getElementById("livepill");
+    els.livestate = document.getElementById("livestate");
+
+    els.hterm_input = document.getElementById("hterm_input");
+    els.hterms_custom = document.getElementById("hterms_custom");
     els.wrap = document.getElementById("wrap");
     els.pause = document.getElementById("pause");
     els.hilite = document.getElementById("hilite");
@@ -219,6 +240,7 @@
     els.btn_cancel = document.getElementById("btn_cancel");
     els.btn_delete = document.getElementById("btn_delete");
     els.logtools = document.getElementById("logtools");
+    els.hilitebar = document.getElementById("hilitebar");
     els.findbar = document.getElementById("findbar");
   }
 
@@ -259,10 +281,14 @@
     const savedPause = localStorage.getItem("pjr_pause");
     if (savedPause !== null) paused = (savedPause === "1");
     if (els.pause) els.pause.checked = paused;
+    updateLiveUi();
 
     const savedHilite = localStorage.getItem("pjr_hilite");
     if (savedHilite !== null) hilite = (savedHilite === "1");
     if (els.hilite) els.hilite.checked = hilite;
+
+    _loadHighlightTerms();
+    updateHighlightUi();
 
     const savedPane = localStorage.getItem("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";
