@@ -1,7 +1,9 @@
+<!-- Version: 0.6.12-docs.1 -->
 # Changelog
 
 ## Unreleased
 
+- Docs: expand user documentation and add Pythonista examples.
 ## 0.6.12
 
 - Web UI: fix a JavaScript strict-mode startup error (stray initialTailForJob assignment).
