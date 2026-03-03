@@ -57,22 +57,6 @@ def _read_js_bundle(p: WebUiPaths) -> str:
         raise RuntimeError(f"No .js files found in {parts_dir}")
 
     return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
-    """Return the JavaScript bundle text.
-
-    Reads and concatenates sources from webui_js/*.js (sorted lexicographically).
-    """
-
-    parts_dir = p.js.with_name("webui_js")
-    if not parts_dir.is_dir():
-        raise FileNotFoundError(f"JavaScript source directory not found: {parts_dir}")
-
-    parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
-    if not parts:
-        raise FileNotFoundError(f"No JavaScript source files found in {parts_dir}")
-
-    return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
-
-
 def build_webui(paths: WebUiPaths | None = None) -> str:
     """Return the bundled webui.html content as a string."""
 

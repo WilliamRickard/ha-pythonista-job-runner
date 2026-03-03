@@ -246,10 +246,20 @@ class Runner:
         if not (1 <= self.bind_port <= 65535):
             self.bind_port = 8787
 
+        # Running as root (typical in add-on containers) materially changes the threat model.
+        try:
+            self._is_root = bool(hasattr(os, "geteuid") and int(os.geteuid()) == 0)
+        except Exception:
+            self._is_root = False
+
+
         self.job_user = str(opts.get("job_user") or "jobrunner").strip() or "jobrunner"
         self._job_uid, self._job_gid = _resolve_user_ids(self.job_user)
         if self._job_uid is None or self._job_gid is None:
-            print("WARNING: job_user not found; jobs will run as root", flush=True)
+            if self._is_root:
+                print("WARNING: job_user not found; jobs would run as root", flush=True)
+            else:
+                print("WARNING: job_user not found; jobs will run as current user", flush=True)
 
         self.timeout_seconds = int(opts.get("timeout_seconds") or 3600)
         self.max_upload_mb = int(opts.get("max_upload_mb") or 50)
@@ -302,6 +312,7 @@ class Runner:
             max_single_uncompressed=int(opts.get("zip_max_single_uncompressed") or (50 * 1024 * 1024)),
         )
 
+        self._pending_slots = 0  # reserved queue slots during new_job initialisation
         self._lock = threading.Lock()
         self._jobs: Dict[str, Job] = {}
         self._job_order: List[str] = []
@@ -513,57 +524,84 @@ class Runner:
 
         def _pip_preexec() -> None:
             try:
-                try:
-                    os.setgroups([])
-                except Exception:
-                    pass
-                os.setgid(int(self._job_gid))
-                os.setuid(int(self._job_uid))
+                os.setsid()
             except Exception:
                 pass
 
-        try:
-            r = subprocess.run(
-                cmd,
-                cwd=str(j.work_dir),
-                env=env,
-                capture_output=True,
-                timeout=max(10, int(self.pip_timeout_seconds)),
-                check=False,
-                text=True,
-                preexec_fn=_pip_preexec,
-            )
-        except subprocess.TimeoutExpired as e:
-            out = _redact_pip_text((e.stdout or ""), redaction_urls)
-            err = _redact_pip_text((e.stderr or ""), redaction_urls)
+            # If running as root, drop privileges for pip (pip may execute build hooks).
+            if not self._is_root:
+                return
             try:
-                _safe_write_text_no_symlink(j.work_dir / "pip_install_stdout.txt", out)
-                _safe_write_text_no_symlink(j.work_dir / "pip_install_stderr.txt", err)
+                os.setgroups([])
             except Exception:
                 pass
-            tail = (err or out).strip()
-            if len(tail) > 2000:
-                tail = tail[-2000:]
-            return f"pip_install_timeout: {tail}"
+            os.setgid(int(self._job_gid))
+            os.setuid(int(self._job_uid))
+
+        pip_stdout_tmp = j.work_dir / "pip_install_stdout.tmp"
+        pip_stderr_tmp = j.work_dir / "pip_install_stderr.tmp"
+        timeout_s = max(10, int(self.pip_timeout_seconds))
+
+        rc: Optional[int] = None
+        try:
+            with open(pip_stdout_tmp, "wb") as f_out, open(pip_stderr_tmp, "wb") as f_err:
+                p = subprocess.Popen(
+                    cmd,
+                    cwd=str(j.work_dir),
+                    env=env,
+                    stdout=f_out,
+                    stderr=f_err,
+                    preexec_fn=_pip_preexec,
+                )
+                try:
+                    rc = int(p.wait(timeout=timeout_s))
+                except subprocess.TimeoutExpired:
+                    _kill_process_group(p, soft_seconds=2)
+                    rc = None
         except Exception as e:
             msg = _redact_pip_text(f"{type(e).__name__}: {e}", redaction_urls)
             return f"pip_install_failed: {msg}"
 
-        out = _redact_pip_text((r.stdout or ""), redaction_urls)
-        err = _redact_pip_text((r.stderr or ""), redaction_urls)
+        def _pip_debug_tail(max_chars: int) -> tuple[str, str]:
+            out_t = file_tail_text(pip_stdout_tmp, max_chars)
+            err_t = file_tail_text(pip_stderr_tmp, max_chars)
+            return (_redact_pip_text(out_t or "", redaction_urls), _redact_pip_text(err_t or "", redaction_urls))
 
-        if r.returncode != 0:
+        if rc is None:
+            out_2k, err_2k = _pip_debug_tail(2000)
             try:
-                # Preserve (redacted) output for debugging. Avoid symlink-following writes.
-                _safe_write_text_no_symlink(j.work_dir / "pip_install_stdout.txt", out)
-                _safe_write_text_no_symlink(j.work_dir / "pip_install_stderr.txt", err)
+                out_20k, err_20k = _pip_debug_tail(20000)
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stdout.txt", out_20k)
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stderr.txt", err_20k)
             except Exception:
                 pass
-            tail = (err or out).strip()
+            tail = (err_2k or out_2k).strip()
             if len(tail) > 2000:
                 tail = tail[-2000:]
-            return f"pip_install_rc_{r.returncode}: {tail}"
+            return f"pip_install_timeout: {tail}"
 
+        if int(rc) != 0:
+            out_2k, err_2k = _pip_debug_tail(2000)
+            try:
+                out_20k, err_20k = _pip_debug_tail(20000)
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stdout.txt", out_20k)
+                _safe_write_text_no_symlink(j.work_dir / "pip_install_stderr.txt", err_20k)
+            except Exception:
+                pass
+            tail = (err_2k or out_2k).strip()
+            if len(tail) > 2000:
+                tail = tail[-2000:]
+            return f"pip_install_rc_{int(rc)}: {tail}"
+
+        # Success: remove temporary log files and prepend to PYTHONPATH so run.py can import installed dependencies.
+        try:
+            pip_stdout_tmp.unlink()
+        except Exception:
+            pass
+        try:
+            pip_stderr_tmp.unlink()
+        except Exception:
+            pass
         # Success: prepend to PYTHONPATH so run.py can import installed dependencies.
         existing = env.get("PYTHONPATH", "")
         env["PYTHONPATH"] = str(deps_dir) + (os.pathsep + existing if existing else "")
@@ -694,80 +732,106 @@ class Runner:
             return self._jobs.get(job_id)
 
     def new_job(self, zip_bytes: bytes, headers: Any, client_ip: str) -> Job:
-        with self._lock:
-            active = sum(1 for j in self._jobs.values() if j.state in ("queued", "running"))
-        if active >= self.queue_max_jobs:
-            raise RuntimeError("queue_full")
+        if self._is_root and (self._job_uid is None or self._job_gid is None):
+            # Refuse to execute untrusted code as root due to misconfiguration.
+            raise RuntimeError("job_user_missing")
 
+        slot_reserved = False
+        job_registered = False
+        job_dir: Optional[Path] = None
         try:
-            self._ensure_min_free_space()
+            with self._lock:
+                active = sum(1 for j in self._jobs.values() if j.state in ("queued", "running"))
+                active += int(getattr(self, "_pending_slots", 0))
+                if active >= self.queue_max_jobs:
+                    raise RuntimeError("queue_full")
+                self._pending_slots += 1
+                slot_reserved = True
+
+            try:
+                self._ensure_min_free_space()
+            except Exception:
+                pass
+
+            cpu = clamp_int(headers.get("X-Runner-CPU-PCT"), self.default_cpu, 1, self.max_cpu)
+            mem = clamp_int(headers.get("X-Runner-MEM-MB"), self.default_mem, 256, self.max_mem)
+            thr = clamp_int(headers.get("X-Runner-THREADS"), self.max_threads, 1, self.max_threads)
+            timeout = clamp_int(headers.get("X-Runner-TIMEOUT"), self.timeout_seconds, 1, self.timeout_seconds)
+
+            job_id = uuid.uuid4().hex
+            job_dir = JOBS_DIR / job_id
+            work_dir = job_dir / "work"
+            job_dir.mkdir(parents=True, exist_ok=True)
+            work_dir.mkdir(parents=True, exist_ok=True)
+
+            safe_extract_zip_bytes(zip_bytes, work_dir, self.safe_zip_limits)
+            self._prepare_work_dir(work_dir)
+
+            run_py = work_dir / "run.py"
+            if not run_py.exists():
+                raise RuntimeError("zip_missing_run_py")
+
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+
+            cpu_count = os.cpu_count() or 1
+            mode = self.cpu_limit_mode
+            if mode not in ("single_core", "total_machine"):
+                mode = "single_core"
+            eff = cpu
+            if mode == "total_machine":
+                eff = min(cpu * cpu_count, 100 * cpu_count)
+
+            j = Job(
+                job_id=job_id,
+                cpu_percent=cpu,
+                cpu_limit_mode=mode,
+                cpu_count=cpu_count,
+                cpu_cpulimit_pct=eff,
+                mem_mb=mem,
+                threads=thr,
+                timeout_seconds=timeout,
+                job_dir=job_dir,
+                work_dir=work_dir,
+                stdout_path=job_dir / "stdout.txt",
+                stderr_path=job_dir / "stderr.txt",
+                status_path=job_dir / "status.json",
+                result_zip=job_dir / f"result_{stamp}_{job_id}.zip",
+                tail_stdout=TailBuffer(self.tail_chars),
+                tail_stderr=TailBuffer(self.tail_chars),
+                client_ip=client_ip,
+                input_sha256=hashlib_sha256_bytes(zip_bytes),
+            )
+
+            # Ingress user metadata
+            if client_ip == INGRESS_PROXY_IP:
+                j.submitted_by_id = headers.get("X-Remote-User-Id")
+                j.submitted_by_name = headers.get("X-Remote-User-Name")
+                j.submitted_by_display_name = headers.get("X-Remote-User-Display-Name")
+                j.ingress_path = headers.get("X-Ingress-Path")
+
+            with self._lock:
+                self._jobs[job_id] = j
+                self._job_order.insert(0, job_id)
+                job_registered = True
+                if slot_reserved:
+                    self._pending_slots = max(0, int(self._pending_slots) - 1)
+                    slot_reserved = False
+
+            self._write_status(j)
+            threading.Thread(target=self._run_job, args=(job_id,), daemon=True).start()
+            return j
+
         except Exception:
-            pass
-
-        cpu = clamp_int(headers.get("X-Runner-CPU-PCT"), self.default_cpu, 1, self.max_cpu)
-        mem = clamp_int(headers.get("X-Runner-MEM-MB"), self.default_mem, 256, self.max_mem)
-        thr = clamp_int(headers.get("X-Runner-THREADS"), self.max_threads, 1, self.max_threads)
-        timeout = clamp_int(headers.get("X-Runner-TIMEOUT"), self.timeout_seconds, 1, self.timeout_seconds)
-
-        job_id = uuid.uuid4().hex
-        job_dir = JOBS_DIR / job_id
-        work_dir = job_dir / "work"
-        job_dir.mkdir(parents=True, exist_ok=True)
-        work_dir.mkdir(parents=True, exist_ok=True)
-
-        safe_extract_zip_bytes(zip_bytes, work_dir, self.safe_zip_limits)
-        self._prepare_work_dir(work_dir)
-
-        run_py = work_dir / "run.py"
-        if not run_py.exists():
-            raise RuntimeError("zip_missing_run_py")
-
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-
-        cpu_count = os.cpu_count() or 1
-        mode = self.cpu_limit_mode
-        if mode not in ("single_core", "total_machine"):
-            mode = "single_core"
-        eff = cpu
-        if mode == "total_machine":
-            eff = min(cpu * cpu_count, 100 * cpu_count)
-
-        j = Job(
-            job_id=job_id,
-            cpu_percent=cpu,
-            cpu_limit_mode=mode,
-            cpu_count=cpu_count,
-            cpu_cpulimit_pct=eff,
-            mem_mb=mem,
-            threads=thr,
-            timeout_seconds=timeout,
-            job_dir=job_dir,
-            work_dir=work_dir,
-            stdout_path=job_dir / "stdout.txt",
-            stderr_path=job_dir / "stderr.txt",
-            status_path=job_dir / "status.json",
-            result_zip=job_dir / f"result_{stamp}_{job_id}.zip",
-            tail_stdout=TailBuffer(self.tail_chars),
-            tail_stderr=TailBuffer(self.tail_chars),
-            client_ip=client_ip,
-            input_sha256=hashlib_sha256_bytes(zip_bytes),
-        )
-
-        # Ingress user metadata
-        if client_ip == INGRESS_PROXY_IP:
-            j.submitted_by_id = headers.get("X-Remote-User-Id")
-            j.submitted_by_name = headers.get("X-Remote-User-Name")
-            j.submitted_by_display_name = headers.get("X-Remote-User-Display-Name")
-            j.ingress_path = headers.get("X-Ingress-Path")
-
-        with self._lock:
-            self._jobs[job_id] = j
-            self._job_order.insert(0, job_id)
-
-        self._write_status(j)
-        threading.Thread(target=self._run_job, args=(job_id,), daemon=True).start()
-        return j
-
+            if (not job_registered) and job_dir is not None:
+                try:
+                    shutil.rmtree(job_dir, ignore_errors=True)
+                except Exception:
+                    pass
+            raise
+        finally:
+            if slot_reserved:
+                with self._lock:
+                    self._pending_slots = max(0, int(self._pending_slots) - 1)
     def delete(self, job_id: str) -> bool:
         j = self.get(job_id)
         if not j:
@@ -827,7 +891,18 @@ class Runner:
 
     def _write_status(self, j: Job) -> None:
         try:
-            j.status_path.write_text(json.dumps(j.status_dict(), indent=2, sort_keys=True), encoding="utf-8")
+            text = json.dumps(j.status_dict(), indent=2, sort_keys=True)
+            tmp = j.status_path.with_name(j.status_path.name + ".tmp")
+            _safe_write_text_no_symlink(tmp, text)
+            try:
+                os.replace(str(tmp), str(j.status_path))
+            except Exception:
+                # Fallback: best-effort direct write if atomic replace fails.
+                _safe_write_text_no_symlink(j.status_path, text)
+                try:
+                    tmp.unlink()
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -896,18 +971,18 @@ class Runner:
                     except Exception:
                         pass
 
-                # Drop privileges for the user job (best-effort)
-                try:
-                    if job_gid is not None:
-                        try:
-                            os.setgroups([])
-                        except Exception:
-                            pass
-                        os.setgid(int(job_gid))
-                    if job_uid is not None:
-                        os.setuid(int(job_uid))
-                except Exception as e:
-                    print(f"WARNING: Failed to drop privileges: {e}", file=sys.stderr)
+
+                # Drop privileges for the user job. If running as root, fail closed on errors.
+                if self._is_root:
+                    if job_uid is None or job_gid is None:
+                        raise RuntimeError("job_user_missing")
+                    try:
+                        os.setgroups([])
+                    except Exception:
+                        pass
+                    os.setgid(int(job_gid))
+                    os.setuid(int(job_uid))
+
 
             cmd = ["python3", "-u", str(j.work_dir / "run.py")]
             if shutil.which("cpulimit"):
@@ -932,7 +1007,7 @@ class Runner:
 
                     def pump(src, dst, tail: TailBuffer) -> None:
                         while True:
-                            b = src.readline()
+                            b = src.read(8192)
                             if not b:
                                 break
                             dst.write(b)
