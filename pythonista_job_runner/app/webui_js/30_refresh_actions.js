@@ -31,7 +31,7 @@ Client IP: ${ip || ""}`;
 
       els.curl_snippet.value = curl;
     } catch (e) {
-      els.overview_text.textContent = `overview error: ${e.message}`;
+      els.overview_text.textContent = `overview error: ${String(e && e.message ? e.message : e)}`;
     }
   }
 
@@ -51,7 +51,7 @@ Client IP: ${ip || ""}`;
         const dt = document.createElement("dt");
         dt.textContent = "Error";
         const dd = document.createElement("dd");
-        dd.textContent = e.message;
+        dd.textContent = String(e && e.message ? e.message : e);
         els.meta.append(dt, dd);
       }
       return;
@@ -67,8 +67,8 @@ Client IP: ${ip || ""}`;
       updateDetailActions(st.state);
 
       if (data.offsets) {
-        offsets.stdout = data.offsets.stdout_next || offsets.stdout;
-        offsets.stderr = data.offsets.stderr_next || offsets.stderr;
+        offsets.stdout = data.offsets.stdout_next ?? offsets.stdout;
+        offsets.stderr = data.offsets.stderr_next ?? offsets.stderr;
       }
 
       const tail = data.tail || {};
@@ -93,7 +93,7 @@ Client IP: ${ip || ""}`;
       const dt = document.createElement("dt");
       dt.textContent = "Error";
       const dd = document.createElement("dd");
-      dd.textContent = e.message;
+      dd.textContent = String(e && e.message ? e.message : e);
       els.meta.append(dt, dd);
     }
   }
@@ -163,7 +163,7 @@ Client IP: ${ip || ""}`;
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (e) {
       setStatus("err", "Disconnected");
-      toast("err", "Request failed", e.message);
+      toast("err", "Request failed", String(e && e.message ? e.message : e));
     }
     finally {
       refreshing = false;

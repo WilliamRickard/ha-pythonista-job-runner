@@ -40,15 +40,32 @@
       return;
     }
     const kind = (currentTab === "stderr") ? "stderr" : "stdout";
-    const txt = buffers[kind] || "";
+    const visibleTxt = (els.logview && typeof els.logview.textContent === "string") ? els.logview.textContent : "";
     const re = /(Traceback|ERROR|Exception|FATAL|WARN(ING)?)/gi;
-    const start = (matches && matchIdx >= 0 && matchIdx < matches.length) ? matches[matchIdx] : 0;
+
+    // Prefer searching the rendered log text (what computeMatches() uses) so indices align.
+    const start = (visibleTxt && matches && matchIdx >= 0 && matchIdx < matches.length) ? matches[matchIdx] : 0;
     re.lastIndex = start + 1;
-    const m = re.exec(txt) || re.exec(txt);
+    let m = visibleTxt ? (re.exec(visibleTxt) || re.exec(visibleTxt)) : null;
+
+    // Fallback: if nothing is rendered (or no match), search the raw buffer.
     if (!m) {
-      toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
+      const rawTxt = buffers[kind] || "";
+      re.lastIndex = 0;
+      m = re.exec(rawTxt);
+      if (!m) {
+        toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
+        return;
+      }
+      // We cannot reliably translate raw indices to rendered indices, so jump to the first visible match.
+      logSearch = m[0];
+      els.logsearch.value = logSearch;
+      computeMatches();
+      matchIdx = 0;
+      scrollToMatch();
       return;
     }
+
     // Use search machinery to scroll approximately.
     logSearch = m[0];
     els.logsearch.value = logSearch;
@@ -247,7 +264,7 @@ function applyFilters() {
     if (els.jobs_loading) els.jobs_loading.hidden = false;
     try {
       const data = await api("jobs.json");
-      jobsCache = (data && data.jobs) ? data.jobs : [];
+      jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
       if (els.jobs_loading) els.jobs_loading.hidden = true;
@@ -270,10 +287,10 @@ function applyFilters() {
     const s = String(v || "").trim();
     if (!s) return "";
     const parts = s.split(/\s+/, 2);
-    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/")) {
+    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/") && !parts[1].startsWith("//")) {
       return parts[1];
     }
-    if (s.startsWith("/")) return s;
+    if (s.startsWith("/") && !s.startsWith("//")) return s;
     return "";
   }
 

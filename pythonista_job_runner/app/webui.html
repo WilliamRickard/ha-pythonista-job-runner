@@ -1370,15 +1370,32 @@ function parseUtcSeconds(v) {
       return;
     }
     const kind = (currentTab === "stderr") ? "stderr" : "stdout";
-    const txt = buffers[kind] || "";
+    const visibleTxt = (els.logview && typeof els.logview.textContent === "string") ? els.logview.textContent : "";
     const re = /(Traceback|ERROR|Exception|FATAL|WARN(ING)?)/gi;
-    const start = (matches && matchIdx >= 0 && matchIdx < matches.length) ? matches[matchIdx] : 0;
+
+    // Prefer searching the rendered log text (what computeMatches() uses) so indices align.
+    const start = (visibleTxt && matches && matchIdx >= 0 && matchIdx < matches.length) ? matches[matchIdx] : 0;
     re.lastIndex = start + 1;
-    const m = re.exec(txt) || re.exec(txt);
+    let m = visibleTxt ? (re.exec(visibleTxt) || re.exec(visibleTxt)) : null;
+
+    // Fallback: if nothing is rendered (or no match), search the raw buffer.
     if (!m) {
-      toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
+      const rawTxt = buffers[kind] || "";
+      re.lastIndex = 0;
+      m = re.exec(rawTxt) || re.exec(rawTxt);
+      if (!m) {
+        toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
+        return;
+      }
+      // We cannot reliably translate raw indices to rendered indices, so jump to the first visible match.
+      logSearch = m[0];
+      els.logsearch.value = logSearch;
+      computeMatches();
+      matchIdx = 0;
+      scrollToMatch();
       return;
     }
+
     // Use search machinery to scroll approximately.
     logSearch = m[0];
     els.logsearch.value = logSearch;
@@ -1458,8 +1475,12 @@ function applyFilters() {
       btnCopy.addEventListener("click", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        await copyTextToClipboard(jobId);
-        toast("ok", "Copied", "Job id copied");
+        try {
+          await copyTextToClipboard(jobId);
+          toast("ok", "Copied", "Job id copied");
+        } catch (err) {
+          toast("err", "Copy failed", String(err && err.message ? err.message : err));
+        }
       });
 
       line.append(btnJob, btnCopy);
@@ -1573,7 +1594,7 @@ function applyFilters() {
     if (els.jobs_loading) els.jobs_loading.hidden = false;
     try {
       const data = await api("jobs.json");
-      jobsCache = (data && data.jobs) ? data.jobs : [];
+      jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
       if (els.jobs_loading) els.jobs_loading.hidden = true;
@@ -1596,10 +1617,10 @@ function applyFilters() {
     const s = String(v || "").trim();
     if (!s) return "";
     const parts = s.split(/\s+/, 2);
-    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/")) {
+    if (parts.length === 2 && /^[A-Z]+$/.test(parts[0]) && parts[1].startsWith("/") && !parts[1].startsWith("//")) {
       return parts[1];
     }
-    if (s.startsWith("/")) return s;
+    if (s.startsWith("/") && !s.startsWith("//")) return s;
     return "";
   }
 
@@ -1684,7 +1705,8 @@ function applyFilters() {
       els.about_sub.textContent = "Help";
       els.about_api.textContent = "";
       els.about_curl.value = "";
-      toast("err", "Could not load info", e.message);
+      const msg = String(e && e.message ? e.message : e);
+      toast("err", "Could not load info", msg);
     }
   }
 
@@ -1927,7 +1949,7 @@ Client IP: ${ip || ""}`;
 
       els.curl_snippet.value = curl;
     } catch (e) {
-      els.overview_text.textContent = `overview error: ${e.message}`;
+      els.overview_text.textContent = `overview error: ${String(e && e.message ? e.message : e)}`;
     }
   }
 
@@ -1947,7 +1969,7 @@ Client IP: ${ip || ""}`;
         const dt = document.createElement("dt");
         dt.textContent = "Error";
         const dd = document.createElement("dd");
-        dd.textContent = e.message;
+        dd.textContent = String(e && e.message ? e.message : e);
         els.meta.append(dt, dd);
       }
       return;
@@ -1963,8 +1985,8 @@ Client IP: ${ip || ""}`;
       updateDetailActions(st.state);
 
       if (data.offsets) {
-        offsets.stdout = data.offsets.stdout_next || offsets.stdout;
-        offsets.stderr = data.offsets.stderr_next || offsets.stderr;
+        offsets.stdout = data.offsets.stdout_next ?? offsets.stdout;
+        offsets.stderr = data.offsets.stderr_next ?? offsets.stderr;
       }
 
       const tail = data.tail || {};
@@ -1989,7 +2011,7 @@ Client IP: ${ip || ""}`;
       const dt = document.createElement("dt");
       dt.textContent = "Error";
       const dd = document.createElement("dd");
-      dd.textContent = e.message;
+      dd.textContent = String(e && e.message ? e.message : e);
       els.meta.append(dt, dd);
     }
   }
@@ -2059,7 +2081,7 @@ Client IP: ${ip || ""}`;
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (e) {
       setStatus("err", "Disconnected");
-      toast("err", "Request failed", e.message);
+      toast("err", "Request failed", String(e && e.message ? e.message : e));
     }
     finally {
       refreshing = false;
@@ -2087,38 +2109,46 @@ Client IP: ${ip || ""}`;
       if (!btn) return;
 
       const action = btn.getAttribute("data-action");
-      if (action === "refresh") await refreshAll();
-      if (action === "open-advanced") openAdvanced();
-      if (action === "close-advanced") closeAdvanced();
-      if (action === "back-to-jobs") setPane("jobs");
-      if (action === "clear-filters") clearFilters();
-      if (action === "reset-ui") resetUi();
-      if (action === "jump-error") jumpToNextError();
-      if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
-      if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
-      if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
-      if (action === "find-next") findNext();
-      if (action === "find-prev") findPrev();
-      if (action === "clear-search") clearSearch();
-      if (action === "copy-curl") await copyCurl();
-      if (action === "open-about") await openAbout();
-      if (action === "close-about") closeAbout();
-      if (action === "copy-base") await copyBase();
-      if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
-      if (action === "copy-endpoint") await copyEndpoint(btn);
-      if (action === "download-zip") downloadZip();
-      if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
-      if (action === "cancel") await cancelJob();
-      if (action === "delete") await deleteJob();
+      try {
+        if (action === "refresh") await refreshAll();
+        if (action === "open-advanced") openAdvanced();
+        if (action === "close-advanced") closeAdvanced();
+        if (action === "back-to-jobs") setPane("jobs");
+        if (action === "clear-filters") clearFilters();
+        if (action === "reset-ui") resetUi();
+        if (action === "jump-error") jumpToNextError();
+        if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
+        if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
+        if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
+        if (action === "find-next") findNext();
+        if (action === "find-prev") findPrev();
+        if (action === "clear-search") clearSearch();
+        if (action === "copy-curl") await copyCurl();
+        if (action === "open-about") await openAbout();
+        if (action === "close-about") closeAbout();
+        if (action === "copy-base") await copyBase();
+        if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
+        if (action === "copy-endpoint") await copyEndpoint(btn);
+        if (action === "download-zip") downloadZip();
+        if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
+        if (action === "cancel") await cancelJob();
+        if (action === "delete") await deleteJob();
+      } catch (e) {
+        toast("err", "Action failed", e && e.message ? e.message : String(e));
+      }
     });
 
-    els.about_overlay.addEventListener("click", (ev) => {
-      if (ev.target === els.about_overlay) closeAbout();
-    });
+    if (els.about_overlay) {
+      els.about_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.about_overlay) closeAbout();
+      });
+    }
 
-    els.adv_overlay.addEventListener("click", (ev) => {
-      if (ev.target === els.adv_overlay) closeAdvanced();
-    });
+    if (els.adv_overlay) {
+      els.adv_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.adv_overlay) closeAdvanced();
+      });
+    }
 
 
     if (els.about_close) {
@@ -2276,6 +2306,8 @@ Client IP: ${ip || ""}`;
     els.btn_back = document.getElementById("btn_back");
     els.btn_cancel = document.getElementById("btn_cancel");
     els.btn_delete = document.getElementById("btn_delete");
+    els.logtools = document.getElementById("logtools");
+    els.findbar = document.getElementById("findbar");
   }
 
   async function init() {
