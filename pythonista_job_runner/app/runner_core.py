@@ -271,7 +271,7 @@ class Runner:
                 return default
             try:
                 iv = int(v)
-            except Exception:
+            except (ValueError, TypeError):
                 return default
             if iv < lo:
                 return lo
