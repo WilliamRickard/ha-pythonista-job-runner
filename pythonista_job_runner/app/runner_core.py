@@ -951,7 +951,7 @@ class Runner:
                     tmp.unlink()
                 except Exception:
                     pass
-        except Exception as e:
+        except OSError as e:
             # Best-effort: avoid crashing the runner if status persistence fails,
             # but emit a warning once per job to aid diagnosis.
             try:
