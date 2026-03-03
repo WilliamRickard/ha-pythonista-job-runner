@@ -92,10 +92,12 @@ buf = io.BytesIO()
 with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
     zf.writestr(
         "run.py",
-        "import os\n"
-        "print('Hello from Pythonista')\n"
-        "os.makedirs('outputs', exist_ok=True)\n"
-        "open('outputs/hello.txt', 'w', encoding='utf-8').write('It worked.\\n')\n",
+        """import os
+print('Hello from Pythonista')
+os.makedirs('outputs', exist_ok=True)
+with open('outputs/hello.txt', 'w', encoding='utf-8') as f:
+    f.write('It worked.\n')
+        """,
     )
 
 payload = buf.getvalue()
