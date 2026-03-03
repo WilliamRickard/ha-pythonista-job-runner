@@ -362,13 +362,19 @@ function applyFilters() {
     renderInfo(infoCache);
   }
 
+  let _aboutReturnFocus = null;
+  let _advReturnFocus = null;
+
   async function openAbout() {
+    _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
     els.about_overlay.hidden = false;
     els.about_overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
     document.body.style.height = "100%";
+    if (els.about_close) els.about_close.focus();
+    else if (els.about_modal) els.about_modal.focus();
     try {
       await loadInfo();
     } catch (e) {
@@ -382,12 +388,15 @@ function applyFilters() {
 
   
   function openAdvanced() {
+    _advReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
     els.adv_overlay.hidden = false;
     els.adv_overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
     document.body.style.height = "100%";
+    if (els.adv_close) els.adv_close.focus();
+    else if (els.adv_modal) els.adv_modal.focus();
 
     if (els.auto) els.auto.checked = auto;
     if (els.pollms) els.pollms.value = String(pollMs);
@@ -400,6 +409,10 @@ function applyFilters() {
     document.documentElement.style.overflow = "";
     document.documentElement.style.height = "";
     document.body.style.height = "";
+    if (_advReturnFocus && (document.contains(_advReturnFocus))) {
+      try { _advReturnFocus.focus(); } catch (e) {}
+    }
+    _advReturnFocus = null;
   }
 
 function closeAbout() {
@@ -409,6 +422,10 @@ function closeAbout() {
     document.documentElement.style.overflow = "";
     document.documentElement.style.height = "";
     document.body.style.height = "";
+    if (_aboutReturnFocus && (document.contains(_aboutReturnFocus))) {
+      try { _aboutReturnFocus.focus(); } catch (e) {}
+    }
+    _aboutReturnFocus = null;
   }
 
   function applyLogStyle() {

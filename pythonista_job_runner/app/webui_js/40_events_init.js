@@ -77,9 +77,15 @@
     }
 
     document.addEventListener("keydown", (ev) => {
-      if (ev.key !== "Escape") return;
-      if (!els.about_overlay.hidden) closeAbout();
-      if (!els.adv_overlay.hidden) closeAdvanced();
+      if (ev.key === "Escape") {
+        if (!els.about_overlay.hidden) closeAbout();
+        if (!els.adv_overlay.hidden) closeAdvanced();
+        return;
+      }
+      if (ev.key === "Tab") {
+        if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
+        if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
+      }
     });
 
     els.pollms.addEventListener("change", () => {
@@ -199,12 +205,14 @@
     els.toast_action = document.getElementById("toast_action");
 
     els.about_overlay = document.getElementById("about_overlay");
+    els.about_modal = document.getElementById("about_modal");
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
     els.about_curl = document.getElementById("about_curl");
 
     els.adv_overlay = document.getElementById("adv_overlay");
+    els.adv_modal = document.getElementById("adv_modal");
     els.adv_close = document.getElementById("adv_close");
     els.auto = document.getElementById("auto");
     els.btn_back = document.getElementById("btn_back");

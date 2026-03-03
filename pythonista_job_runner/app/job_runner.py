@@ -3,7 +3,7 @@ from __future__ import annotations
 """
 Entry point for the Pythonista Job Runner Home Assistant add-on.
 
-Version: 0.6.11
+Version: 0.6.12
 
 See pythonista_job_runner/CHANGELOG.md for release notes.
 """
