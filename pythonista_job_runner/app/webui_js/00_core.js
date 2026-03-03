@@ -255,11 +255,31 @@ function parseUtcSeconds(v) {
     if (tStderr) tStderr.classList.toggle("active", next === "stderr");
     if (tOverview) tOverview.classList.toggle("active", next === "overview");
 
+    // Accessibility: keep ARIA tab state in sync with the active tab.
+    const tabs = [
+      { el: tStdout, selected: next === "stdout" },
+      { el: tStderr, selected: next === "stderr" },
+      { el: tOverview, selected: next === "overview" },
+    ];
+    for (const t of tabs) {
+      if (!t.el) continue;
+      t.el.setAttribute("aria-selected", t.selected ? "true" : "false");
+      t.el.tabIndex = t.selected ? 0 : -1;
+    }
+
     const showLogs = (next !== "overview");
     els.overview.hidden = showLogs;
     els.logpanel.style.display = showLogs ? "block" : "none";
     if (els.logtools) els.logtools.style.display = showLogs ? "flex" : "none";
     if (els.findbar) els.findbar.style.display = showLogs ? "flex" : "none";
+
+    // Keep tabpanel ARIA state aligned with what is shown.
+    if (els.overview) els.overview.setAttribute("aria-hidden", showLogs ? "true" : "false");
+    if (els.logpanel) {
+      els.logpanel.setAttribute("aria-hidden", showLogs ? "false" : "true");
+      const activeTabId = (next === "stderr") ? "tab_stderr" : (next === "overview" ? "tab_overview" : "tab_stdout");
+      els.logpanel.setAttribute("aria-labelledby", activeTabId);
+    }
 
     if (next === "overview") {
       resetSearch();
@@ -304,3 +324,53 @@ function parseUtcSeconds(v) {
     toast("ok", "Reset", "UI settings cleared");
     window.setTimeout(() => window.location.reload(), 500);
   }
+
+  function _isVisible(el) {
+    if (!(el instanceof HTMLElement)) return false;
+    const rects = el.getClientRects();
+    return !!(rects && rects.length);
+  }
+
+  function _focusablesWithin(root) {
+    if (!root) return [];
+    const sel = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(",");
+    const nodes = Array.from(root.querySelectorAll(sel));
+    return nodes.filter((n) => (n instanceof HTMLElement) && _isVisible(n) && n.getAttribute("aria-hidden") !== "true");
+  }
+
+  function trapTabKey(ev, root) {
+    if (!root) return;
+    const focusables = _focusablesWithin(root);
+    if (!focusables.length) return;
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+
+    if (!(active instanceof HTMLElement) || !root.contains(active)) {
+      (ev.shiftKey ? last : first).focus();
+      ev.preventDefault();
+      return;
+    }
+
+    if (ev.shiftKey) {
+      if (active === first) {
+        last.focus();
+        ev.preventDefault();
+      }
+      return;
+    }
+
+    if (active === last) {
+      first.focus();
+      ev.preventDefault();
+    }
+  }
+

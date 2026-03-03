@@ -26,6 +26,9 @@
   --radius: 14px;
   --shadow: 0 6px 24px rgba(0,0,0,0.20);
 
+  --tableHeaderBg: rgba(20,24,36,0.92);
+  --toastBg: rgba(20,24,36,0.96);
+
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Typography */
@@ -50,6 +53,8 @@
     --chip2: rgba(29,78,216,0.12);
 
     --shadow: 0 10px 30px rgba(17,24,39,0.10);
+    --tableHeaderBg: rgba(255,255,255,0.92);
+    --toastBg: rgba(255,255,255,0.96);
   }
 
   body{
@@ -330,13 +335,13 @@ th{
   font-weight: 700;
   position: sticky;
   top: 0;
-  background: rgba(20,24,36,0.92);
+  background: var(--tableHeaderBg);
   backdrop-filter: blur(8px);
 }
 
 @media (prefers-color-scheme: light){
   th{
-    background: rgba(255,255,255,0.92);
+    background: var(--tableHeaderBg);
   }
 }
 
@@ -534,7 +539,7 @@ pre.nowrap{ white-space: pre; }
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: rgba(20,24,36,0.96);
+  background: var(--toastBg);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
   display:none;
@@ -542,7 +547,7 @@ pre.nowrap{ white-space: pre; }
 
 @media (prefers-color-scheme: light){
   .toast{
-    background: rgba(255,255,255,0.96);
+    background: var(--toastBg);
   }
 }
 
@@ -637,9 +642,21 @@ summary{
   font-weight: 800;
   color: var(--text);
   list-style: none;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 summary::-webkit-details-marker{ display:none; }
+summary::after{
+  content: "▾";
+  color: var(--muted);
+  font-size: 14px;
+  transform: rotate(-90deg);
+  transition: transform 120ms ease;
+}
+details[open] summary::after{ transform: rotate(0deg); }
 
 .steps{
   margin: 10px 0 0 0;
@@ -709,7 +726,18 @@ summary::-webkit-details-marker{ display:none; }
 
   /* Compact mobile list: keep table rows and hide secondary columns */
   table{ min-width: 0 !important; }
-  thead{ display:none; }
+  /* Visually hide the table header on mobile while keeping it available to assistive technology */
+  #jobtable thead{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
 
   #jobtable th:nth-child(3), #jobtable td:nth-child(3),
   #jobtable th:nth-child(4), #jobtable td:nth-child(4),
@@ -878,7 +906,7 @@ summary::-webkit-details-marker{ display:none; }
               <dl class="kvgrid" id="meta"></dl>
             </div>
 
-            <div id="overview" hidden style="margin-top:14px;">
+            <div id="overview" hidden style="margin-top:14px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="true">
               <div class="hint" id="overview_text"></div>
               <details class="moreopts" style="margin-top:10px;">
                 <summary>API examples</summary>
@@ -886,10 +914,10 @@ summary::-webkit-details-marker{ display:none; }
               </details>
             </div>
 
-            <div class="tabs" style="margin-top:14px;" aria-label="Output tabs">
-              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout">stdout</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr">stderr</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview">overview</button>
+            <div class="tabs" style="margin-top:14px;" role="tablist" aria-label="Output tabs">
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="true" aria-controls="logpanel" tabindex="0">stdout</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">overview</button>
             </div>
 
             <div class="logtools" id="logtools" style="margin-top:10px;">
@@ -916,7 +944,7 @@ summary::-webkit-details-marker{ display:none; }
               <span class="count" id="matchcount"></span>
             </div>
 
-            <div id="logpanel">
+            <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
               <pre id="logview"></pre>
             </div>
           </section>
@@ -927,11 +955,11 @@ summary::-webkit-details-marker{ display:none; }
 
   
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Advanced settings">
+    <div class="modal" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
-          <div class="modal-title">Advanced</div>
-          <div class="modal-sub">Refresh, polling, and maintenance</div>
+          <div class="modal-title" id="adv_title">Advanced</div>
+          <div class="modal-sub" id="adv_sub">Refresh, polling, and maintenance</div>
         </div>
         <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
@@ -964,10 +992,10 @@ summary::-webkit-details-marker{ display:none; }
   </div>
 
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Help and API information">
+    <div class="modal" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
       <div class="modal-header">
         <div>
-          <div class="modal-title">Help</div>
+          <div class="modal-title" id="about_title">Help</div>
           <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
         </div>
         <button type="button" id="about_close" class="small" data-action="close-about" aria-label="Close help">Close</button>
@@ -1279,11 +1307,31 @@ function parseUtcSeconds(v) {
     if (tStderr) tStderr.classList.toggle("active", next === "stderr");
     if (tOverview) tOverview.classList.toggle("active", next === "overview");
 
+    // Accessibility: keep ARIA tab state in sync with the active tab.
+    const tabs = [
+      { el: tStdout, selected: next === "stdout" },
+      { el: tStderr, selected: next === "stderr" },
+      { el: tOverview, selected: next === "overview" },
+    ];
+    for (const t of tabs) {
+      if (!t.el) continue;
+      t.el.setAttribute("aria-selected", t.selected ? "true" : "false");
+      t.el.tabIndex = t.selected ? 0 : -1;
+    }
+
     const showLogs = (next !== "overview");
     els.overview.hidden = showLogs;
     els.logpanel.style.display = showLogs ? "block" : "none";
     if (els.logtools) els.logtools.style.display = showLogs ? "flex" : "none";
     if (els.findbar) els.findbar.style.display = showLogs ? "flex" : "none";
+
+    // Keep tabpanel ARIA state aligned with what is shown.
+    if (els.overview) els.overview.setAttribute("aria-hidden", showLogs ? "true" : "false");
+    if (els.logpanel) {
+      els.logpanel.setAttribute("aria-hidden", showLogs ? "false" : "true");
+      const activeTabId = (next === "stderr") ? "tab_stderr" : (next === "overview" ? "tab_overview" : "tab_stdout");
+      els.logpanel.setAttribute("aria-labelledby", activeTabId);
+    }
 
     if (next === "overview") {
       resetSearch();
@@ -1327,6 +1375,55 @@ function parseUtcSeconds(v) {
     for (const k of keys) localStorage.removeItem(k);
     toast("ok", "Reset", "UI settings cleared");
     window.setTimeout(() => window.location.reload(), 500);
+  }
+
+  function _isVisible(el) {
+    if (!(el instanceof HTMLElement)) return false;
+    const rects = el.getClientRects();
+    return !!(rects && rects.length);
+  }
+
+  function _focusablesWithin(root) {
+    if (!root) return [];
+    const sel = [
+      "a[href]",
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(",");
+    const nodes = Array.from(root.querySelectorAll(sel));
+    return nodes.filter((n) => (n instanceof HTMLElement) && _isVisible(n) && n.getAttribute("aria-hidden") !== "true");
+  }
+
+  function trapTabKey(ev, root) {
+    if (!root) return;
+    const focusables = _focusablesWithin(root);
+    if (!focusables.length) return;
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+
+    if (!(active instanceof HTMLElement) || !root.contains(active)) {
+      (ev.shiftKey ? last : first).focus();
+      ev.preventDefault();
+      return;
+    }
+
+    if (ev.shiftKey) {
+      if (active === first) {
+        last.focus();
+        ev.preventDefault();
+      }
+      return;
+    }
+
+    if (active === last) {
+      first.focus();
+      ev.preventDefault();
+    }
   }
   function escapeHtml(s) {
     return String(s)
@@ -1692,13 +1789,19 @@ function applyFilters() {
     renderInfo(infoCache);
   }
 
+  let _aboutReturnFocus = null;
+  let _advReturnFocus = null;
+
   async function openAbout() {
+    _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
     els.about_overlay.hidden = false;
     els.about_overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
     document.body.style.height = "100%";
+    if (els.about_close) els.about_close.focus();
+    else if (els.about_modal) els.about_modal.focus();
     try {
       await loadInfo();
     } catch (e) {
@@ -1712,12 +1815,15 @@ function applyFilters() {
 
   
   function openAdvanced() {
+    _advReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
     els.adv_overlay.hidden = false;
     els.adv_overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     document.documentElement.style.height = "100%";
     document.body.style.height = "100%";
+    if (els.adv_close) els.adv_close.focus();
+    else if (els.adv_modal) els.adv_modal.focus();
 
     if (els.auto) els.auto.checked = auto;
     if (els.pollms) els.pollms.value = String(pollMs);
@@ -1730,6 +1836,10 @@ function applyFilters() {
     document.documentElement.style.overflow = "";
     document.documentElement.style.height = "";
     document.body.style.height = "";
+    if (_advReturnFocus && (document.contains(_advReturnFocus))) {
+      try { _advReturnFocus.focus(); } catch (e) {}
+    }
+    _advReturnFocus = null;
   }
 
 function closeAbout() {
@@ -1739,6 +1849,10 @@ function closeAbout() {
     document.documentElement.style.overflow = "";
     document.documentElement.style.height = "";
     document.body.style.height = "";
+    if (_aboutReturnFocus && (document.contains(_aboutReturnFocus))) {
+      try { _aboutReturnFocus.focus(); } catch (e) {}
+    }
+    _aboutReturnFocus = null;
   }
 
   function applyLogStyle() {
@@ -2173,9 +2287,15 @@ Client IP: ${ip || ""}`;
     }
 
     document.addEventListener("keydown", (ev) => {
-      if (ev.key !== "Escape") return;
-      if (!els.about_overlay.hidden) closeAbout();
-      if (!els.adv_overlay.hidden) closeAdvanced();
+      if (ev.key === "Escape") {
+        if (!els.about_overlay.hidden) closeAbout();
+        if (!els.adv_overlay.hidden) closeAdvanced();
+        return;
+      }
+      if (ev.key === "Tab") {
+        if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
+        if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
+      }
     });
 
     els.pollms.addEventListener("change", () => {
@@ -2295,12 +2415,14 @@ Client IP: ${ip || ""}`;
     els.toast_action = document.getElementById("toast_action");
 
     els.about_overlay = document.getElementById("about_overlay");
+    els.about_modal = document.getElementById("about_modal");
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
     els.about_curl = document.getElementById("about_curl");
 
     els.adv_overlay = document.getElementById("adv_overlay");
+    els.adv_modal = document.getElementById("adv_modal");
     els.adv_close = document.getElementById("adv_close");
     els.auto = document.getElementById("auto");
     els.btn_back = document.getElementById("btn_back");

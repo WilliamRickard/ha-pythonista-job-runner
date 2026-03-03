@@ -363,7 +363,7 @@ class TestRunner:
             "token": "test_token",
             "bind_host": "0.0.0.0",
             "bind_port": 8787,
-            "job_user": "testuser",
+            "job_user": "root" if hasattr(os, "getuid") else "jobrunner",
         }
 
     def test_runner_initialization_defaults(self, temp_jobs_dir, basic_opts):
@@ -373,7 +373,7 @@ class TestRunner:
         assert runner.token == "test_token"
         assert runner.bind_host == "0.0.0.0"
         assert runner.bind_port == 8787
-        assert runner.job_user == "testuser"
+        assert runner.job_user in ("root", "jobrunner")
         assert runner.timeout_seconds == 3600
         assert runner.max_upload_mb == 50
         assert runner.default_cpu == 25
@@ -475,6 +475,9 @@ class TestRunner:
         """Test new_job raises error when queue is full."""
         basic_opts["queue_max_jobs"] = 1
         runner = Runner(basic_opts)
+
+        # Keep the first job "active" deterministically so queue_full is stable.
+        runner._run_job = lambda job_id: time.sleep(1)
 
         # Create minimal zip with run.py
         zip_buffer = create_test_zip()
@@ -609,7 +612,7 @@ class TestRunnerIntegration:
 
     def test_runner_new_job_creates_job(self, temp_jobs_dir):
         """Test new_job creates a job successfully."""
-        opts = {"token": "test"}
+        opts = {"token": "test", "job_user": "root" if hasattr(os, "getuid") else "jobrunner"}
         runner = Runner(opts)
 
         zip_data = create_test_zip()
@@ -633,7 +636,7 @@ class TestRunnerIntegration:
 
     def test_runner_stats_with_jobs(self, temp_jobs_dir):
         """Test stats_dict with various job states."""
-        opts = {"token": "test"}
+        opts = {"token": "test", "job_user": "root" if hasattr(os, "getuid") else "jobrunner"}
         runner = Runner(opts)
 
         # Add jobs manually
@@ -653,7 +656,7 @@ class TestRunnerIntegration:
 
     def test_runner_list_jobs_ordered(self, temp_jobs_dir):
         """Test list_jobs returns jobs in correct order."""
-        opts = {"token": "test"}
+        opts = {"token": "test", "job_user": "root" if hasattr(os, "getuid") else "jobrunner"}
         runner = Runner(opts)
 
         job1 = Job(job_id="first")

@@ -18,6 +18,9 @@
   --radius: 14px;
   --shadow: 0 6px 24px rgba(0,0,0,0.20);
 
+  --tableHeaderBg: rgba(20,24,36,0.92);
+  --toastBg: rgba(20,24,36,0.96);
+
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Typography */
@@ -42,6 +45,8 @@
     --chip2: rgba(29,78,216,0.12);
 
     --shadow: 0 10px 30px rgba(17,24,39,0.10);
+    --tableHeaderBg: rgba(255,255,255,0.92);
+    --toastBg: rgba(255,255,255,0.96);
   }
 
   body{
@@ -322,13 +327,13 @@ th{
   font-weight: 700;
   position: sticky;
   top: 0;
-  background: rgba(20,24,36,0.92);
+  background: var(--tableHeaderBg);
   backdrop-filter: blur(8px);
 }
 
 @media (prefers-color-scheme: light){
   th{
-    background: rgba(255,255,255,0.92);
+    background: var(--tableHeaderBg);
   }
 }
 
@@ -526,7 +531,7 @@ pre.nowrap{ white-space: pre; }
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: rgba(20,24,36,0.96);
+  background: var(--toastBg);
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
   display:none;
@@ -534,7 +539,7 @@ pre.nowrap{ white-space: pre; }
 
 @media (prefers-color-scheme: light){
   .toast{
-    background: rgba(255,255,255,0.96);
+    background: var(--toastBg);
   }
 }
 
@@ -629,9 +634,21 @@ summary{
   font-weight: 800;
   color: var(--text);
   list-style: none;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 summary::-webkit-details-marker{ display:none; }
+summary::after{
+  content: "▾";
+  color: var(--muted);
+  font-size: 14px;
+  transform: rotate(-90deg);
+  transition: transform 120ms ease;
+}
+details[open] summary::after{ transform: rotate(0deg); }
 
 .steps{
   margin: 10px 0 0 0;
@@ -701,7 +718,18 @@ summary::-webkit-details-marker{ display:none; }
 
   /* Compact mobile list: keep table rows and hide secondary columns */
   table{ min-width: 0 !important; }
-  thead{ display:none; }
+  /* Visually hide the table header on mobile while keeping it available to assistive technology */
+  #jobtable thead{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
 
   #jobtable th:nth-child(3), #jobtable td:nth-child(3),
   #jobtable th:nth-child(4), #jobtable td:nth-child(4),

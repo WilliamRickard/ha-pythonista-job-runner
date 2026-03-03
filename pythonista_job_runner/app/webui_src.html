@@ -161,7 +161,7 @@
               <dl class="kvgrid" id="meta"></dl>
             </div>
 
-            <div id="overview" hidden style="margin-top:14px;">
+            <div id="overview" hidden style="margin-top:14px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="true">
               <div class="hint" id="overview_text"></div>
               <details class="moreopts" style="margin-top:10px;">
                 <summary>API examples</summary>
@@ -169,10 +169,10 @@
               </details>
             </div>
 
-            <div class="tabs" style="margin-top:14px;" aria-label="Output tabs">
-              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout">stdout</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr">stderr</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview">overview</button>
+            <div class="tabs" style="margin-top:14px;" role="tablist" aria-label="Output tabs">
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="true" aria-controls="logpanel" tabindex="0">stdout</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">overview</button>
             </div>
 
             <div class="logtools" id="logtools" style="margin-top:10px;">
@@ -199,7 +199,7 @@
               <span class="count" id="matchcount"></span>
             </div>
 
-            <div id="logpanel">
+            <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
               <pre id="logview"></pre>
             </div>
           </section>
@@ -210,11 +210,11 @@
 
   
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Advanced settings">
+    <div class="modal" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
-          <div class="modal-title">Advanced</div>
-          <div class="modal-sub">Refresh, polling, and maintenance</div>
+          <div class="modal-title" id="adv_title">Advanced</div>
+          <div class="modal-sub" id="adv_sub">Refresh, polling, and maintenance</div>
         </div>
         <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
@@ -247,10 +247,10 @@
   </div>
 
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Help and API information">
+    <div class="modal" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
       <div class="modal-header">
         <div>
-          <div class="modal-title">Help</div>
+          <div class="modal-title" id="about_title">Help</div>
           <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
         </div>
         <button type="button" id="about_close" class="small" data-action="close-about" aria-label="Close help">Close</button>
