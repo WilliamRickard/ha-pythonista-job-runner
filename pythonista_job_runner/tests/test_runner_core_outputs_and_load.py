@@ -68,7 +68,7 @@ def test_make_result_zip_respects_outputs_max_files(temp_data_dir):
     assert "outputs/c.txt" not in names
 
 
-def test_load_jobs_from_disk_uses_directory_name_as_job_id(temp_data_dir, tmp_path):
+def test_load_jobs_from_disk_uses_directory_name_as_job_id(temp_data_dir):
     # Create a job directory whose status.json claims a different job_id.
     job_dir = runner_core.JOBS_DIR / "dir_job"
     job_dir.mkdir(parents=True, exist_ok=True)
