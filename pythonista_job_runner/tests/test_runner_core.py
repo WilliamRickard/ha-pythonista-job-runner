@@ -477,7 +477,7 @@ class TestRunner:
         runner = Runner(basic_opts)
 
         # Keep the first job "active" deterministically so queue_full is stable.
-        runner._run_job = lambda job_id: None
+        runner._run_job = lambda _job_id: None
 
         # Create minimal zip with run.py
         zip_buffer = create_test_zip()
