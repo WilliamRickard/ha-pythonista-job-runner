@@ -52,7 +52,7 @@
     if (!m) {
       const rawTxt = buffers[kind] || "";
       re.lastIndex = 0;
-      m = re.exec(rawTxt) || re.exec(rawTxt);
+      m = re.exec(rawTxt);
       if (!m) {
         toast("ok", "No errors found", "No ERROR/WARN/Traceback lines found");
         return;
