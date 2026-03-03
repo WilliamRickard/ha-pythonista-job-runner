@@ -15,7 +15,7 @@ def _read_manifest(zpath: Path) -> dict:
     return json.loads(data)
 
 
-def test_make_result_zip_respects_outputs_max_files(temp_data_dir, tmp_path):
+def test_make_result_zip_respects_outputs_max_files(temp_data_dir):
     runner = runner_core.Runner(
         {
             "token": "t",
