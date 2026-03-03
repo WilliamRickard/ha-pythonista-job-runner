@@ -319,6 +319,33 @@ class Handler(BaseHTTPRequestHandler):
             if not j.stdout_path.exists():
                 self._json(404, {"error": "not_ready"})
                 return
+
+            q = parse_qs(urlparse(self.path).query)
+            from_off = self._parse_int((q.get("from") or [None])[0], -1)
+            max_bytes = self._parse_int((q.get("max_bytes") or [None])[0], 0)
+
+            if from_off >= 0 or max_bytes > 0:
+                if from_off < 0:
+                    from_off = 0
+                max_bytes_default = runner.tail_chars * 2
+                if max_bytes <= 0:
+                    max_bytes = max_bytes_default
+                if max_bytes > 1024 * 1024:
+                    max_bytes = 1024 * 1024
+                txt, next_off, size = read_file_delta(j.stdout_path, from_off, max_bytes)
+                data = txt.encode("utf-8", errors="replace")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("X-File-Size", str(size))
+                self.send_header("X-From-Offset", str(from_off))
+                self.send_header("X-Next-Offset", str(next_off))
+                self.end_headers()
+                self._write_bytes(data)
+                return
+
             size = j.stdout_path.stat().st_size
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -344,6 +371,33 @@ class Handler(BaseHTTPRequestHandler):
             if not j.stderr_path.exists():
                 self._json(404, {"error": "not_ready"})
                 return
+
+            q = parse_qs(urlparse(self.path).query)
+            from_off = self._parse_int((q.get("from") or [None])[0], -1)
+            max_bytes = self._parse_int((q.get("max_bytes") or [None])[0], 0)
+
+            if from_off >= 0 or max_bytes > 0:
+                if from_off < 0:
+                    from_off = 0
+                max_bytes_default = runner.tail_chars * 2
+                if max_bytes <= 0:
+                    max_bytes = max_bytes_default
+                if max_bytes > 1024 * 1024:
+                    max_bytes = 1024 * 1024
+                txt, next_off, size = read_file_delta(j.stderr_path, from_off, max_bytes)
+                data = txt.encode("utf-8", errors="replace")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("X-File-Size", str(size))
+                self.send_header("X-From-Offset", str(from_off))
+                self.send_header("X-Next-Offset", str(next_off))
+                self.end_headers()
+                self._write_bytes(data)
+                return
+
             size = j.stderr_path.stat().st_size
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")

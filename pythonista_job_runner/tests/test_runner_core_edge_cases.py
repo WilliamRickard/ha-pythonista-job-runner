@@ -46,4 +46,4 @@ def test_semaphore_allows_at_least_one_acquire(temp_data_dir):
 
 def test_negative_retention_hours_is_stored(temp_data_dir):
     runner = runner_core.Runner({"token": "t", "job_retention_hours": -10})
-    assert runner.retention_hours == -10
+    assert runner.retention_hours == 1

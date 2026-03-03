@@ -10,7 +10,9 @@
   function renderLog(kind) {
     if (kind === "overview") return;
     const txt = buffers[kind] || "";
-    if (!hilite) {
+
+    const needHtml = !!hilite || hasHighlightTerms();
+    if (!needHtml) {
       els.logview.textContent = txt;
       applyLogStyle();
       return;
@@ -18,20 +20,55 @@
 
     const MAX_RENDER = 200000;
     const truncated = (txt.length > MAX_RENDER);
+    const sliceStart = truncated ? (txt.length - MAX_RENDER) : 0;
     const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
-    const lines = slice.split("\n");
+
+    const lines = slice.split("
+");
     const out = [];
+
+    // New line window: mark recently appended lines for a short period.
+    const meta = (lastAppend && lastAppend[kind]) ? lastAppend[kind] : null;
+    const showNew = !!(meta && meta.at && (Date.now() - meta.at) < 2500);
+    const newFrom = showNew ? Math.max(0, (meta.from || 0) - sliceStart) : 1e12;
+
+    const terms = Array.isArray(highlightTerms) ? highlightTerms.slice(0) : [];
+    const termsUpper = terms.map((t) => String(t || "").toUpperCase()).filter(Boolean);
+
+    let pos = 0;
     for (const line of lines) {
+      const lineStart = pos;
+      pos += line.length + 1;
+
       const esc = escapeHtml(line);
       let cls = "logline";
+
       const u = line.toUpperCase();
-      if (u.includes("TRACEBACK") || u.includes("ERROR") || u.includes("EXCEPTION")) cls += " err";
-      else if (u.includes("WARN")) cls += " warn";
+
+      if (hilite) {
+        if (u.includes("TRACEBACK") || u.includes("ERROR") || u.includes("EXCEPTION")) cls += " err";
+        else if (u.includes("WARN")) cls += " warn";
+      }
+
+      if (termsUpper.length) {
+        for (const t of termsUpper) {
+          if (t && u.includes(t)) {
+            cls += " hit";
+            break;
+          }
+        }
+      }
+
+      if (showNew && lineStart >= newFrom) {
+        cls += " new";
+      }
+
       out.push(`<span class="${cls}">${esc}</span>`);
     }
-    els.logview.innerHTML = out.join("\n");
-    applyLogStyle();
 
+    els.logview.innerHTML = out.join("
+");
+    applyLogStyle();
   }
 
   function jumpToNextError() {

@@ -82,13 +82,13 @@ class TestJob:
     def test_job_duration_seconds_running(self):
         """Test duration_seconds for a running job."""
         job = Job(job_id="test123")
-        job.started_utc = utc_now()
-        time.sleep(0.1)  # Small delay to ensure duration > 0
+        from datetime import datetime, timezone
+        job.started_utc = datetime.fromtimestamp(time.time() - 2, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         duration = job.duration_seconds()
         assert duration is not None
         assert duration >= 0
-        assert duration < 2  # Should be less than 2 seconds
+        assert duration <= 5  # Allow for rounding to whole seconds
 
     def test_job_duration_seconds_finished(self):
         """Test duration_seconds for a finished job."""
@@ -477,16 +477,13 @@ class TestRunner:
         runner = Runner(basic_opts)
 
         # Keep the first job "active" deterministically so queue_full is stable.
-        runner._run_job = lambda job_id: time.sleep(1)
+        runner._run_job = lambda _job_id: None
 
         # Create minimal zip with run.py
         zip_buffer = create_test_zip()
 
         # Create first job to fill the queue
         job1 = runner.new_job(zip_buffer, {}, "127.0.0.1")
-
-        # Wait a moment for the job to be queued
-        time.sleep(0.1)
 
         # Second job should raise queue_full error
         with pytest.raises(RuntimeError, match="queue_full"):
@@ -784,5 +781,5 @@ class TestBoundaryConditions:
         }
         runner = Runner(opts)
 
-        # Should store the value (validation happens in purge)
-        assert runner.retention_hours == -10
+        # Negative values are clamped defensively
+        assert runner.retention_hours == 1

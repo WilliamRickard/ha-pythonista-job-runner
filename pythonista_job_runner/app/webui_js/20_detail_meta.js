@@ -7,9 +7,24 @@
 
   function appendBuffer(which, chunk) {
     if (!chunk) return;
-    buffers[which] = (buffers[which] || "") + chunk;
-    if (buffers[which].length > LOG_MAX_CHARS) {
-      buffers[which] = buffers[which].slice(-LOG_MAX_CHARS);
+
+    const before = buffers[which] || "";
+    const combined = before + chunk;
+
+    let dropped = 0;
+    let final = combined;
+    if (combined.length > LOG_MAX_CHARS) {
+      dropped = combined.length - LOG_MAX_CHARS;
+      final = combined.slice(-LOG_MAX_CHARS);
+    }
+
+    buffers[which] = final;
+
+    // Track where new content starts in the current buffer so renderLog() can mark new lines.
+    const from = Math.max(0, before.length - dropped);
+    if (lastAppend && lastAppend[which]) {
+      lastAppend[which].at = Date.now();
+      lastAppend[which].from = from;
     }
   }
 

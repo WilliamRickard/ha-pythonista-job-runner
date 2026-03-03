@@ -26,6 +26,12 @@
 
   let paused = false;
   let hilite = false;
+  let highlightTerms = [];
+  let autoPauseReason = "";
+
+  const lastAppend = { stdout: { at: 0, from: 0 }, stderr: { at: 0, from: 0 } };
+  let newFlashTimer = null;
+  let programmaticScrollAt = 0;
   let pane = "jobs"; // "jobs" or "detail" on narrow screens
   let refreshing = false;
   let toastActionHandler = null;
@@ -182,6 +188,147 @@ function parseUtcSeconds(v) {
     els.lastupdated.textContent = ts;
   }
 
+  function updateLiveUi() {
+    if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
+
+    const isLive = (follow && !paused);
+    els.btn_live.classList.toggle("active", isLive);
+    els.btn_live.setAttribute("aria-pressed", isLive ? "true" : "false");
+
+    const isPaused = !!paused;
+    els.btn_pause_resume.classList.toggle("active", isPaused);
+    els.btn_pause_resume.setAttribute("aria-pressed", isPaused ? "true" : "false");
+    els.btn_pause_resume.textContent = isPaused ? "Resume" : "Pause";
+
+    if (els.btn_jump_latest) {
+      els.btn_jump_latest.hidden = !isPaused;
+    }
+
+    els.livepill.classList.remove("ok", "warn", "err");
+    if (isPaused) {
+      els.livepill.classList.add("warn");
+      els.livestate.textContent = "Paused";
+    } else if (isLive) {
+      els.livepill.classList.add("ok");
+      els.livestate.textContent = "Live";
+    } else {
+      els.livestate.textContent = "Scroll";
+    }
+  }
+
+  function setFollow(next) {
+    follow = !!next;
+    if (els.follow) els.follow.checked = follow;
+    localStorage.setItem("pjr_follow", follow ? "1" : "0");
+    updateLiveUi();
+  }
+
+  function setPaused(next, reason) {
+    paused = !!next;
+    autoPauseReason = paused ? String(reason || "") : "";
+    if (els.pause) els.pause.checked = paused;
+    localStorage.setItem("pjr_pause", paused ? "1" : "0");
+    updateLiveUi();
+  }
+
+  function flashNewLines() {
+    if (!els.logpanel) return;
+    els.logpanel.classList.add("newflash");
+    if (newFlashTimer) window.clearTimeout(newFlashTimer);
+    newFlashTimer = window.setTimeout(() => {
+      if (els.logpanel) els.logpanel.classList.remove("newflash");
+    }, 950);
+  }
+
+  function _normTerm(t) {
+    const s = String(t || "").trim();
+    if (!s) return "";
+    if (s.length > 64) return s.slice(0, 64);
+    return s;
+  }
+
+  function _saveHighlightTerms() {
+    try {
+      localStorage.setItem("pjr_hterms", JSON.stringify(highlightTerms));
+    } catch (_e) {}
+  }
+
+  function _loadHighlightTerms() {
+    try {
+      const raw = localStorage.getItem("pjr_hterms");
+      if (!raw) return;
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        highlightTerms = arr.map(_normTerm).filter(Boolean);
+      }
+    } catch (_e) {}
+  }
+
+  function hasHighlightTerms() {
+    return Array.isArray(highlightTerms) && highlightTerms.length > 0;
+  }
+
+  function toggleHighlightTerm(term) {
+    const t = _normTerm(term);
+    if (!t) return;
+    const idx = highlightTerms.findIndex((x) => x.toLowerCase() === t.toLowerCase());
+    if (idx >= 0) highlightTerms.splice(idx, 1);
+    else highlightTerms.push(t);
+    _saveHighlightTerms();
+    updateHighlightUi();
+    renderLog(currentTab);
+  }
+
+  function clearHighlightTerms() {
+    highlightTerms = [];
+    _saveHighlightTerms();
+    updateHighlightUi();
+    renderLog(currentTab);
+  }
+
+  function addHighlightTermFromInput() {
+    if (!els.hterm_input) return;
+    const t = _normTerm(els.hterm_input.value);
+    if (!t) return;
+    els.hterm_input.value = "";
+    const exists = highlightTerms.some((x) => x.toLowerCase() === t.toLowerCase());
+    if (!exists) highlightTerms.push(t);
+    _saveHighlightTerms();
+    updateHighlightUi();
+    renderLog(currentTab);
+  }
+
+  function updateHighlightUi() {
+    const setPressed = (id, term) => {
+      const b = document.getElementById(id);
+      if (!b) return;
+      const on = highlightTerms.some((x) => x.toLowerCase() === String(term).toLowerCase());
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    };
+
+    setPressed("hterm_error", "ERROR");
+    setPressed("hterm_warn", "WARN");
+    setPressed("hterm_traceback", "Traceback");
+
+    if (!els.hterms_custom) return;
+    els.hterms_custom.textContent = "";
+
+    const builtins = ["ERROR", "WARN", "Traceback"];
+    const custom = highlightTerms.filter((t) => !builtins.some((b) => b.toLowerCase() === t.toLowerCase()));
+
+    for (const t of custom) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip small active";
+      btn.textContent = t;
+      btn.setAttribute("data-action", "toggle-hterm");
+      btn.setAttribute("data-term", t);
+      btn.setAttribute("aria-pressed", "true");
+      els.hterms_custom.appendChild(btn);
+    }
+  }
+
   async function copyTextToClipboard(text) {
     const t = String(text || "");
     if (!t) return;
@@ -271,6 +418,7 @@ function parseUtcSeconds(v) {
     els.overview.hidden = showLogs;
     els.logpanel.style.display = showLogs ? "block" : "none";
     if (els.logtools) els.logtools.style.display = showLogs ? "flex" : "none";
+    if (els.hilitebar) els.hilitebar.style.display = showLogs ? "flex" : "none";
     if (els.findbar) els.findbar.style.display = showLogs ? "flex" : "none";
 
     // Keep tabpanel ARIA state aligned with what is shown.
@@ -318,7 +466,7 @@ function parseUtcSeconds(v) {
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_pane"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane"
     ];
     for (const k of keys) localStorage.removeItem(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -374,3 +522,71 @@ function parseUtcSeconds(v) {
     }
   }
 
+
+
+  async function goLive() {
+    setPaused(false);
+    setFollow(true);
+    updateLiveUi();
+    if (currentJob) {
+      try {
+        await refreshMetaAndTail({ forceTail: true });
+      } catch (_e) {}
+    }
+    if (els.logview) {
+      programmaticScrollAt = Date.now();
+      els.logview.scrollTop = els.logview.scrollHeight;
+    }
+  }
+
+  async function togglePauseResume() {
+    if (paused) {
+      await goLive();
+      return;
+    }
+    // Pause means stop consuming new bytes and stop auto-follow.
+    setFollow(false);
+    setPaused(true, "manual");
+  }
+
+  async function jumpLatest() {
+    await goLive();
+  }
+
+  function clearCurrentLog() {
+    const kind = (currentTab === "stderr") ? "stderr" : (currentTab === "stdout" ? "stdout" : "");
+    if (!kind) return;
+
+    buffers[kind] = "";
+    lastAppend[kind].at = 0;
+    lastAppend[kind].from = 0;
+
+    // Keep offsets as-is so we continue from the current tail position.
+    els.logview.textContent = "";
+
+    logSearch = "";
+    if (els.logsearch) els.logsearch.value = "";
+    resetSearch();
+
+    renderLog(kind);
+  }
+
+  function isNearBottom(el) {
+    const gap = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    return gap <= 30;
+  }
+
+  function onLogScrollAutoPause() {
+    if (!els.logview) return;
+    if (paused) return;
+    if (!follow) return;
+    if (currentTab === "overview") return;
+
+    // Ignore programmatic scrolls.
+    if (Date.now() - programmaticScrollAt < 250) return;
+
+    if (!isNearBottom(els.logview)) {
+      setFollow(false);
+      setPaused(true, "scroll");
+    }
+  }

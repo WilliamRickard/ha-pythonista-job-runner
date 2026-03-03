@@ -150,6 +150,8 @@ class Job:
 
     cancel_requested: bool = False
 
+    delete_requested: bool = False
+
     job_dir: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset")
     work_dir: Path = dataclasses.field(default_factory=lambda: JOBS_DIR / "unset" / "work")
 
@@ -200,6 +202,7 @@ class Job:
             },
             "result_filename": self.result_zip.name,
             "input_sha256": self.input_sha256,
+            "delete_requested": self.delete_requested,
         }
 
 
@@ -261,13 +264,29 @@ class Runner:
             else:
                 print("WARNING: job_user not found; jobs will run as current user", flush=True)
 
-        self.timeout_seconds = int(opts.get("timeout_seconds") or 3600)
-        self.max_upload_mb = int(opts.get("max_upload_mb") or 50)
+        def _opt_int(name: str, default: int, lo: int, hi: int) -> int:
+            """Parse an integer option and clamp to [lo, hi]."""
+            v = opts.get(name)
+            if v is None:
+                return default
+            try:
+                iv = int(v)
+            except (ValueError, TypeError):
+                return default
+            if iv < lo:
+                return lo
+            if iv > hi:
+                return hi
+            return iv
+
+        self.timeout_seconds = _opt_int("timeout_seconds", 3600, 1, 86400)
+        self.max_upload_mb = _opt_int("max_upload_mb", 50, 1, 1024)
         self.install_requirements = bool(opts.get("install_requirements", False))
-        self.cleanup_min_free_mb = int(opts.get("cleanup_min_free_mb") or 0)
-        self.pip_timeout_seconds = int(opts.get("pip_timeout_seconds") or 120)
+        self.cleanup_min_free_mb = _opt_int("cleanup_min_free_mb", 0, 0, 262144)
+        self.pip_timeout_seconds = _opt_int("pip_timeout_seconds", 120, 10, 3600)
         self.pip_index_url = str(opts.get("pip_index_url") or "").strip()
         self.pip_extra_index_url = str(opts.get("pip_extra_index_url") or "").strip()
+
         trusted_hosts: List[str] = []
         for x in (opts.get("pip_trusted_hosts") or []):
             if not isinstance(x, str):
@@ -282,37 +301,46 @@ class Runner:
                 print(f"WARNING: Invalid pip_trusted_hosts entry skipped: {x!r}", flush=True)
         self.pip_trusted_hosts = trusted_hosts
 
+        self.default_cpu = _opt_int("default_cpu_percent", 25, 1, 100)
+        self.max_cpu = _opt_int("max_cpu_percent", 50, 1, 100)
+        if self.max_cpu < self.default_cpu:
+            self.max_cpu = self.default_cpu
 
-        self.default_cpu = int(opts.get("default_cpu_percent") or 25)
-        self.max_cpu = int(opts.get("max_cpu_percent") or 50)
-        self.default_mem = int(opts.get("default_mem_mb") or 4096)
-        self.max_mem = int(opts.get("max_mem_mb") or 4096)
-        self.max_threads = int(opts.get("max_threads") or 1)
+        self.default_mem = _opt_int("default_mem_mb", 4096, 256, 262144)
+        self.max_mem = _opt_int("max_mem_mb", 4096, 256, 262144)
+        if self.max_mem < self.default_mem:
+            self.max_mem = self.default_mem
+
+        self.max_threads = _opt_int("max_threads", 1, 1, 256)
 
         self.cpu_limit_mode = str(opts.get("cpu_limit_mode") or "single_core").strip() or "single_core"
 
-        self.max_concurrent_jobs = int(opts.get("max_concurrent_jobs") or 1)
-        self.queue_max_jobs = int(opts.get("queue_max_jobs") or 10)
+        self.max_concurrent_jobs = _opt_int("max_concurrent_jobs", 1, 1, 32)
+        self.queue_max_jobs = _opt_int("queue_max_jobs", 10, 1, 1000)
 
-        self.tail_chars = int(opts.get("tail_chars") or 8000)
-        self.retention_hours = int(opts.get("job_retention_hours") or 24)
+        self.tail_chars = _opt_int("tail_chars", 8000, 0, 1000000)
+        self.retention_hours = _opt_int("job_retention_hours", 24, 1, 720)
 
-        self.summary_head_chars = int(opts.get("summary_head_chars") or 4000)
-        self.summary_tail_chars = int(opts.get("summary_tail_chars") or 4000)
+        self.summary_head_chars = _opt_int("summary_head_chars", 4000, 0, 1000000)
+        self.summary_tail_chars = _opt_int("summary_tail_chars", 4000, 0, 1000000)
         self.manifest_sha256 = bool(opts.get("manifest_sha256", False))
+
+        self.outputs_max_files = _opt_int("outputs_max_files", 2000, 0, 1000000)
+        self.outputs_max_bytes = _opt_int("outputs_max_bytes", 209715200, 0, 2147483647)
 
         self.notify_on_completion = bool(opts.get("notify_on_completion", True))
         self.notification_mode = str(opts.get("notification_mode") or "latest").strip() or "latest"
         self.notification_id_prefix = str(opts.get("notification_id_prefix") or "pythonista_job_runner").strip() or "pythonista_job_runner"
-        self.notification_excerpt_chars = int(opts.get("notification_excerpt_chars") or 1200)
+        self.notification_excerpt_chars = _opt_int("notification_excerpt_chars", 1200, 0, 10000)
 
         self.safe_zip_limits = SafeZipLimits(
-            max_members=int(opts.get("zip_max_members") or 2000),
-            max_total_uncompressed=int(opts.get("zip_max_total_uncompressed") or (200 * 1024 * 1024)),
-            max_single_uncompressed=int(opts.get("zip_max_single_uncompressed") or (50 * 1024 * 1024)),
+            max_members=_opt_int("zip_max_members", 2000, 1, 100000),
+            max_total_uncompressed=_opt_int("zip_max_total_uncompressed", (200 * 1024 * 1024), 1, 2147483647),
+            max_single_uncompressed=_opt_int("zip_max_single_uncompressed", (50 * 1024 * 1024), 1, 2147483647),
         )
 
         self._pending_slots = 0  # reserved queue slots during new_job initialisation
+        self._status_write_warned: set[str] = set()
         self._lock = threading.Lock()
         self._jobs: Dict[str, Job] = {}
         self._job_order: List[str] = []
@@ -832,16 +860,36 @@ class Runner:
             if slot_reserved:
                 with self._lock:
                     self._pending_slots = max(0, int(self._pending_slots) - 1)
-    def delete(self, job_id: str) -> bool:
+    def _finalize_delete(self, job_id: str) -> None:
+        """Remove job state and delete its on-disk directory (best-effort)."""
         j = self.get(job_id)
         if not j:
-            return False
-        self.cancel(job_id)
-        shutil.rmtree(j.job_dir, ignore_errors=True)
+            return
+        try:
+            shutil.rmtree(j.job_dir, ignore_errors=True)
+        except Exception:
+            pass
         with self._lock:
             self._jobs.pop(job_id, None)
             self._job_order = [x for x in self._job_order if x != job_id]
             self._procs.pop(job_id, None)
+
+    def delete(self, job_id: str) -> bool:
+        """Delete a job.
+
+        If the job is still queued/running, mark it for deletion and cancel it.
+        The directory is removed once the job thread exits to avoid races with
+        ongoing log/result writes.
+        """
+        j = self.get(job_id)
+        if not j:
+            return False
+        if j.state in ("queued", "running"):
+            j.delete_requested = True
+            self.cancel(job_id)
+            self._write_status(j)
+            return True
+        self._finalize_delete(job_id)
         return True
 
     def cancel(self, job_id: str) -> bool:
@@ -903,8 +951,20 @@ class Runner:
                     tmp.unlink()
                 except Exception:
                     pass
-        except Exception:
-            pass
+        except OSError as e:
+            # Best-effort: avoid crashing the runner if status persistence fails,
+            # but emit a warning once per job to aid diagnosis.
+            try:
+                jid = getattr(j, "job_id", "unknown")
+                if jid not in self._status_write_warned:
+                    self._status_write_warned.add(jid)
+                    print(
+                        f"WARNING: failed to write status for {jid}: {type(e).__name__}: {e}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+            except Exception:
+                pass
 
     def _run_job(self, job_id: str) -> None:
         j = self.get(job_id)
@@ -1075,6 +1135,9 @@ class Runner:
             except Exception:
                 pass
 
+            if getattr(j, "delete_requested", False):
+                self._finalize_delete(j.job_id)
+
     def _notification_id(self, j: Job) -> Optional[str]:
         if not self.notify_on_completion:
             return None
@@ -1123,25 +1186,63 @@ class Runner:
     def _iter_outputs(self, j: Job) -> Iterable[Path]:
         out_dir = j.work_dir / "outputs"
         if not out_dir.exists() or not out_dir.is_dir() or out_dir.is_symlink():
-            return []
-        return [p for p in out_dir.rglob("*") if p.is_file() and not p.is_symlink()]
+            return
+        # Deterministic traversal to keep result zips stable across runs.
+        for root, dirs, files in os.walk(str(out_dir)):
+            dirs.sort()
+            files.sort()
+            for fn in files:
+                p = Path(root) / fn
+                try:
+                    if not p.is_file() or p.is_symlink():
+                        continue
+                except OSError:
+                    continue
+                yield p
 
     def _make_result_zip(self, j: Job) -> None:
         exit_code_text = (str(j.exit_code) if j.exit_code is not None else "").encode("utf-8")
         status_json = json.dumps(j.status_dict(), indent=2, sort_keys=True).encode("utf-8")
 
-        manifest: Dict[str, Any] = {"job_id": j.job_id, "runner_version": ADDON_VERSION, "generated_utc": utc_now(), "outputs": []}
+        manifest: Dict[str, Any] = {
+            "job_id": j.job_id,
+            "runner_version": ADDON_VERSION,
+            "generated_utc": utc_now(),
+            "outputs": [],
+            "outputs_truncated": False,
+            "outputs_limit_reason": None,
+            "outputs_max_files": int(self.outputs_max_files),
+            "outputs_max_bytes": int(self.outputs_max_bytes),
+        }
 
         total_bytes = 0
-        files = list(self._iter_outputs(j))
-        for p in files:
-            rel = p.relative_to(j.work_dir).as_posix()
-            size = int(p.stat().st_size)
+        files: List[Path] = []
+
+        max_files = int(self.outputs_max_files)
+        max_bytes = int(self.outputs_max_bytes)
+
+        for p_out in self._iter_outputs(j):
+            try:
+                size = int(p_out.stat().st_size)
+            except Exception:
+                continue
+
+            if max_files > 0 and len(files) >= max_files:
+                manifest["outputs_truncated"] = True
+                manifest["outputs_limit_reason"] = "max_files"
+                break
+            if max_bytes > 0 and (total_bytes + size) > max_bytes:
+                manifest["outputs_truncated"] = True
+                manifest["outputs_limit_reason"] = "max_bytes"
+                break
+
+            files.append(p_out)
+            rel = p_out.relative_to(j.work_dir).as_posix()
             total_bytes += size
             entry: Dict[str, Any] = {"path": rel, "size": size}
             if self.manifest_sha256:
                 try:
-                    entry["sha256"] = sha256_file(p)
+                    entry["sha256"] = sha256_file(p_out)
                 except Exception:
                     entry["sha256"] = None
             manifest["outputs"].append(entry)
@@ -1175,6 +1276,10 @@ class Runner:
         summary_lines.append("")
         summary_lines.append(f"outputs_total_files: {manifest.get('outputs_total_files')}")
         summary_lines.append(f"outputs_total_bytes: {manifest.get('outputs_total_bytes')}")
+        summary_lines.append(f"outputs_truncated: {manifest.get('outputs_truncated')}")
+        summary_lines.append(f"outputs_limit_reason: {manifest.get('outputs_limit_reason')}")
+        summary_lines.append(f"outputs_max_files: {manifest.get('outputs_max_files')}")
+        summary_lines.append(f"outputs_max_bytes: {manifest.get('outputs_max_bytes')}")
         summary_lines.append("")
         summary_lines.append("stdout_head:")
         summary_lines.append(out_parts["head"])
@@ -1232,11 +1337,9 @@ class Runner:
 
             out_dir = j.work_dir / "outputs"
             if out_dir.exists() and out_dir.is_dir() and not out_dir.is_symlink():
-                for p in out_dir.rglob("*"):
-                    if not (p.is_file() and not p.is_symlink()):
-                        continue
-                    rel = p.relative_to(j.work_dir).as_posix()
-                    _safe_zip_write(zf, p, rel, out_dir)
+                for p_out in files:
+                    rel = p_out.relative_to(j.work_dir).as_posix()
+                    _safe_zip_write(zf, p_out, rel, out_dir)
 
     def _reaper(self) -> None:
         while True:
@@ -1294,7 +1397,9 @@ class Runner:
             except Exception:
                 continue
 
-            job_id = str(data.get("job_id") or p.name)
+            status_job_id = str(data.get("job_id") or "")
+            job_id = str(p.name)
+            status_id_mismatch = bool(status_job_id and status_job_id != job_id)
             j = Job(job_id=job_id)
 
             j.created_utc = str(data.get("created_utc") or utc_now())
@@ -1305,14 +1410,23 @@ class Runner:
             j.exit_code = data.get("exit_code")
             j.error = data.get("error")
 
+            if status_id_mismatch:
+                msg = f"status_job_id_mismatch: {status_job_id}"
+                if j.error:
+                    j.error = f"{j.error} | {msg}"
+                else:
+                    j.error = msg
+
+            j.delete_requested = bool(data.get("delete_requested", False))
+
             lim = data.get("limits") or {}
-            j.cpu_percent = int(lim.get("cpu_percent") or self.default_cpu)
+            j.cpu_percent = clamp_int(str(lim.get("cpu_percent")) if lim.get("cpu_percent") is not None else None, self.default_cpu, 1, self.max_cpu)
             j.cpu_limit_mode = str(lim.get("cpu_limit_mode") or self.cpu_limit_mode)
             j.cpu_count = int(lim.get("cpu_count") or (os.cpu_count() or 1))
             j.cpu_cpulimit_pct = int(lim.get("cpu_cpulimit_pct") or j.cpu_percent)
-            j.mem_mb = int(lim.get("mem_mb") or self.default_mem)
-            j.threads = int(lim.get("threads") or self.max_threads)
-            j.timeout_seconds = int(lim.get("timeout_seconds") or self.timeout_seconds)
+            j.mem_mb = clamp_int(str(lim.get("mem_mb")) if lim.get("mem_mb") is not None else None, self.default_mem, 256, self.max_mem)
+            j.threads = clamp_int(str(lim.get("threads")) if lim.get("threads") is not None else None, self.max_threads, 1, self.max_threads)
+            j.timeout_seconds = clamp_int(str(lim.get("timeout_seconds")) if lim.get("timeout_seconds") is not None else None, self.timeout_seconds, 1, self.timeout_seconds)
 
             sb = data.get("submitted_by") or {}
             j.submitted_by_id = sb.get("id")

@@ -65,6 +65,8 @@ options:
     summary_head_chars: 4000
     summary_tail_chars: 4000
     manifest_sha256: false
+    outputs_max_files: 2000
+    outputs_max_bytes: 209715200
     zip_max_members: 2000
     zip_max_total_uncompressed: 209715200
     zip_max_single_uncompressed: 52428800
@@ -113,6 +115,8 @@ schema:
     summary_head_chars: "int(0,1000000)"
     summary_tail_chars: "int(0,1000000)"
     manifest_sha256: bool
+    outputs_max_files: "int(0,1000000)"
+    outputs_max_bytes: "int(0,2147483647)"
     zip_max_members: "int(1,100000)"
     zip_max_total_uncompressed: "int(1,2147483647)"
     zip_max_single_uncompressed: "int(1,2147483647)"

@@ -159,3 +159,31 @@ def test_stdout_rejects_multi_segment_job_id(temp_data_dir):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_stdout_supports_delta_query(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+
+    job_id = "b"
+    job_dir = runner_core.JOBS_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    stdout_path = job_dir / "stdout.txt"
+    stdout_path.write_text("abcdef\n", encoding="utf-8")
+
+    j = runner_core.Job(job_id=job_id, job_dir=job_dir, stdout_path=stdout_path)
+    with runner._lock:
+        runner._jobs[job_id] = j
+        runner._job_order.insert(0, job_id)
+
+    httpd, host, port = _start_server(runner)
+    try:
+        status, hdrs, data = _request("GET", host, port, "/stdout/b.txt?from=0&max_bytes=3", None, {"X-Runner-Token": "t"})
+        assert status == 200
+        assert data == b"abc"
+        hdr_map = {k.lower(): v for (k, v) in hdrs}
+        assert hdr_map.get("x-from-offset") == "0"
+        assert hdr_map.get("x-next-offset") == "3"
+        assert hdr_map.get("x-file-size") == str(stdout_path.stat().st_size)
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
