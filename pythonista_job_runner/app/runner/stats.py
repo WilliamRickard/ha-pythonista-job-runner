@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.1
+# Version: 0.6.12-refactor.2
 """Stats helpers for the Runner.
 
 These functions are intentionally side-effect free except for updating Runner cache
@@ -12,6 +12,8 @@ import shutil
 import time
 from pathlib import Path
 from typing import Any, Dict, Tuple
+
+from runner.store import JobStore
 
 
 def get_disk_usage_cached(runner: object, ttl_seconds: int = 5) -> Tuple[int, int]:
@@ -101,11 +103,8 @@ def get_jobs_dir_bytes_cached(runner: object, ttl_seconds: int = 30) -> int:
 
 def stats_dict(runner: object) -> Dict[str, Any]:
     """Return the /stats.json payload."""
-    lock = getattr(runner, "_lock")
-    jobs = getattr(runner, "_jobs")
-
-    with lock:
-        states = [j.state for j in jobs.values()]
+    store = JobStore.for_runner(runner)
+    states = [str(getattr(j, "state", "")) for j in store.jobs_values_snapshot()]
 
     jobs_total = len(states)
     jobs_running = sum(1 for s in states if s == "running")

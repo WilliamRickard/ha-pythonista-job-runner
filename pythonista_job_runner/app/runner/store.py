@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.4
+# Version: 0.6.12-refactor.5
 """Job storage and lifecycle operations.
 
 This module provides a stateful JobStore façade used by Runner.
@@ -56,6 +56,53 @@ class JobStore:
             return self._registry.procs
         return getattr(self._runner, "_procs")
 
+    def jobs_values_snapshot(self) -> List[object]:
+        """Return a snapshot list of all Job objects currently tracked.
+
+        This includes jobs that may not be present in the current job_order list.
+        """
+        lock = self._lock()
+        jobs = self._jobs()
+        with lock:
+            return list(jobs.values())
+
+    def get_proc(self, job_id: str) -> Any:
+        """Return the subprocess handle for job_id, if present."""
+        lock = self._lock()
+        procs = self._procs()
+        with lock:
+            return procs.get(job_id)
+
+    def set_proc(self, job_id: str, proc: Any) -> None:
+        """Record the subprocess handle for job_id."""
+        lock = self._lock()
+        procs = self._procs()
+        with lock:
+            procs[job_id] = proc
+
+    def pop_proc(self, job_id: str) -> Any:
+        """Remove and return the subprocess handle for job_id, if present."""
+        lock = self._lock()
+        procs = self._procs()
+        with lock:
+            return procs.pop(job_id, None)
+
+    def discard_job_id(self, job_id: str) -> None:
+        """Remove in-memory tracking for job_id without requiring a Job object.
+
+        This is used by housekeeping fallback paths that may have already removed the
+        job directory and only need to keep the in-memory indices consistent.
+        """
+        lock = self._lock()
+        jobs = self._jobs()
+        procs = self._procs()
+        runner = self._runner
+        with lock:
+            jobs.pop(job_id, None)
+            procs.pop(job_id, None)
+            current_order = list(self._job_order())
+            setattr(runner, "_job_order", [x for x in current_order if x != job_id])
+
     @classmethod
     def for_runner(cls, runner: object) -> "JobStore":
         """Return the cached JobStore for runner, creating one if needed."""
@@ -106,9 +153,11 @@ class JobStore:
                 setattr(runner, "_pending_slots", int(getattr(runner, "_pending_slots", 0)) + 1)
                 slot_reserved = True
 
-            ensure_min_free_space = getattr(runner, "_ensure_min_free_space", None)
-            if callable(ensure_min_free_space):
-                ensure_min_free_space()
+            try:
+                getattr(runner, "_ensure_min_free_space")()
+            except Exception:
+                pass
+
             cpu = clamp_int(
                 headers.get("X-Runner-CPU-PCT"),
                 int(getattr(runner, "default_cpu", 25)),
@@ -214,7 +263,8 @@ class JobStore:
 
         finally:
             if slot_reserved:
-                with self._lock():
+                lock = self._lock()
+                with lock:
                     setattr(
                         runner,
                         "_pending_slots",
@@ -240,9 +290,8 @@ class JobStore:
 
         with lock:
             jobs.pop(job_id, None)
-            job_order = self._job_order()
-            if job_id in job_order:
-                job_order.remove(job_id)
+            current_order = list(self._job_order())
+            setattr(runner, "_job_order", [x for x in current_order if x != job_id])
             procs.pop(job_id, None)
 
     def delete_job(self, job_id: str) -> bool:
@@ -312,9 +361,8 @@ class JobStore:
                 deleted.append(job_id)
                 continue
             try:
-                ok = self.delete_job(job_id)
-                if ok:
-                    deleted.append(job_id)
+                _ = self.delete_job(job_id)
+                deleted.append(job_id)
             except Exception:
                 continue
 
