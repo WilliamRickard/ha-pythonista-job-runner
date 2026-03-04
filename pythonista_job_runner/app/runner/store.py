@@ -106,11 +106,9 @@ class JobStore:
                 setattr(runner, "_pending_slots", int(getattr(runner, "_pending_slots", 0)) + 1)
                 slot_reserved = True
 
-            try:
-                getattr(runner, "_ensure_min_free_space")()
-            except Exception:
-                pass
-
+            ensure_min_free_space = getattr(runner, "_ensure_min_free_space", None)
+            if callable(ensure_min_free_space):
+                ensure_min_free_space()
             cpu = clamp_int(
                 headers.get("X-Runner-CPU-PCT"),
                 int(getattr(runner, "default_cpu", 25)),
