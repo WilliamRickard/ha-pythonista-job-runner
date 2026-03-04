@@ -8,9 +8,9 @@ import io
 import threading
 from pathlib import Path
 
-import runner.executor as executor_mod
-
 import pytest
+
+import runner.executor as executor_mod
 import runner_core
 from runner.store import JobStore
 import runner.store as store_mod
