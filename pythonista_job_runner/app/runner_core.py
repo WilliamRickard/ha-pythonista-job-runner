@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.2
+# Version: 0.6.12-refactor.3
 from __future__ import annotations
 
 import ipaddress
@@ -368,6 +368,9 @@ class Runner:
         # these as properties backed by this registry.
         self._state = _state.create_job_registry()
 
+        # Internal facade for job lifecycle operations.
+        self._job_store = _store.JobStore(self, self._state)
+
         self._sema = threading.Semaphore(max(1, self.max_concurrent_jobs))
         self._last_cleanup_check_ts = 0.0
 
@@ -443,28 +446,28 @@ class Runner:
         return _stats.stats_dict(self)
 
     def list_jobs(self) -> List[Job]:
-        return list(_store.list_jobs(self))  # type: ignore[return-value]
+        return list(self._job_store.list_jobs())  # type: ignore[return-value]
 
     def get(self, job_id: str) -> Optional[Job]:
-        return _store.get_job(self, job_id)  # type: ignore[return-value]
+        return self._job_store.get_job(job_id)  # type: ignore[return-value]
 
     def new_job(self, zip_bytes: bytes, headers: Any, client_ip: str) -> Job:
-        return _store.new_job(self, zip_bytes, headers, client_ip)  # type: ignore[return-value]
+        return self._job_store.new_job(zip_bytes, headers, client_ip)  # type: ignore[return-value]
 
     def _finalize_delete(self, job_id: str) -> None:
-        return _store.finalize_delete(self, job_id)
+        return self._job_store.finalize_delete(job_id)
 
     def delete(self, job_id: str) -> bool:
-        return _store.delete_job(self, job_id)
+        return self._job_store.delete_job(job_id)
 
     def cancel(self, job_id: str) -> bool:
-        return _store.cancel_job(self, job_id)
+        return self._job_store.cancel_job(job_id)
 
     def purge(self, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
-        return _store.purge_jobs(self, states, older_than_hours, dry_run)
+        return self._job_store.purge_jobs(states, older_than_hours, dry_run)
 
     def _write_status(self, j: Job) -> None:
-        return _store.write_status(self, j)
+        return self._job_store.write_status(j)
 
     def _run_job(self, job_id: str) -> None:
         return _executor.run_job(self, job_id)
@@ -485,7 +488,7 @@ class Runner:
         return _housekeeping.reaper_loop(self)
 
     def _load_jobs_from_disk(self) -> None:
-        return _store.load_jobs_from_disk(self)
+        return self._job_store.load_jobs_from_disk()
 
 
 def hashlib_sha256_bytes(b: bytes) -> str:

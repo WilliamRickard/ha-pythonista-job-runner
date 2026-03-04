@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.1
+# Version: 0.6.12-refactor.3
 """Job storage and lifecycle operations."""
 
 from __future__ import annotations
@@ -20,6 +20,62 @@ from runner.fs_safe import safe_write_text_no_symlink
 from runner.hashes import hashlib_sha256_bytes
 from runner.process import kill_process_group
 
+
+
+from runner.state import JobRegistry
+
+
+class JobStore:
+    """Stateful façade for job storage operations.
+
+    The functions in this module historically operated directly on a Runner
+    instance. JobStore provides an internal abstraction layer so Runner can
+    delegate job lifecycle operations while preserving the existing import and
+    test surface.
+    """
+
+    def __init__(self, runner: object, registry: Optional[JobRegistry] = None) -> None:
+        self._runner = runner
+        self._registry = registry
+
+    @classmethod
+    def for_runner(cls, runner: object) -> "JobStore":
+        """Return the cached JobStore for runner, creating one if needed."""
+
+        existing = getattr(runner, "_job_store", None)
+        if isinstance(existing, cls):
+            return existing
+        reg = getattr(runner, "_state", None)
+        store = cls(runner, reg if isinstance(reg, JobRegistry) else None)
+        setattr(runner, "_job_store", store)
+        return store
+
+    def list_jobs(self) -> List[object]:
+        return list_jobs(self._runner)
+
+    def get_job(self, job_id: str) -> Optional[object]:
+        return get_job(self._runner, job_id)
+
+    def new_job(self, zip_bytes: bytes, headers: Any, client_ip: str) -> object:
+        return new_job(self._runner, zip_bytes, headers, client_ip)
+
+    def finalize_delete(self, job_id: str) -> None:
+        finalize_delete(self._runner, job_id)
+
+    def delete_job(self, job_id: str) -> bool:
+        return delete_job(self._runner, job_id)
+
+    def cancel_job(self, job_id: str) -> bool:
+        return cancel_job(self._runner, job_id)
+
+    def purge_jobs(self, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
+        return purge_jobs(self._runner, states, older_than_hours, dry_run)
+
+    def write_status(self, j: object) -> None:
+        write_status(self._runner, j)
+
+    def load_jobs_from_disk(self) -> None:
+        load_jobs_from_disk(self._runner)
 
 def list_jobs(runner: object) -> List[object]:
     lock = getattr(runner, "_lock")
