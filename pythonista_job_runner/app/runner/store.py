@@ -243,8 +243,9 @@ class JobStore:
 
         with lock:
             jobs.pop(job_id, None)
-            current_order = list(self._job_order())
-            setattr(runner, "_job_order", [x for x in current_order if x != job_id])
+            job_order = self._job_order()
+            if job_id in job_order:
+                job_order.remove(job_id)
             procs.pop(job_id, None)
 
     def delete_job(self, job_id: str) -> bool:
