@@ -1,8 +1,14 @@
-# Version: 0.6.12-refactor.7
+# Version: 0.6.12-refactor.9
 """Unit tests for JobStore registry helpers."""
 
 from __future__ import annotations
 
+
+import io
+import threading
+from pathlib import Path
+
+import runner.executor as executor_mod
 
 import pytest
 import runner_core
@@ -113,3 +119,108 @@ def test_delete_done_job_discards_proc_entry(temp_data_dir):
     assert runner.get(jid) is None
     assert jid not in runner._job_order
     assert store.get_proc(jid) is None
+
+def test_delete_running_job_marks_delete_and_cancel_but_keeps_registry(monkeypatch, temp_data_dir):
+    runner = _make_runner(temp_data_dir)
+    store = JobStore.for_runner(runner)
+
+    jid = "job-delete-running"
+    job = runner_core.Job(job_id=jid, state="running")
+    runner._jobs[jid] = job
+    runner._job_order.append(jid)
+
+    proc = _DummyProc(running=True)
+    store.set_proc(jid, proc)
+
+    calls = []
+
+    def _stub_kill(p, soft_seconds=0):
+        calls.append((p, soft_seconds))
+
+    monkeypatch.setattr(store_mod, "kill_process_group", _stub_kill)
+
+    assert runner.delete(jid) is True
+
+    # For running jobs, delete marks flags and cancels, but does not remove from registry yet.
+    assert job.delete_requested is True
+    assert job.cancel_requested is True
+    assert runner.get(jid) is job
+    assert jid in runner._job_order
+    assert store.get_proc(jid) is proc
+    assert calls == [(proc, 2)]
+
+
+class _BlockingPopen:
+    def __init__(self, *args, **kwargs) -> None:
+        self.stdout = io.BytesIO(b"stdout\n")
+        self.stderr = io.BytesIO(b"stderr\n")
+        self._running = True
+
+    def poll(self):
+        return None if self._running else 0
+
+
+def test_delete_requested_finalizes_after_executor_exit(monkeypatch, temp_data_dir):
+    runner = _make_runner(temp_data_dir)
+    store = JobStore.for_runner(runner)
+
+    jid = "job-delete-finalize"
+    job_dir = Path(runner_core.JOBS_DIR) / jid
+    work_dir = job_dir / "work"
+    work_dir.mkdir(parents=True, exist_ok=True)
+    (work_dir / "run.py").write_text("print('ok')\n", encoding="utf-8")
+
+    job = runner_core.Job(job_id=jid, state="queued")
+    job.job_dir = job_dir
+    job.work_dir = work_dir
+    job.stdout_path = job_dir / "stdout.txt"
+    job.stderr_path = job_dir / "stderr.txt"
+    job.status_path = job_dir / "status.json"
+    job.result_zip = job_dir / "result.zip"
+
+    runner._jobs[jid] = job
+    runner._job_order.append(jid)
+
+    proc_set = threading.Event()
+    orig_set_proc = store.set_proc
+
+    def _set_proc(job_id, proc):
+        orig_set_proc(job_id, proc)
+        proc_set.set()
+
+    # Patch the store instance so executor.run_job sees the event when it registers the proc.
+    store.set_proc = _set_proc  # type: ignore[assignment]
+
+    kill_calls = []
+
+    def _stub_kill(p, soft_seconds=0):
+        kill_calls.append((p, soft_seconds))
+        if hasattr(p, "_running"):
+            p._running = False
+
+    # delete() calls store_mod.kill_process_group; executor calls executor_mod.kill_process_group.
+    monkeypatch.setattr(store_mod, "kill_process_group", _stub_kill)
+    monkeypatch.setattr(executor_mod, "kill_process_group", _stub_kill)
+
+    monkeypatch.setattr(executor_mod.subprocess, "Popen", _BlockingPopen)
+    monkeypatch.setattr(executor_mod.time, "sleep", lambda _s: None)
+
+    # Keep the test focused on lifecycle; result/notify are covered elsewhere.
+    monkeypatch.setattr(runner, "_make_result_zip", lambda _j: None)
+    monkeypatch.setattr(runner, "_notify_done", lambda _j: None)
+
+    t = threading.Thread(target=runner._run_job, args=(jid,), daemon=True)
+    t.start()
+
+    assert proc_set.wait(timeout=2), "executor never started the job subprocess"
+    assert runner.delete(jid) is True
+
+    t.join(timeout=5)
+    assert not t.is_alive(), "executor thread did not exit"
+
+    assert runner.get(jid) is None
+    assert jid not in runner._job_order
+    assert store.get_proc(jid) is None
+    assert not job_dir.exists()
+
+    assert kill_calls, "expected a kill_process_group call when cancelling the running job"
