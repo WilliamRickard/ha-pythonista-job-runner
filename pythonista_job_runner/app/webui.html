@@ -1829,7 +1829,8 @@ function parseUtcSeconds(v) {
       out.push(`<span class="${cls}">${esc}</span>`);
     }
 
-    els.logview.innerHTML = out.join("\n");
+    els.logview.innerHTML = out.join("
+");
     applyLogStyle();
   }
 
