@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.1
+# Version: 0.6.12-refactor.2
 """Job execution helpers."""
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from utils import TailBuffer, utc_now
 
 from runner.fs_safe import safe_write_text_no_symlink
 from runner.process import kill_process_group
+from runner.store import JobStore
 
 try:
     import resource
@@ -172,10 +173,7 @@ def run_job(runner: object, job_id: str) -> None:
                     env=env,
                     preexec_fn=_preexec,
                 )
-                lock = getattr(runner, "_lock")
-                procs = getattr(runner, "_procs")
-                with lock:
-                    procs[j.job_id] = p
+                JobStore.for_runner(runner).set_proc(j.job_id, p)
 
                 assert p.stdout is not None
                 assert p.stderr is not None
@@ -219,10 +217,7 @@ def run_job(runner: object, job_id: str) -> None:
                 t2.join(timeout=5)
 
         finally:
-            lock = getattr(runner, "_lock")
-            procs = getattr(runner, "_procs")
-            with lock:
-                procs.pop(j.job_id, None)
+            JobStore.for_runner(runner).pop_proc(j.job_id)
 
         j.exit_code = rc
         j.finished_utc = utc_now()

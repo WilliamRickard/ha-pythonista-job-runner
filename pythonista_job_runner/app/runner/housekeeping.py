@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.1
+# Version: 0.6.12-refactor.2
 """Housekeeping helpers: free-space enforcement and retention reaper."""
 
 from __future__ import annotations
@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import List, Tuple
 
 from utils import parse_utc
+
+from runner.store import JobStore
 
 
 def disk_free_bytes(runner: object) -> int:
@@ -103,47 +105,30 @@ def ensure_min_free_space(runner: object) -> None:
         except Exception:
             pass
 
-        lock = getattr(runner, "_lock")
-        jobs = getattr(runner, "_jobs")
-        job_order = getattr(runner, "_job_order")
-        procs = getattr(runner, "_procs")
-        with lock:
-            jobs.pop(job_id, None)
-            setattr(runner, "_job_order", [x for x in job_order if x != job_id])
-            procs.pop(job_id, None)
+        JobStore.for_runner(runner).discard_job_id(job_id)
 
 
 def reaper_loop(runner: object) -> None:
     """Background retention loop that deletes stale finished jobs."""
+    store = JobStore.for_runner(runner)
     while True:
         try:
             cutoff = int(time.time()) - (int(getattr(runner, "retention_hours", 0)) * 3600)
             stale: List[str] = []
 
-            lock = getattr(runner, "_lock")
-            jobs = getattr(runner, "_jobs")
-
-            with lock:
-                for jid, j in jobs.items():
-                    if j.finished_utc:
-                        finished = parse_utc(j.finished_utc) or time.time()
-                        if int(finished) < cutoff:
-                            stale.append(jid)
+            for j in store.jobs_values_snapshot():
+                finished_utc = getattr(j, "finished_utc", None)
+                if not finished_utc:
+                    continue
+                finished = parse_utc(str(finished_utc)) or time.time()
+                if int(finished) < cutoff:
+                    stale.append(str(getattr(j, "job_id", "")))
 
             for jid in stale:
-                j = getattr(runner, "get")(jid)
+                j = store.get_job(jid)
                 if j:
                     shutil.rmtree(j.job_dir, ignore_errors=True)
-
-                lock = getattr(runner, "_lock")
-                jobs = getattr(runner, "_jobs")
-                job_order = getattr(runner, "_job_order")
-                procs = getattr(runner, "_procs")
-
-                with lock:
-                    jobs.pop(jid, None)
-                    setattr(runner, "_job_order", [x for x in job_order if x != jid])
-                    procs.pop(jid, None)
+                store.discard_job_id(jid)
         except Exception:
             pass
         time.sleep(600)
