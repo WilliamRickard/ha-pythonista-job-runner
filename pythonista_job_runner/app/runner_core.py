@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.1
+# Version: 0.6.12-refactor.2
 from __future__ import annotations
 
 import ipaddress
@@ -28,6 +28,7 @@ from runner import notify as _notify
 from runner import process as _process
 from runner import redact as _redact
 from runner import results as _results
+from runner import state as _state
 from runner import stats as _stats
 from runner import store as _store
 
@@ -361,10 +362,12 @@ class Runner:
 
         self._pending_slots = 0  # reserved queue slots during new_job initialisation
         self._status_write_warned: set[str] = set()
-        self._lock = threading.Lock()
-        self._jobs: Dict[str, Job] = {}
-        self._job_order: List[str] = []
-        self._procs: Dict[str, Any] = {}
+
+        # Centralised mutable job registry. Tests historically access Runner._jobs and
+        # Runner._job_order directly (including reassigning _job_order), so we expose
+        # these as properties backed by this registry.
+        self._state = _state.create_job_registry()
+
         self._sema = threading.Semaphore(max(1, self.max_concurrent_jobs))
         self._last_cleanup_check_ts = 0.0
 
@@ -378,6 +381,38 @@ class Runner:
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
         self._load_jobs_from_disk()
         threading.Thread(target=self._reaper, daemon=True).start()
+
+    @property
+    def _lock(self) -> threading.Lock:
+        return self._state.lock
+
+    @_lock.setter
+    def _lock(self, v: threading.Lock) -> None:
+        self._state.lock = v
+
+    @property
+    def _jobs(self) -> Dict[str, Job]:
+        return self._state.jobs  # type: ignore[return-value]
+
+    @_jobs.setter
+    def _jobs(self, v: Dict[str, Job]) -> None:
+        self._state.jobs = v  # type: ignore[assignment]
+
+    @property
+    def _job_order(self) -> List[str]:
+        return self._state.job_order
+
+    @_job_order.setter
+    def _job_order(self, v: List[str]) -> None:
+        self._state.job_order = v
+
+    @property
+    def _procs(self) -> Dict[str, Any]:
+        return self._state.procs
+
+    @_procs.setter
+    def _procs(self, v: Dict[str, Any]) -> None:
+        self._state.procs = v
 
     def _build_job_env(self, threads: int) -> Dict[str, str]:
         return _executor.build_job_env(self, threads)
