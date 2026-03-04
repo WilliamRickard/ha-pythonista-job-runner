@@ -9,7 +9,7 @@ They are intentionally lightweight and do not execute browser code.
 
 from __future__ import annotations
 
-from webui_build import build_webui
+from pythonista_job_runner.app.webui_build import build_webui
 
 
 def _bundled() -> str:
