@@ -1,0 +1,42 @@
+:focus-visible{
+  outline: 2px solid rgba(138,180,255,0.55);
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px){
+  .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  table{ min-width: 620px; }
+}
+
+@media (max-width: 720px){
+  .page-header{ align-items: flex-start; }
+  .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Compact mobile list: keep table rows and hide secondary columns */
+  table{ min-width: 0 !important; }
+  /* Visually hide the table header on mobile while keeping it available to assistive technology */
+  #jobtable thead{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
+
+  #jobtable th:nth-child(3), #jobtable td:nth-child(3),
+  #jobtable th:nth-child(4), #jobtable td:nth-child(4),
+  #jobtable th:nth-child(5), #jobtable td:nth-child(5){
+    display:none;
+  }
+
+  #jobtable td{ padding: 10px 10px; }
+  #jobtable td.actions{ white-space: nowrap; }
+
+  .jobmeta{ display:flex; }
+}
+
+.loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }

@@ -1,7 +1,9 @@
-<!-- Version: 0.6.12-webui.3 -->
+<!-- Version: 0.6.12-webui.6 -->
 # Web UI HTML parts
 
 These files are concatenated (in an explicit order defined in `webui_build.py`) to form the body of the Web UI.
+
+The JavaScript bundle order is also explicit (see `app/webui_js/` and `WEBUI_JS_PARTS`).
 
 Current order:
 - `00_shell.html`
@@ -16,7 +18,7 @@ Rules:
 - Do not include document-level tags (`<!doctype>`, `<html>`, `<head>`, `<body>`).
 - Do not include `<script>` or `<style>` blocks; use `webui_js/*.js` and `webui.css`.
 - Keep HTML `id` attributes unique across all parts (the build will fail on duplicates).
-- Avoid root-relative URLs (for example `href="/"`), because Home Assistant Ingress runs under a path prefix.
+- Avoid root-relative URLs (for example `href="/"`), because Home Assistant Ingress runs under a path prefix. The build will fail and report the part and line number.
 
 To rebuild the single-file bundle:
 ```

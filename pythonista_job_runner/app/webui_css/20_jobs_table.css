@@ -1,0 +1,254 @@
+.tablewrap{
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+}
+
+table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 700px;
+}
+
+th, td{
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+th{
+  text-align:left;
+  color: var(--muted);
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  background: var(--tableHeaderBg);
+  backdrop-filter: blur(8px);
+}
+
+@media (prefers-color-scheme: light){
+  th{
+    background: var(--tableHeaderBg);
+  }
+}
+
+tr:hover{ background: rgba(120, 140, 180, 0.10); }
+tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
+
+
+.jobcell{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.jobline{
+  display:flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.jobbtn{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  font-family: var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copybtn{
+  flex: 0 0 auto;
+}
+
+.jobmeta{
+  display:none;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.jobmeta .meta{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.badge{
+  display:inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: var(--chip);
+}
+
+.badge::before{
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.badge.running{ border-color: rgba(49,130,206,0.6); }
+.badge.running::before{ background: var(--link); }
+.badge.done{ border-color: rgba(31,139,76,0.6); }
+.badge.done::before{ background: var(--ok); }
+.badge.error{ border-color: rgba(197,48,48,0.6); }
+.badge.error::before{ background: var(--err); }
+.badge.queued{ border-color: rgba(241,196,15,0.55); }
+.badge.queued::before{ background: var(--warn); }
+
+.actionsbar{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.actionsbar.right{
+  justify-content: flex-end;
+}
+
+.empty{
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--panel2);
+  color: var(--muted);
+}
+
+.kvgrid{
+  display:grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.kvgrid dt{
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.kvgrid dd{
+  margin: 0;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.tabs{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tabs button{
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
+.tabs button.active{
+  background: var(--chip2);
+  border-color: rgba(138,180,255,0.45);
+}
+
+.logtools{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.logtools .tog{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel2);
+}
+
+.logtools input[type="checkbox"]{ transform: scale(1.1); }
+
+.livebar{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#livepill{
+  background: var(--panel2);
+}
+
+#livepill.ok{ border-color: rgba(46,204,113,0.45); }
+#livepill.ok .dot{ background: var(--ok); }
+#livepill.warn{ border-color: rgba(241,196,15,0.55); }
+#livepill.warn .dot{ background: var(--warn); }
+#livepill.err{ border-color: rgba(255,92,92,0.45); }
+#livepill.err .dot{ background: var(--err); }
+
+.hilitebar{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.hilitebar .hilite-label{
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.hilitebar input[type="text"]{
+  width: 160px;
+  flex: 0 0 auto;
+}
+
+.hterms_custom{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#logpanel{
+  position: relative;
+}
+
+#logpanel.newflash::after{
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  height: 24px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, transparent, rgba(138,180,255,0.18));
+  pointer-events: none;
+  animation: pjrFlashFade 900ms ease-out forwards;
+}
+
+@keyframes pjrFlashFade{
+  from{ opacity: 1; }
+  to{ opacity: 0; }
+}

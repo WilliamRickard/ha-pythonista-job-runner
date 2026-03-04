@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.3
+# Version: 0.6.12-webui.8
 from __future__ import annotations
 
 """Build the Home Assistant Ingress-safe Web UI template.
@@ -8,11 +8,11 @@ cleanly behind Home Assistant Ingress without requiring a static file server.
 
 To make the UI easier to edit and review, the source is split into:
 - webui_src.html (HTML skeleton + placeholders)
-- webui.css      (CSS)
+- webui_css/*.css (CSS parts -> generates webui.css)
 - webui_html/*.html (HTML body split into partials)
 - webui_js/*.js    (JavaScript split into parts)
 
-This script assembles webui_html/*.html, then inlines webui.css and the JS bundle (from webui_js/*.js) into webui_src.html to produce webui.html.
+This script assembles webui_html/*.html, then inlines the bundled webui.css (from webui_css/*.css parts) and the JS bundle (from webui_js/*.js) into webui_src.html to produce webui.html.
 
 Usage (from repo root):
     python pythonista_job_runner/app/webui_build.py
@@ -26,6 +26,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import re
+
+
+WEBUI_VERSION = "0.6.12-webui.8"
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,77 @@ WEBUI_HTML_PARTS: tuple[str, ...] = (
     "50_help.html",
     "60_toast.html",
 )
+
+
+WEBUI_JS_PARTS: tuple[str, ...] = (
+    "00_core.js",
+    "10_render_search.js",
+    "20_detail_meta.js",
+    "30_refresh_actions.js",
+    "40_events_init.js",
+)
+
+WEBUI_CSS_PARTS: tuple[str, ...] = (
+    "00_tokens.css",
+    "10_layout.css",
+    "20_jobs_table.css",
+    "30_logs.css",
+    "40_overlays.css",
+    "50_responsive.css",
+)
+
+
+
+
+
+_ROOT_RELATIVE_PATTERNS_HTML: tuple[str, ...] = (
+    'href="/',
+    "href='/",
+    'src="/',
+    "src='/",
+)
+
+_ROOT_RELATIVE_PATTERNS_JS: tuple[str, ...] = (
+    'fetch("/',
+    "fetch('/",
+)
+
+_ROOT_RELATIVE_PATTERNS_CSS: tuple[str, ...] = (
+    "url(/",
+    'url("/',
+    "url('/",
+    '@import "/',
+    "@import '/",
+    '@import url("/',
+    "@import url('/",
+    "@import url(/",
+)
+
+
+def _raise_root_relative_error(source: str, line_no: int, pat: str, line: str) -> None:
+    """Raise a user-facing error for a root-relative reference.
+
+    Home Assistant Ingress runs add-ons under a path prefix, so root-relative
+    references typically break by pointing at the Home Assistant host root.
+    """
+
+    snippet = line.strip()
+    if len(snippet) > 240:
+        snippet = snippet[:237] + "..."
+    raise RuntimeError(
+        f"Root-relative reference found in {source}:{line_no}: {pat}\n"
+        f"  {snippet}"
+    )
+
+
+def _check_root_relative_in_text(source: str, text: str, patterns: tuple[str, ...]) -> None:
+    """Raise if text contains a root-relative reference matching patterns."""
+
+    for idx, line in enumerate(text.splitlines(), start=1):
+        for pat in patterns:
+            if pat in line:
+                _raise_root_relative_error(source=source, line_no=idx, pat=pat, line=line)
+
 
 def _check_unique_html_ids(texts_by_part: dict[str, str]) -> None:
     """Raise if duplicate HTML id attributes exist across parts.
@@ -143,6 +217,13 @@ def _read_html_parts(p: WebUiPaths) -> str:
         for pat in banned_patterns:
             if pat.search(txt):
                 raise RuntimeError(f"HTML part contains forbidden tag/pattern ({pat.pattern}): {part}")
+
+        _check_root_relative_in_text(
+            source=f"webui_html/{part.name}",
+            text=txt,
+            patterns=_ROOT_RELATIVE_PATTERNS_HTML,
+        )
+
         texts.append(txt)
         texts_by_part[part.name] = txt
 
@@ -151,26 +232,124 @@ def _read_html_parts(p: WebUiPaths) -> str:
 
 
 def _read_js_bundle(p: WebUiPaths) -> str:
-    """Return the JavaScript bundle text from webui_js/*.js parts."""
+    """Return the JavaScript bundle text from webui_js/*.js parts.
+
+    The assembly order is explicit (WEBUI_JS_PARTS) to make builds deterministic.
+    """
 
     parts_dir = p.js.with_name("webui_js")
     if not parts_dir.is_dir():
         raise RuntimeError(f"Web UI JavaScript parts directory not found: {parts_dir}")
 
-    parts = sorted(x for x in parts_dir.glob("*.js") if x.is_file())
-    if not parts:
-        raise RuntimeError(f"No .js files found in {parts_dir}")
+    expected_paths = [parts_dir / name for name in WEBUI_JS_PARTS]
+    missing = [x.name for x in expected_paths if not x.is_file()]
+    if missing:
+        raise RuntimeError(
+            "Missing expected Web UI JavaScript part(s): " + "; ".join(missing)
+        )
 
-    return "\n".join(x.read_text(encoding="utf-8").rstrip() for x in parts).rstrip()
+    unexpected = sorted(
+        x.name
+        for x in parts_dir.glob("*.js")
+        if x.is_file() and x.name not in WEBUI_JS_PARTS
+    )
+    if unexpected:
+        raise RuntimeError(
+            "Unexpected Web UI JavaScript part(s): " + "; ".join(unexpected)
+            + "\nIf you intended to add a part, update WEBUI_JS_PARTS in webui_build.py."
+        )
+
+    texts: list[str] = []
+    for part in expected_paths:
+        txt = part.read_text(encoding="utf-8").rstrip()
+        _check_root_relative_in_text(
+            source=f"webui_js/{part.name}",
+            text=txt,
+            patterns=_ROOT_RELATIVE_PATTERNS_JS,
+        )
+        texts.append(txt)
+
+    return "\n".join(texts).rstrip()
+
+
+def _read_css_bundle(p: WebUiPaths) -> str:
+    """Return the CSS bundle text from webui_css/*.css parts.
+
+    The assembly order is explicit (WEBUI_CSS_PARTS) to make builds deterministic.
+    """
+
+    parts_dir = p.css.with_name("webui_css")
+    if not parts_dir.is_dir():
+        raise RuntimeError(f"Web UI CSS parts directory not found: {parts_dir}")
+
+    expected_paths = [parts_dir / name for name in WEBUI_CSS_PARTS]
+    missing = [x.name for x in expected_paths if not x.is_file()]
+    if missing:
+        raise RuntimeError("Missing expected Web UI CSS part(s): " + "; ".join(missing))
+
+    unexpected = sorted(
+        x.name
+        for x in parts_dir.glob("*.css")
+        if x.is_file() and x.name not in WEBUI_CSS_PARTS
+    )
+    if unexpected:
+        raise RuntimeError(
+            "Unexpected Web UI CSS part(s): " + "; ".join(unexpected)
+            + "\nIf you intended to add a part, update WEBUI_CSS_PARTS in webui_build.py."
+        )
+
+    texts: list[str] = []
+    for part in expected_paths:
+        txt = part.read_text(encoding="utf-8")
+        if any("VERSION:" in line for line in txt.splitlines()[0:3]):
+            raise RuntimeError(f"CSS part must not declare VERSION header: {part}")
+
+        _check_root_relative_in_text(
+            source=f"webui_css/{part.name}",
+            text=txt,
+            patterns=_ROOT_RELATIVE_PATTERNS_CSS,
+        )
+        if txt and not txt.endswith("\n"):
+            txt += "\n"
+        texts.append(txt)
+
+    return "".join(texts)
+
+
+def _build_css(p: WebUiPaths) -> str:
+    """Return the generated webui.css content as a string."""
+
+    # Keep the version header as the first line for easy identification.
+    version = WEBUI_VERSION
+    body = _read_css_bundle(p)
+    out = f"/* VERSION: {version} */\n" + body
+    if not out.endswith("\n"):
+        out += "\n"
+    return out
+
+
+def _build_js(p: WebUiPaths) -> str:
+    """Return the generated webui.js content as a string."""
+
+    # Keep the version header as the first line for easy identification.
+    version = WEBUI_VERSION
+    body = _read_js_bundle(p)
+    out = f"/* VERSION: {version} */\n" + body
+    if not out.endswith("\n"):
+        out += "\n"
+    return out
+
+
 def build_webui(paths: WebUiPaths | None = None) -> str:
     """Return the bundled webui.html content as a string."""
 
     p = paths or _default_paths()
 
     src = p.src_html.read_text(encoding="utf-8")
-    css = p.css.read_text(encoding="utf-8").rstrip()
+    css = _build_css(p)
+
     body = _read_html_parts(p)
-    js = _read_js_bundle(p)
+    js = _build_js(p)
     if "/*__WEBUI_CSS__*/" not in src:
         raise RuntimeError("webui_src.html missing /*__WEBUI_CSS__*/ placeholder")
     if "<!--__WEBUI_BODY__*/" not in src:
@@ -184,36 +363,49 @@ def build_webui(paths: WebUiPaths | None = None) -> str:
 
     # Guardrail: webui must only use relative URLs, because Ingress sits under a path prefix.
     # (This is a heuristic check, not a full HTML/JS parser.)
-    bad_patterns = [
-        'href="/',
-        "href='/",
-        'src="/',
-        "src='/",
-        'fetch("/',
-        "fetch('/",
-    ]
-    for pat in bad_patterns:
-        if pat in out:
-            raise RuntimeError(f"webui bundle contains root-relative reference: {pat}")
+    _check_root_relative_in_text(
+        source="webui bundle (post-assembly)",
+        text=out,
+        patterns=_ROOT_RELATIVE_PATTERNS_HTML
+        + _ROOT_RELATIVE_PATTERNS_JS
+        + _ROOT_RELATIVE_PATTERNS_CSS,
+    )
 
     return out
 
 
 def write_webui(paths: WebUiPaths | None = None) -> None:
-    """Write webui.html in-place."""
+    """Write webui.html, webui.css, and webui.js in-place."""
 
     p = paths or _default_paths()
+    css = _build_css(p)
+    js = _build_js(p)
     out = build_webui(p)
+
+    p.css.write_text(css, encoding="utf-8")
+    p.js.write_text(js, encoding="utf-8")
     p.out_html.write_text(out, encoding="utf-8")
 
 
 def check_webui(paths: WebUiPaths | None = None) -> None:
-    """Raise RuntimeError if webui.html does not match the bundle output."""
+    """Raise RuntimeError if generated Web UI outputs are out of date."""
 
     p = paths or _default_paths()
-    expected = build_webui(p)
-    actual = p.out_html.read_text(encoding="utf-8")
-    if actual != expected:
+
+    expected_css = _build_css(p)
+    actual_css = p.css.read_text(encoding="utf-8")
+    if actual_css != expected_css:
+        raise RuntimeError("webui.css is out of date. Run webui_build.py to regenerate it.")
+
+    expected_js = _build_js(p)
+    actual_js = p.js.read_text(encoding="utf-8")
+    if actual_js != expected_js:
+        raise RuntimeError("webui.js is out of date. Run webui_build.py to regenerate it.")
+
+
+    expected_html = build_webui(p)
+    actual_html = p.out_html.read_text(encoding="utf-8")
+    if actual_html != expected_html:
         raise RuntimeError("webui.html is out of date. Run webui_build.py to regenerate it.")
 
 

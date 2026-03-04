@@ -1,0 +1,60 @@
+#logview .logline{
+  display:block;
+  padding: 0 2px;
+  border-radius: 6px;
+}
+
+#logview .logline.err{
+  background: rgba(255,92,92,0.10);
+  color: var(--text);
+}
+
+#logview .logline.warn{
+  background: rgba(241,196,15,0.10);
+  color: var(--text);
+}
+
+#logview .logline.hit{
+  outline: 1px solid rgba(138,180,255,0.35);
+  background: rgba(138,180,255,0.08);
+}
+
+#logview .logline.new{
+  animation: pjrNewLine 2000ms ease-out forwards;
+}
+
+@keyframes pjrNewLine{
+  from{ background: rgba(46,204,113,0.14); }
+  to{ background: transparent; }
+}
+
+pre{
+  margin: 10px 0 0 0;
+  background: var(--panel2);
+  color: var(--text);
+  padding: 12px;
+  overflow: auto;
+  max-height: 45vh;
+  white-space: pre-wrap;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+pre.nowrap{ white-space: pre; }
+
+.findbar{
+  margin-top: 10px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.findbar .count{
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 6px;
+}
