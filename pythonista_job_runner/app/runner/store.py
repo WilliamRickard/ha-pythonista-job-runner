@@ -312,8 +312,9 @@ class JobStore:
                 deleted.append(job_id)
                 continue
             try:
-                _ = self.delete_job(job_id)
-                deleted.append(job_id)
+                ok = self.delete_job(job_id)
+                if ok:
+                    deleted.append(job_id)
             except Exception:
                 continue
 
