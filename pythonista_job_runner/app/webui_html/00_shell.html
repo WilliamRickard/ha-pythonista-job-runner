@@ -1,0 +1,30 @@
+<!-- Version: 0.6.12-webui.1 -->
+<!-- Section: Shell header and main container open -->
+  <div class="container">
+    <header class="page-header">
+      <div class="brand">
+        <h1>Pythonista Job Runner</h1>
+        <div class="subline">
+          <span>v__ADDON_VERSION__</span>
+          <span class="pill" id="statuspill">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="statusline" role="status" aria-live="polite">Connecting…</span>
+          </span>
+          <span class="pill" id="autopill" title="Auto refresh">
+            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
+            <span>Auto: <span id="autostate">on</span></span>
+          </span>
+          <span class="pill" title="Last refresh">
+            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
+            <span id="lastupdated">never</span>
+          </span>
+        </div>
+      </div>
+      <div class="toplinks">
+        <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
+        <button type="button" class="linkbtn" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+      </div>
+    </header>
+
+    <main>
