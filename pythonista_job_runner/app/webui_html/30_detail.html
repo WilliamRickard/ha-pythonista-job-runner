@@ -1,0 +1,99 @@
+<!-- Version: 0.6.12-webui.1 -->
+<!-- Section: Job detail panel and closes main container -->
+      <section id="pane_detail" class="card" style="margin-top:14px;">
+        <div class="card-header">
+          <h2>Job details</h2>
+          <div class="actionsbar right">
+            <button type="button" class="small" id="btn_back" data-action="back-to-jobs" hidden>Back</button>
+            <button type="button" class="small" data-action="copy-curl">Copy curl</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div id="detail_empty" class="empty">Select a job from the list to see logs, metadata, and download the result zip.</div>
+
+          <section id="detail" hidden aria-label="Job detail">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+              <div style="font-size:16px;font-weight:800;">Job <span id="jobid"></span></div>
+              <div class="actionsbar">
+                <button type="button" class="small primary" data-action="download-zip">Download zip</button>
+                <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
+                <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
+                <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
+                <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <dl class="kvgrid" id="meta"></dl>
+            </div>
+
+            <div id="overview" hidden style="margin-top:14px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="true">
+              <div class="hint" id="overview_text"></div>
+              <details class="moreopts" style="margin-top:10px;">
+                <summary>API examples</summary>
+                <textarea id="curl_snippet" rows="9" readonly></textarea>
+              </details>
+            </div>
+
+            <div class="tabs" style="margin-top:14px;" role="tablist" aria-label="Output tabs">
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="true" aria-controls="logpanel" tabindex="0">stdout</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">overview</button>
+            </div>
+
+            <div class="logtools" id="logtools" style="margin-top:10px;">
+              <div class="livebar" role="group" aria-label="Live tail controls">
+                <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
+                <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
+                <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
+                <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
+                <span class="pill" id="livepill" title="Live tail state">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span id="livestate">Live</span>
+                </span>
+                <input type="checkbox" id="follow" checked hidden/>
+                <input type="checkbox" id="pause" hidden/>
+              </div>
+
+              <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
+              <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
+              <label class="tog" style="gap:10px;">
+                font
+                <input type="range" id="font" min="11" max="18" value="13"/>
+              </label>
+              <button type="button" class="small" data-action="jump-error">Next error</button>
+              <span style="flex:1 1 140px;"></span>
+              <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
+              <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+            </div>
+
+            <div class="hilitebar" id="hilitebar" aria-label="Highlight terms">
+              <span class="hilite-label">Highlight</span>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
+              <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
+              <span style="flex:1 1 140px;"></span>
+              <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
+              <button type="button" class="small" data-action="add-hterm">Add</button>
+              <button type="button" class="small" data-action="clear-hterms">Clear</button>
+            </div>
+
+            <div class="findbar" id="findbar">
+              <label class="sr-only" for="logsearch">Find in log</label>
+              <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
+              <button type="button" class="small" data-action="find-prev">Prev</button>
+              <button type="button" class="small" data-action="find-next">Next</button>
+              <button type="button" class="small" data-action="clear-search">Clear</button>
+              <span class="count" id="matchcount"></span>
+            </div>
+
+            <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
+              <pre id="logview"></pre>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>

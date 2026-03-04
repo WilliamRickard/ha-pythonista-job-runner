@@ -1,0 +1,49 @@
+<!-- Version: 0.6.12-webui.1 -->
+<!-- Section: Help modal -->
+<div id="about_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="about_title">Help</div>
+          <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
+        </div>
+        <button type="button" id="about_close" class="small" data-action="close-about" aria-label="Close help">Close</button>
+      </div>
+      <div class="modal-body">
+        <details open>
+          <summary>Quick start</summary>
+          <ol class="steps">
+            <li>Set an access token in the add-on Configuration.</li>
+            <li>From Pythonista, submit a job by sending a zip file to <code>POST /run</code>.</li>
+            <li>Watch progress here, then download the result zip from the job details view.</li>
+          </ol>
+          <div class="hint">
+            If you call the runner directly (not via Home Assistant Ingress), your client must send the <code>X-Runner-Token</code> header.
+          </div>
+        </details>
+
+        <details>
+          <summary>API and endpoints</summary>
+          <div class="hint" style="margin-top:8px;">These are the endpoints exposed by the runner. Tap Copy to copy a full URL.</div>
+          <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+          </div>
+
+          <textarea id="about_curl" rows="9" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
+          <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
+        </details>
+
+        <details>
+          <summary>Troubleshooting</summary>
+          <ul class="steps" style="list-style:disc;padding-left:18px;">
+            <li>If the status shows Disconnected, open the add-on Log tab and check for errors.</li>
+            <li>If you see unauthorised, you are likely using direct access without <code>X-Runner-Token</code>, or the token does not match the add-on Configuration.</li>
+            <li>If jobs never appear, confirm your Pythonista script uploads a zip to <code>/run</code> and stays under <code>max_upload_mb</code>.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </div>
