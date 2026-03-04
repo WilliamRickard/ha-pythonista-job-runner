@@ -189,7 +189,7 @@ def test_delete_requested_finalizes_after_executor_exit(monkeypatch, temp_data_d
         proc_set.set()
 
     # Patch the store instance so executor.run_job sees the event when it registers the proc.
-    store.set_proc = _set_proc  # type: ignore[assignment]
+    monkeypatch.setattr(store, "set_proc", _set_proc)
 
     kill_calls = []
 
