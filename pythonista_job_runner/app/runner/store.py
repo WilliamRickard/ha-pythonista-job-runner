@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.5
+# Version: 0.6.12-refactor.6
 """Job storage and lifecycle operations.
 
 This module provides a stateful JobStore façade used by Runner.
@@ -283,16 +283,8 @@ class JobStore:
         except Exception:
             pass
 
-        lock = self._lock()
-        jobs = self._jobs()
-        procs = self._procs()
-        runner = self._runner
-
-        with lock:
-            jobs.pop(job_id, None)
-            current_order = list(self._job_order())
-            setattr(runner, "_job_order", [x for x in current_order if x != job_id])
-            procs.pop(job_id, None)
+        # Centralise in-memory registry updates to avoid drift in invariants.
+        self.discard_job_id(job_id)
 
     def delete_job(self, job_id: str) -> bool:
         """Delete a job.
