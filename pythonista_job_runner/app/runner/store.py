@@ -216,8 +216,7 @@ class JobStore:
 
         finally:
             if slot_reserved:
-                lock = self._lock()
-                with lock:
+                with self._lock():
                     setattr(
                         runner,
                         "_pending_slots",
