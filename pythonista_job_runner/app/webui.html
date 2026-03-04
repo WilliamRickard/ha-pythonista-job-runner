@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.12-webui.1 -->
+<!doctype html><!-- VERSION: 0.6.12-webui.8 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -6,7 +6,7 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui_html/*.html, webui_js/*.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.12 */
+/* VERSION: 0.6.12-webui.8 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -84,7 +84,6 @@ body{
 
 a{ color: var(--link); text-decoration: none; }
 a:hover{ text-decoration: underline; }
-
 .container{
   max-width: 1100px;
   margin: 0 auto;
@@ -307,7 +306,6 @@ label{
 }
 
 .meta-strip .pill{ background: var(--panel2); }
-
 .tablewrap{
   overflow-x: auto;
   border-radius: 12px;
@@ -562,7 +560,6 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   from{ opacity: 1; }
   to{ opacity: 0; }
 }
-
 #logview .logline{
   display:block;
   padding: 0 2px;
@@ -623,7 +620,6 @@ pre.nowrap{ white-space: pre; }
   font-size: 12px;
   padding: 0 6px;
 }
-
 .toast{
   position: fixed;
   left: 12px;
@@ -805,7 +801,6 @@ details[open] summary::after{ transform: rotate(0deg); }
   color: var(--muted);
   word-break: break-word;
 }
-
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -848,6 +843,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
+
   </style>
 </head>
 <body>
@@ -1177,6 +1173,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   </div>
 
   <script>
+/* VERSION: 0.6.12-webui.8 */
 /* VERSION: 0.6.12 */
 /* eslint-disable no-alert */
 (() => {
@@ -2938,6 +2935,7 @@ Client IP: ${ip || ""}`;
     start();
   }
 })();
+
   </script>
 </body>
 </html>
