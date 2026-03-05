@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.2 -->
+<!-- Version: 0.6.12-docs.3 -->
 # Pythonista Job Runner (Home Assistant add-on repository)
 
 Run Python jobs from Pythonista (iOS) on your Home Assistant host, and download the results as a zip. The add-on includes an Ingress Web UI for job status and logs.
@@ -159,6 +159,26 @@ More troubleshooting is in `pythonista_job_runner/DOCS.md`.
 - `pythonista_job_runner/DOCS.md`: full user guide and API reference
 - `pythonista_job_runner/README.md`: short add-on intro
 - `SECURITY.md`: security model and safe setup
+
+## Development
+
+Contributor guide: see `CONTRIBUTING.md`.
+
+Web UI sources live under `pythonista_job_runner/app/`:
+
+- HTML wrapper: `webui_src.html`
+- HTML partials: `webui_html/*.html`
+- CSS partials: `webui_css/*.css`
+- JavaScript parts: `webui_js/*.js`
+
+Generated outputs (do not edit by hand):
+
+- `webui.html`, `webui.css`, `webui.js`
+
+Rebuild and validate:
+
+- `python pythonista_job_runner/app/webui_build.py`
+- `python pythonista_job_runner/app/webui_build.py --check`
 
 ## Support
 
