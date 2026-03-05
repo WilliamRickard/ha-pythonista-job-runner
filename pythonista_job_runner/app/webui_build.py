@@ -30,7 +30,7 @@ import re
 
 WEBUI_VERSION = "0.6.12-webui.12"
 
-_RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*)\s*VERSION\s*:", re.IGNORECASE)
+_RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*|<!--)\s*VERSION\s*:", re.IGNORECASE)
 
 _SRC_HTML_VERSION_RE = re.compile(
     r'^\s*<!doctype\s+html><!--\s*VERSION:\s*([^ ]+)\s*-->\s*$',
@@ -66,7 +66,7 @@ def _assert_parts_readme_versions(p: "WebUiPaths") -> None:
         if not m:
             # Allow README files without a version line, but fail fast on malformed
             # "Version:" headers that don't match our expected format.
-            if "Version:" in first_line or "VERSION:" in first_line:
+            if "version:" in first_line.strip().lower():
                 raise RuntimeError(
                     f"{folder}/README.md first line must be '<!-- Version: {WEBUI_VERSION} -->' "
                     f"or omit the version header (found {first_line!r})"
@@ -369,7 +369,7 @@ def _read_css_bundle(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8")
-        if any("VERSION:" in line for line in txt.splitlines()[0:3]):
+        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
             raise RuntimeError(f"CSS part must not declare VERSION header: {part}")
 
         _check_root_relative_in_text(

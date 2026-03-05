@@ -66,3 +66,19 @@ def test_builder_rejects_version_header_in_js_part(tmp_path: Path) -> None:
     msg = str(excinfo.value)
     assert "JavaScript part must not declare VERSION header" in msg
     assert "00_core.js" in msg
+
+
+def test_builder_rejects_html_style_version_header_in_js_part(tmp_path: Path) -> None:
+    """A JS part must not contain an HTML-comment VERSION header either."""
+
+    paths = _write_minimal_webui_tree(
+        tmp_path,
+        js_parts={"00_core.js": "<!-- VERSION: 999 -->\n// js\n"},
+    )
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_webui(paths)
+
+    msg = str(excinfo.value)
+    assert "JavaScript part must not declare VERSION header" in msg
+    assert "00_core.js" in msg
