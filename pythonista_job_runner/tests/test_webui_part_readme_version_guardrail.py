@@ -93,3 +93,16 @@ def test_readme_version_omitted_is_allowed(tmp_path: Path) -> None:
 
     out = build_webui(paths)
     assert out.startswith("<!doctype html")
+
+
+def test_readme_malformed_lowercase_version_header_fails(tmp_path: Path) -> None:
+    """Malformed README version headers should fail regardless of case."""
+
+    paths = _write_minimal_tree(tmp_path)
+    (tmp_path / "webui_html" / "README.md").write_text("version: nope\n# Readme\n", encoding="utf-8")
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_webui(paths)
+
+    msg = str(excinfo.value)
+    assert "webui_html/README.md first line must be" in msg
