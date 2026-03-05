@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.8
+# Version: 0.6.12-webui.12
 from __future__ import annotations
 
 """Build the Home Assistant Ingress-safe Web UI template.
@@ -28,7 +28,73 @@ from pathlib import Path
 import re
 
 
-WEBUI_VERSION = "0.6.12-webui.8"
+WEBUI_VERSION = "0.6.12-webui.12"
+
+_RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*)\s*VERSION\s*:", re.IGNORECASE)
+
+_SRC_HTML_VERSION_RE = re.compile(
+    r'^\s*<!doctype\s+html><!--\s*VERSION:\s*([^ ]+)\s*-->\s*$',
+    re.IGNORECASE,
+)
+
+
+_OUT_TEXT_VERSION_RE = re.compile(
+    r'^\s*/\*\s*VERSION:\s*([^\s*]+)\s*\*/\s*$',
+    re.IGNORECASE,
+)
+
+_README_VERSION_RE = re.compile(
+    r'^\s*<!--\s*Version:\s*([^ ]+)\s*-->\s*$',
+    re.IGNORECASE,
+)
+
+
+def _assert_parts_readme_versions(p: "WebUiPaths") -> None:
+    """Ensure webui_* part README versions match WEBUI_VERSION (or omit version line).
+
+    This avoids a second, drifting "documentation version" for the Web UI parts.
+    """
+
+    base = p.src_html.parent
+    for folder in ("webui_html", "webui_css", "webui_js"):
+        readme = base / folder / "README.md"
+        if not readme.is_file():
+            continue
+        text = readme.read_text(encoding="utf-8")
+        first_line = text.splitlines()[0] if text else ""
+        m = _README_VERSION_RE.match(first_line)
+        if not m:
+            # Allow README files without a version line, but fail fast on malformed
+            # "Version:" headers that don't match our expected format.
+            if "Version:" in first_line or "VERSION:" in first_line:
+                raise RuntimeError(
+                    f"{folder}/README.md first line must be '<!-- Version: {WEBUI_VERSION} -->' "
+                    f"or omit the version header (found {first_line!r})"
+                )
+            continue
+        found = m.group(1)
+        if found != WEBUI_VERSION:
+            raise RuntimeError(
+                f"{folder}/README.md VERSION ({found}) does not match WEBUI_VERSION ({WEBUI_VERSION})"
+            )
+
+
+def _assert_src_html_version_matches(src_html_path: Path, src_text: str) -> None:
+    """Ensure webui_src.html VERSION comment matches WEBUI_VERSION."""
+    first_line = src_text.splitlines()[0] if src_text else ""
+    m = _SRC_HTML_VERSION_RE.match(first_line)
+    if not m:
+        raise RuntimeError(
+            f"{src_html_path.name} first line must be '<!doctype html><!-- VERSION: {WEBUI_VERSION} -->' "
+            f"(found {first_line!r})"
+        )
+    found = m.group(1)
+    if found != WEBUI_VERSION:
+        raise RuntimeError(
+            f"{src_html_path.name} VERSION ({found}) does not match WEBUI_VERSION ({WEBUI_VERSION})"
+        )
+
+
 
 
 @dataclass(frozen=True)
@@ -214,6 +280,8 @@ def _read_html_parts(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8").rstrip()
+        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
+            raise RuntimeError(f"JavaScript part must not declare VERSION header: {part}")
         for pat in banned_patterns:
             if pat.search(txt):
                 raise RuntimeError(f"HTML part contains forbidden tag/pattern ({pat.pattern}): {part}")
@@ -262,6 +330,8 @@ def _read_js_bundle(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8").rstrip()
+        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
+            raise RuntimeError(f"JavaScript part must not declare VERSION header: {part}")
         _check_root_relative_in_text(
             source=f"webui_js/{part.name}",
             text=txt,
@@ -346,6 +416,9 @@ def build_webui(paths: WebUiPaths | None = None) -> str:
     p = paths or _default_paths()
 
     src = p.src_html.read_text(encoding="utf-8")
+    _assert_src_html_version_matches(p.src_html, src)
+    _assert_parts_readme_versions(p)
+
     css = _build_css(p)
 
     body = _read_html_parts(p)
@@ -378,6 +451,7 @@ def write_webui(paths: WebUiPaths | None = None) -> None:
     """Write webui.html, webui.css, and webui.js in-place."""
 
     p = paths or _default_paths()
+    _assert_parts_readme_versions(p)
     css = _build_css(p)
     js = _build_js(p)
     out = build_webui(p)
@@ -387,24 +461,64 @@ def write_webui(paths: WebUiPaths | None = None) -> None:
     p.out_html.write_text(out, encoding="utf-8")
 
 
+
+def _assert_output_text_version_header(path: Path, text: str) -> None:
+    """Ensure a generated text output starts with a VERSION header matching WEBUI_VERSION."""
+    first_line = text.splitlines()[0] if text else ""
+    m = _OUT_TEXT_VERSION_RE.match(first_line)
+    if not m:
+        raise RuntimeError(
+            f"{path.name} first line must be '/* VERSION: {WEBUI_VERSION} */' (found {first_line!r})"
+        )
+    found = m.group(1)
+    if found != WEBUI_VERSION:
+        raise RuntimeError(
+            f"{path.name} VERSION ({found}) does not match WEBUI_VERSION ({WEBUI_VERSION})"
+        )
+
+
+def _assert_output_html_version_header(path: Path, text: str) -> None:
+    """Ensure a generated HTML output starts with a VERSION comment matching WEBUI_VERSION."""
+    first_line = text.splitlines()[0] if text else ""
+    m = _SRC_HTML_VERSION_RE.match(first_line)
+    if not m:
+        raise RuntimeError(
+            f"{path.name} first line must be '<!doctype html><!-- VERSION: {WEBUI_VERSION} -->' (found {first_line!r})"
+        )
+    found = m.group(1)
+    if found != WEBUI_VERSION:
+        raise RuntimeError(
+            f"{path.name} VERSION ({found}) does not match WEBUI_VERSION ({WEBUI_VERSION})"
+        )
+
+
+def _assert_generated_outputs_version_headers(p: WebUiPaths, css_text: str, js_text: str, html_text: str) -> None:
+    """Ensure generated outputs include a consistent VERSION header."""
+    _assert_output_text_version_header(p.css, css_text)
+    _assert_output_text_version_header(p.js, js_text)
+    _assert_output_html_version_header(p.out_html, html_text)
+
 def check_webui(paths: WebUiPaths | None = None) -> None:
     """Raise RuntimeError if generated Web UI outputs are out of date."""
 
     p = paths or _default_paths()
+    _assert_parts_readme_versions(p)
+
+    actual_css = p.css.read_text(encoding="utf-8")
+    actual_js = p.js.read_text(encoding="utf-8")
+    actual_html = p.out_html.read_text(encoding="utf-8")
+
+    _assert_generated_outputs_version_headers(p, actual_css, actual_js, actual_html)
 
     expected_css = _build_css(p)
-    actual_css = p.css.read_text(encoding="utf-8")
     if actual_css != expected_css:
         raise RuntimeError("webui.css is out of date. Run webui_build.py to regenerate it.")
 
     expected_js = _build_js(p)
-    actual_js = p.js.read_text(encoding="utf-8")
     if actual_js != expected_js:
         raise RuntimeError("webui.js is out of date. Run webui_build.py to regenerate it.")
 
-
     expected_html = build_webui(p)
-    actual_html = p.out_html.read_text(encoding="utf-8")
     if actual_html != expected_html:
         raise RuntimeError("webui.html is out of date. Run webui_build.py to regenerate it.")
 
