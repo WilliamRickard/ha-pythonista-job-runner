@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.10
+# Version: 0.6.12-webui.12
 """Tests for root-relative URL guardrails in Web UI build inputs."""
 
 from __future__ import annotations
