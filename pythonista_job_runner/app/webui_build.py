@@ -280,8 +280,6 @@ def _read_html_parts(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8").rstrip()
-        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
-            raise RuntimeError(f"JavaScript part must not declare VERSION header: {part}")
         for pat in banned_patterns:
             if pat.search(txt):
                 raise RuntimeError(f"HTML part contains forbidden tag/pattern ({pat.pattern}): {part}")
