@@ -451,7 +451,6 @@ def write_webui(paths: WebUiPaths | None = None) -> None:
     """Write webui.html, webui.css, and webui.js in-place."""
 
     p = paths or _default_paths()
-    _assert_parts_readme_versions(p)
     css = _build_css(p)
     js = _build_js(p)
     out = build_webui(p)
