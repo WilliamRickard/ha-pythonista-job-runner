@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.7
+# Version: 0.6.12-webui.12
 """Tests for root-relative URL guardrails in Web UI build inputs."""
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from webui_build import WEBUI_CSS_PARTS, WEBUI_HTML_PARTS, WEBUI_JS_PARTS, WebUiPaths, build_webui
+from webui_build import WEBUI_VERSION, WEBUI_CSS_PARTS, WEBUI_HTML_PARTS, WEBUI_JS_PARTS, WebUiPaths, build_webui
 
 
 def _write_minimal_webui_tree(
@@ -28,7 +28,7 @@ def _write_minimal_webui_tree(
     out_html = tmp / "webui.html"
 
     src_html.write_text(
-        "<!doctype html>\n"
+        f"<!doctype html><!-- VERSION: {WEBUI_VERSION} -->\n"
         "<html>\n"
         "<head><style>/*__WEBUI_CSS__*/</style></head>\n"
         "<body><!--__WEBUI_BODY__*/<script>/*__WEBUI_JS__*/</script></body>\n"

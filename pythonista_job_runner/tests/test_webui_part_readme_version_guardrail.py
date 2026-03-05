@@ -1,9 +1,5 @@
-# Version: 0.6.12-webui.10
-"""Tests for deterministic Web UI JavaScript part ordering.
-
-The builder enforces an explicit ordered list of JS parts so adding or renaming a
-file cannot silently change bundle order.
-"""
+# Version: 0.6.12-webui.12
+"""Tests for Web UI part README version guardrail."""
 
 from __future__ import annotations
 
@@ -11,11 +7,23 @@ from pathlib import Path
 
 import pytest
 
-from webui_build import WEBUI_VERSION, WEBUI_CSS_PARTS, WEBUI_HTML_PARTS, WEBUI_JS_PARTS, WebUiPaths, build_webui
+from webui_build import (
+    WEBUI_VERSION,
+    WEBUI_CSS_PARTS,
+    WEBUI_HTML_PARTS,
+    WEBUI_JS_PARTS,
+    WebUiPaths,
+    build_webui,
+)
 
 
-def _write_minimal_tree(tmp: Path) -> WebUiPaths:
+def _write_minimal_tree(
+    tmp: Path,
+    readme_versions: dict[str, str] | None = None,
+) -> WebUiPaths:
     """Create a minimal webui build tree in tmp and return paths."""
+
+    readme_versions = readme_versions or {}
 
     src_html = tmp / "webui_src.html"
     css = tmp / "webui.css"
@@ -31,6 +39,7 @@ def _write_minimal_tree(tmp: Path) -> WebUiPaths:
         encoding="utf-8",
     )
 
+    # These are generated outputs; they only need to exist.
     css.write_text("", encoding="utf-8")
     js.write_text("", encoding="utf-8")
     out_html.write_text("", encoding="utf-8")
@@ -50,30 +59,37 @@ def _write_minimal_tree(tmp: Path) -> WebUiPaths:
     for name in WEBUI_CSS_PARTS:
         (css_dir / name).write_text("/* css */\n", encoding="utf-8")
 
+    # Optional READMEs
+    for folder, version in readme_versions.items():
+        (tmp / folder).mkdir(exist_ok=True)
+        (tmp / folder / "README.md").write_text(
+            f"<!-- Version: {version} -->\n# Readme\n",
+            encoding="utf-8",
+        )
+
     return WebUiPaths(src_html=src_html, css=css, js=js, out_html=out_html)
 
 
-def test_builder_fails_if_expected_js_part_missing(tmp_path: Path) -> None:
-    """Missing expected JS parts must fail loudly."""
+def test_readme_version_mismatch_fails(tmp_path: Path) -> None:
+    """If a part README declares a mismatched version, the build should fail."""
 
-    paths = _write_minimal_tree(tmp_path)
-
-    missing = WEBUI_JS_PARTS[-1]
-    (tmp_path / "webui_js" / missing).unlink()
-
-    with pytest.raises(RuntimeError) as excinfo:
-        build_webui(paths)
-
-    assert "Missing expected Web UI JavaScript part" in str(excinfo.value)
-
-
-def test_builder_fails_if_unexpected_js_part_exists(tmp_path: Path) -> None:
-    """Unexpected JS parts must fail loudly."""
-
-    paths = _write_minimal_tree(tmp_path)
-    (tmp_path / "webui_js" / "99_extra.js").write_text("// extra\n", encoding="utf-8")
+    paths = _write_minimal_tree(
+        tmp_path,
+        readme_versions={"webui_html": "bad-version"},
+    )
 
     with pytest.raises(RuntimeError) as excinfo:
         build_webui(paths)
 
-    assert "Unexpected Web UI JavaScript part" in str(excinfo.value)
+    msg = str(excinfo.value)
+    assert "webui_html/README.md VERSION" in msg
+    assert "does not match WEBUI_VERSION" in msg
+
+
+def test_readme_version_omitted_is_allowed(tmp_path: Path) -> None:
+    """README files may omit the version header entirely."""
+
+    paths = _write_minimal_tree(tmp_path)
+
+    out = build_webui(paths)
+    assert out.startswith("<!doctype html")

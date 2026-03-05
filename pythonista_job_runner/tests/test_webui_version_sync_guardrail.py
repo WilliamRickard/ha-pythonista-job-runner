@@ -1,8 +1,9 @@
 # Version: 0.6.12-webui.10
-"""Tests for deterministic Web UI JavaScript part ordering.
+"""Tests for Web UI version synchronisation guardrail.
 
-The builder enforces an explicit ordered list of JS parts so adding or renaming a
-file cannot silently change bundle order.
+The builder enforces that webui_src.html contains a first-line VERSION comment
+that matches WEBUI_VERSION in webui_build.py so the generated outputs are
+consistent and drift is detected early.
 """
 
 from __future__ import annotations
@@ -11,10 +12,17 @@ from pathlib import Path
 
 import pytest
 
-from webui_build import WEBUI_VERSION, WEBUI_CSS_PARTS, WEBUI_HTML_PARTS, WEBUI_JS_PARTS, WebUiPaths, build_webui
+from webui_build import (
+    WEBUI_VERSION,
+    WEBUI_CSS_PARTS,
+    WEBUI_HTML_PARTS,
+    WEBUI_JS_PARTS,
+    WebUiPaths,
+    build_webui,
+)
 
 
-def _write_minimal_tree(tmp: Path) -> WebUiPaths:
+def _write_minimal_webui_tree(tmp: Path, src_first_line: str) -> WebUiPaths:
     """Create a minimal webui build tree in tmp and return paths."""
 
     src_html = tmp / "webui_src.html"
@@ -23,7 +31,7 @@ def _write_minimal_tree(tmp: Path) -> WebUiPaths:
     out_html = tmp / "webui.html"
 
     src_html.write_text(
-        f"<!doctype html><!-- VERSION: {WEBUI_VERSION} -->\n"
+        src_first_line + "\n"
         "<html>\n"
         "<head><style>/*__WEBUI_CSS__*/</style></head>\n"
         "<body><!--__WEBUI_BODY__*/<script>/*__WEBUI_JS__*/</script></body>\n"
@@ -31,6 +39,7 @@ def _write_minimal_tree(tmp: Path) -> WebUiPaths:
         encoding="utf-8",
     )
 
+    # Generated outputs (required paths)
     css.write_text("", encoding="utf-8")
     js.write_text("", encoding="utf-8")
     out_html.write_text("", encoding="utf-8")
@@ -53,27 +62,29 @@ def _write_minimal_tree(tmp: Path) -> WebUiPaths:
     return WebUiPaths(src_html=src_html, css=css, js=js, out_html=out_html)
 
 
-def test_builder_fails_if_expected_js_part_missing(tmp_path: Path) -> None:
-    """Missing expected JS parts must fail loudly."""
+def test_builder_fails_when_src_version_mismatches(tmp_path: Path) -> None:
+    """Mismatched VERSION in webui_src.html should raise with details."""
 
-    paths = _write_minimal_tree(tmp_path)
-
-    missing = WEBUI_JS_PARTS[-1]
-    (tmp_path / "webui_js" / missing).unlink()
+    bad = "<!doctype html><!-- VERSION: 0.0.0 -->"
+    paths = _write_minimal_webui_tree(tmp_path, bad)
 
     with pytest.raises(RuntimeError) as excinfo:
         build_webui(paths)
 
-    assert "Missing expected Web UI JavaScript part" in str(excinfo.value)
+    msg = str(excinfo.value)
+    assert "webui_src.html VERSION" in msg
+    assert "0.0.0" in msg
+    assert WEBUI_VERSION in msg
 
 
-def test_builder_fails_if_unexpected_js_part_exists(tmp_path: Path) -> None:
-    """Unexpected JS parts must fail loudly."""
+def test_builder_fails_when_src_missing_version_comment(tmp_path: Path) -> None:
+    """Missing VERSION comment should raise and show the found first line."""
 
-    paths = _write_minimal_tree(tmp_path)
-    (tmp_path / "webui_js" / "99_extra.js").write_text("// extra\n", encoding="utf-8")
+    paths = _write_minimal_webui_tree(tmp_path, "<!doctype html>")
 
     with pytest.raises(RuntimeError) as excinfo:
         build_webui(paths)
 
-    assert "Unexpected Web UI JavaScript part" in str(excinfo.value)
+    msg = str(excinfo.value)
+    assert "first line must be" in msg
+    assert "<!doctype html>" in msg
