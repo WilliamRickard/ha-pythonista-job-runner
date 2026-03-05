@@ -63,7 +63,10 @@ def _assert_parts_readme_versions(p: "WebUiPaths") -> None:
         text = readme.read_text(encoding="utf-8")
         first_line = text.splitlines()[0] if text else ""
         m = _README_VERSION_RE.match(first_line)
-        if not m:
+# Keep stricter pattern matching to avoid false positives
+if "Version:" in first_line or "VERSION:" in first_line:
+    if not _README_VERSION_RE.match(first_line):
+        raise RuntimeError(...)
             # Allow README files without a version line, but fail fast on malformed
             # "Version:" headers that don't match our expected format.
             if "version:" in first_line.strip().lower():
