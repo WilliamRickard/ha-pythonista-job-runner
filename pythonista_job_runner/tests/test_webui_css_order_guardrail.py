@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.7
+# Version: 0.6.12-webui.10
 """Tests for deterministic Web UI CSS part ordering.
 
 The builder enforces an explicit ordered list of CSS parts so adding or renaming a
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from webui_build import WEBUI_CSS_PARTS, WEBUI_HTML_PARTS, WEBUI_JS_PARTS, WebUiPaths, build_webui
+from webui_build import WEBUI_VERSION, WEBUI_CSS_PARTS, WEBUI_HTML_PARTS, WEBUI_JS_PARTS, WebUiPaths, build_webui
 
 
 def _write_minimal_tree(tmp: Path) -> WebUiPaths:
@@ -23,7 +23,7 @@ def _write_minimal_tree(tmp: Path) -> WebUiPaths:
     out_html = tmp / "webui.html"
 
     src_html.write_text(
-        "<!doctype html>\n"
+        f"<!doctype html><!-- VERSION: {WEBUI_VERSION} -->\n"
         "<html>\n"
         "<head><style>/*__WEBUI_CSS__*/</style></head>\n"
         "<body><!--__WEBUI_BODY__*/<script>/*__WEBUI_JS__*/</script></body>\n"

@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-webui.8 -->
+<!-- Version: 0.6.12-webui.9 -->
 # Web UI JavaScript parts
 
 The Web UI JavaScript is split into multiple files for readability and review.
@@ -18,6 +18,7 @@ Current order:
 - `40_events_init.js`
 
 Rules:
+- Do not add `VERSION:` headers in part files. The bundle header is generated in `webui.js`.
 - Avoid root-relative requests like `fetch('/api')`. Home Assistant Ingress runs
   add-ons under a path prefix, so root-relative URLs typically break.
 - If you add a new JS part, update `WEBUI_JS_PARTS` and run:

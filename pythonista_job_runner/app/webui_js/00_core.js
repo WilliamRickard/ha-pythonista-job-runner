@@ -1,4 +1,3 @@
-/* VERSION: 0.6.12 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";

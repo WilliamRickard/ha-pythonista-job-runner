@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.8
+# Version: 0.6.12-webui.10
 from __future__ import annotations
 
 """Build the Home Assistant Ingress-safe Web UI template.
@@ -28,7 +28,31 @@ from pathlib import Path
 import re
 
 
-WEBUI_VERSION = "0.6.12-webui.8"
+WEBUI_VERSION = "0.6.12-webui.10"
+
+_RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*)\s*VERSION\s*:", re.IGNORECASE)
+
+_SRC_HTML_VERSION_RE = re.compile(
+    r'^\s*<!doctype\s+html><!--\s*VERSION:\s*([^ ]+)\s*-->\s*$',
+    re.IGNORECASE,
+)
+
+def _assert_src_html_version_matches(src_html_path: Path, src_text: str) -> None:
+    """Ensure webui_src.html VERSION comment matches WEBUI_VERSION."""
+    first_line = src_text.splitlines()[0] if src_text else ""
+    m = _SRC_HTML_VERSION_RE.match(first_line)
+    if not m:
+        raise RuntimeError(
+            f"{src_html_path.name} first line must be '<!doctype html><!-- VERSION: {WEBUI_VERSION} -->' "
+            f"(found {first_line!r})"
+        )
+    found = m.group(1)
+    if found != WEBUI_VERSION:
+        raise RuntimeError(
+            f"{src_html_path.name} VERSION ({found}) does not match WEBUI_VERSION ({WEBUI_VERSION})"
+        )
+
+
 
 
 @dataclass(frozen=True)
@@ -214,6 +238,8 @@ def _read_html_parts(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8").rstrip()
+        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
+            raise RuntimeError(f"JavaScript part must not declare VERSION header: {part}")
         for pat in banned_patterns:
             if pat.search(txt):
                 raise RuntimeError(f"HTML part contains forbidden tag/pattern ({pat.pattern}): {part}")
@@ -262,6 +288,8 @@ def _read_js_bundle(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8").rstrip()
+        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
+            raise RuntimeError(f"JavaScript part must not declare VERSION header: {part}")
         _check_root_relative_in_text(
             source=f"webui_js/{part.name}",
             text=txt,
@@ -346,6 +374,8 @@ def build_webui(paths: WebUiPaths | None = None) -> str:
     p = paths or _default_paths()
 
     src = p.src_html.read_text(encoding="utf-8")
+    _assert_src_html_version_matches(p.src_html, src)
+
     css = _build_css(p)
 
     body = _read_html_parts(p)
