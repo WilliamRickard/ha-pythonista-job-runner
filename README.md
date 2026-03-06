@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.4 -->
+<!-- Version: 0.6.12-docs.6 -->
 # Pythonista Job Runner (Home Assistant add-on repository)
 
 Run Python jobs from Pythonista (iOS) on your Home Assistant host, and download the results as a zip. The add-on includes an Ingress Web UI for job status and logs.
@@ -14,7 +14,7 @@ For the full guide (configuration, API reference, Pythonista client examples, tr
 2. In Settings -> Add-ons -> Add-on Store, find **Pythonista Job Runner**, install it, then open it.
 3. In the add-on configuration, set a strong **Access token** and save.
 4. Start the add-on.
-5. From Pythonista, upload a job zip to `http://YOUR_HOME_ASSISTANT_HOST:8787/run` with header `X-Runner-Token: YOUR_RUNNER_TOKEN`.
+5. From Pythonista, upload a job zip to `http://YOUR_HOME_ASSISTANT_HOST:8787/run` with header `X-Runner-Token: YOUR_RUNNER_TOKEN`. This direct API path only works when **Access token** is set and **Ingress only** is off.
 
 If you want to confirm the add-on is working before touching Pythonista, open **Open Web UI** (Ingress) and check that the job list loads.
 
@@ -122,31 +122,34 @@ For a fuller client (stream logs, cancel jobs, download results by job id), see 
 
 ## Screenshots
 
-Placeholders for screenshots to add later:
+The repo now includes placeholder screenshots in [`docs/screenshots/`](docs/screenshots/) so the README layout works before real captures are added. Replace them with current Home Assistant screenshots when the UI is ready.
 
-- Add-on Store entry: `docs/screenshots/01_addon_store.png`
-- Add-on configuration (token field): `docs/screenshots/02_config_token.png`
-- Ingress Web UI job list: `docs/screenshots/03_webui_jobs.png`
+### Add-on Store entry
 
-Once you add the images, you can embed them here.
+![Home Assistant Add-on Store page for Pythonista Job Runner](docs/screenshots/01_addon_store.png)
 
-<!--
-![Add-on Store entry](docs/screenshots/01_addon_store.png)
-![Add-on configuration](docs/screenshots/02_config_token.png)
-![Ingress Web UI](docs/screenshots/03_webui_jobs.png)
--->
+### Add-on configuration
+
+![Pythonista Job Runner configuration page showing the access token setting](docs/screenshots/02_config_token.png)
+
+### Ingress Web UI
+
+![Pythonista Job Runner Ingress Web UI showing the jobs list](docs/screenshots/03_webui_jobs.png)
 
 ## Security model
 
-- The external HTTP API requires `X-Runner-Token` on every request.
-- Keep port 8787 on your local network only. Do not expose it to the public internet.
-- The Ingress Web UI runs inside Home Assistant and uses Home Assistant authentication.
+- `GET /health` is intentionally unauthenticated for basic connectivity checks.
+- The Ingress Web UI runs inside Home Assistant and uses Home Assistant authentication. It does not use `X-Runner-Token`.
+- Direct API requests from Pythonista must send `X-Runner-Token`. If **Access token** is blank, direct API access is disabled.
+- If **Allowed client CIDRs** is set, direct API requests must come from an allowed network as well as present the correct token.
+- If **Ingress only** (`ingress_strict`) is enabled, direct API access is blocked completely, even with the right token and CIDR.
+- Keep port `8787` on your local network only. Do not expose it to the public internet.
 
 For more detail and hardening ideas, see [`SECURITY.md`](SECURITY.md).
 
 ## Troubleshooting
 
-- **401 unauthorised**: check the token and that you are sending it in `X-Runner-Token`.
+- **401 unauthorised**: check the token, confirm **Access token** is not blank, and make sure **Ingress only** is off if you are calling the direct API from Pythonista.
 - **Cannot connect**: confirm the add-on is started and that `YOUR_HOME_ASSISTANT_HOST` is reachable from your iPhone.
 - **Upload fails immediately**: your zip must contain `run.py` at the zip root (not inside a subfolder).
 - **Result zip is missing your files**: your script must write them under `outputs/`.

@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.2 -->
+<!-- Version: 0.6.12-docs.3 -->
 # Security policy
 
 ## Reporting a vulnerability
@@ -27,6 +27,13 @@ Current authentication and access behaviour:
 - If the Access token is blank, direct non-Ingress API access is denied.
 - If `api_allow_cidrs` is configured, direct non-Ingress access must satisfy both checks: valid token and client IP inside one of the configured CIDR ranges.
 - If `ingress_strict` is enabled, only Ingress traffic is accepted. Direct access is denied even if the token and CIDR checks would otherwise pass.
+
+In practice, direct API access works only when all of the following are true:
+
+- You are not using the dedicated unauthenticated `GET /health` endpoint.
+- The request is not being blocked by `ingress_strict`.
+- The Access token is set and matches `X-Runner-Token`.
+- The client IP matches `api_allow_cidrs`, if you configured one.
 
 ## Operating this add-on safely
 

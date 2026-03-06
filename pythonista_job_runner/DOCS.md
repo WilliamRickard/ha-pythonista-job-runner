@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.6 -->
+<!-- Version: 0.6.12-docs.9 -->
 # Pythonista Job Runner
 
 Pythonista Job Runner is a Home Assistant add-on that:
@@ -44,16 +44,21 @@ Home Assistant documentation (developer docs):
 
 In the add-on Configuration tab:
 
-- Security -> Access token (required)
-  - Pythonista must send this token in the `X-Runner-Token` header for direct API calls.
-- Security -> Ingress only (recommended for UI)
+- Security -> Access token
+  - Direct API clients such as Pythonista must send this value in the `X-Runner-Token` header.
+  - If this value is blank, direct API access is disabled.
+- Security -> Ingress only
+  - This is the `ingress_strict` option in the add-on config.
   - If enabled, only Home Assistant Ingress can access the add-on.
   - This is great for the Web UI, but it blocks direct calls from Pythonista.
+- Security -> Allowed client CIDRs
+  - This is the `api_allow_cidrs` option in the add-on config.
+  - If set, direct API requests must come from an allowed network as well as present the correct token.
 
 Typical setup for Pythonista usage:
 
 - Set a strong Access token.
-- Leave "Ingress only" OFF (so Pythonista can connect).
+- Leave "Ingress only" OFF so Pythonista can connect directly.
 - Optionally set "Allowed client CIDRs" to your local network range (for example, your Wi-Fi subnet) so the API is not reachable from everywhere.
 
 Remote access tip: do not expose the add-on port directly to the internet. If you need remote access, prefer a VPN or Home Assistant Cloud, and keep your Home Assistant instance secured.
@@ -62,13 +67,60 @@ Remote access tip: do not expose the add-on port directly to the internet. If yo
 
 The add-on exposes its HTTP API on port 8787 (by default). The base URL will look like one of these:
 
-- `http://homeassistant.local:8787`
-- `http://<home-assistant-ip>:8787`
+- `http://YOUR_HOME_ASSISTANT_HOST:8787`
+- `http://YOUR_HOME_ASSISTANT_IP:8787`
 
 Ingress Web UI (inside Home Assistant):
 - Open the add-on and click **Open Web UI**.
 - Ingress is authenticated by Home Assistant. Home Assistant recommends add-ons restrict Ingress traffic to the Supervisor proxy IP `172.30.32.2` and deny others. This add-on treats Ingress traffic as trusted. Home Assistant Ingress requirements are documented here:
   - https://developers.home-assistant.io/docs/apps/presentation/#ingress
+
+## Ingress versus direct API access
+
+Use **Ingress** when you are interacting with the built-in Web UI from inside Home Assistant. Use the **direct API** when Pythonista or another script is uploading jobs over the network.
+
+### Ingress
+
+Ingress is the simplest path for humans using the Web UI:
+
+1. Open the add-on inside Home Assistant.
+2. Click **Open Web UI**.
+3. Browse jobs, logs, and result downloads in the authenticated Home Assistant session.
+
+Ingress requests are authenticated by Home Assistant itself and proxied to the add-on. You do not send `X-Runner-Token` manually in this flow. `GET /health` is separate and intentionally unauthenticated for simple connectivity checks.
+
+### Direct API
+
+The direct API is the path Pythonista uses. This goes to port `8787` on your Home Assistant host and requires `X-Runner-Token`. It only works when an Access token is set, `ingress_strict` is off, and your client IP matches any configured `api_allow_cidrs`.
+
+Concrete Pythonista example:
+
+```python
+import requests
+
+RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
+TOKEN = "YOUR_RUNNER_TOKEN"
+REQUEST_TIMEOUT_SECONDS = 60
+
+with open("job.zip", "rb") as f:
+    response = requests.post(
+        RUNNER_URL + "/run",
+        data=f,
+        headers={
+            "X-Runner-Token": TOKEN,
+            "Content-Type": "application/zip",
+        },
+        timeout=REQUEST_TIMEOUT_SECONDS,
+    )
+
+response.raise_for_status()
+print(response.json())
+```
+
+Rule of thumb:
+
+- Open Web UI inside Home Assistant: use Ingress.
+- Upload from Pythonista on your phone: use the direct API with `X-Runner-Token`.
 
 ## Job zip format
 
@@ -212,7 +264,7 @@ This script:
 ```python
 """Pythonista client for Pythonista Job Runner.
 
-Edit RUNNER_URL and TOKEN, then run in Pythonista.
+Edit RUNNER_URL and TOKEN, then run in Pythonista. The placeholder host name and token below match the shorter examples elsewhere in this guide.
 """
 
 import io
@@ -225,8 +277,11 @@ import zipfile
 import requests
 
 
-RUNNER_URL = "http://homeassistant.local:8787"
-TOKEN = "paste-your-access-token"
+RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
+TOKEN = "YOUR_RUNNER_TOKEN"
+SUBMIT_TIMEOUT_SECONDS = 60
+POLL_TIMEOUT_SECONDS = 30
+DOWNLOAD_TIMEOUT_SECONDS = 120
 
 
 def build_job_zip(zip_path):
@@ -249,7 +304,7 @@ def submit_job(zip_path):
             RUNNER_URL + "/run",
             data=f,  # raw zip bytes
             headers={"X-Runner-Token": TOKEN},
-            timeout=60,
+            timeout=SUBMIT_TIMEOUT_SECONDS,
         )
     r.raise_for_status()
     return r.json()
@@ -264,7 +319,7 @@ def poll_until_done(job_id, poll_seconds=1):
             RUNNER_URL + "/tail/{}.json".format(job_id),
             params={"stdout_from": last_out, "stderr_from": last_err},
             headers={"X-Runner-Token": TOKEN},
-            timeout=30,
+            timeout=POLL_TIMEOUT_SECONDS,
         )
         r.raise_for_status()
         payload = r.json()
@@ -295,7 +350,7 @@ def download_result(job_id, out_zip_path):
     r = requests.get(
         RUNNER_URL + "/result/{}.zip".format(job_id),
         headers={"X-Runner-Token": TOKEN},
-        timeout=120,
+        timeout=DOWNLOAD_TIMEOUT_SECONDS,
     )
     r.raise_for_status()
     with open(out_zip_path, "wb") as f:
@@ -339,8 +394,9 @@ If you already have a `job.zip` saved in Files, you can pick it:
 import requests
 import dialogs
 
-RUNNER_URL = "http://homeassistant.local:8787"
-TOKEN = "paste-your-access-token"
+RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
+TOKEN = "YOUR_RUNNER_TOKEN"
+SUBMIT_TIMEOUT_SECONDS = 60
 
 
 def main():
@@ -354,7 +410,7 @@ def main():
             RUNNER_URL + "/run",
             data=f,
             headers={"X-Runner-Token": TOKEN},
-            timeout=60,
+            timeout=SUBMIT_TIMEOUT_SECONDS,
         )
 
     r.raise_for_status()
@@ -374,19 +430,21 @@ Note: `dialogs.pick_document()` returns a temporary file path. If you need to ke
 Causes:
 
 - Missing or wrong `X-Runner-Token`.
-- "Ingress only" is enabled, and you are calling the API directly from Pythonista.
-- You set "Allowed client CIDRs" and your phone is not in the allowed range.
+- Access token is blank, so direct API access is disabled.
+- "Ingress only" (`ingress_strict`) is enabled, and you are calling the API directly from Pythonista.
+- You set "Allowed client CIDRs" (`api_allow_cidrs`) and your phone is not in the allowed range.
 
 Fix:
 
-- Confirm the token matches.
+- Confirm the token matches the configured Access token.
+- Set an Access token if you want direct Pythonista access.
 - Disable "Ingress only" if you need direct Pythonista access.
-- Adjust CIDR allowlist.
+- Adjust the CIDR allowlist.
 
 ### Cannot connect
 
 - Confirm the add-on is running.
-- Confirm you can reach `http://<home-assistant-host>:8787/health` from the same network.
+- Confirm you can reach `http://YOUR_HOME_ASSISTANT_HOST:8787/health` from the same network.
 - If you are using HTTPS for Home Assistant, note the add-on port is still HTTP by default. Use a VPN, a reverse proxy, or keep it local.
 
 ### 413 upload too large
