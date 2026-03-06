@@ -68,6 +68,11 @@ def test_readme_screenshot_alt_text_is_descriptive() -> None:
         assert 'placeholder' not in lowered, (
             f'{image_path.name} alt text should describe the intended image, not call it a placeholder'
         )
+        if image_path.name not in ALT_TEXT_KEYWORDS:
+            raise AssertionError(
+                f'{image_path.name} is not in ALT_TEXT_KEYWORDS. '
+                f'Add it to the dictionary or remove the unexpected screenshot file.'
+            )
         keywords = ALT_TEXT_KEYWORDS[image_path.name]
         matches = sum(1 for keyword in keywords if keyword in lowered)
         assert matches >= 2, (
