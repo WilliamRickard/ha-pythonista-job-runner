@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.2 -->
+<!-- Version: 0.6.12-docs.3 -->
 ## What changed
 
 -
@@ -17,6 +17,7 @@
   - [ ] [`pythonista_job_runner/DOCS.md`](../pythonista_job_runner/DOCS.md)
   - [ ] [`SECURITY.md`](../SECURITY.md), if security behaviour changed
 - [ ] Tests are green (`python -m pytest -q`) or rationale given if not applicable
+- [ ] If Markdown or internal docs changed, `python -m pytest -q pythonista_job_runner/tests/test_docs_links_exist.py` passed
 - [ ] If Web UI sources changed, `python pythonista_job_runner/app/webui_build.py --check` passed
 - [ ] Verified in Home Assistant with a basic smoke test where practical
 - [ ] No secrets or tokens committed

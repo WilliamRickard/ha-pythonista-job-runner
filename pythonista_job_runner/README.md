@@ -1,12 +1,11 @@
-<!-- Version: 0.6.12-docs.6 -->
+<!-- Version: 0.6.12-docs.8 -->
 # Pythonista Job Runner
 
 Run Python jobs sent from Pythonista (iOS) and download the results as a zip.
 
 This add-on is designed for the "phone as controller, Home Assistant as worker" workflow: you build a small job zip on the iPhone, send it to Home Assistant, and fetch the result back to the phone.
 
-For full documentation (recommended), open:
-- [DOCS.md](DOCS.md)
+This file is the short add-on introduction. For the full guide, API reference, troubleshooting, and security detail, open [DOCS.md](DOCS.md).
 
 ## Quick start
 
@@ -22,15 +21,16 @@ This add-on expects the raw zip bytes as the request body (not multipart form up
 ```python
 import requests
 
-RUNNER_URL = "http://homeassistant.local:8787"
-TOKEN = "paste-your-access-token"
+RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
+TOKEN = "YOUR_RUNNER_TOKEN"
+REQUEST_TIMEOUT_SECONDS = 60
 
 with open("job.zip", "rb") as f:
     r = requests.post(
         RUNNER_URL + "/run",
         data=f,
         headers={"X-Runner-Token": TOKEN},
-        timeout=60,
+        timeout=REQUEST_TIMEOUT_SECONDS,
     )
 
 r.raise_for_status()
@@ -48,4 +48,5 @@ See [DOCS.md](DOCS.md) for:
 - Pythonista client scripts (including polling logs and downloading results)
 - Full HTTP API reference
 - Troubleshooting
+- [Ingress versus direct API access](DOCS.md#ingress-versus-direct-api-access)
 - [Advanced: Web UI customisation](DOCS.md#advanced-web-ui-customisation) (for contributors)

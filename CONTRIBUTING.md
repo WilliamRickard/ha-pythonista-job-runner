@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.4 -->
+<!-- Version: 0.6.12-docs.7 -->
 # Contributing
 
 Thanks for contributing.
@@ -29,6 +29,19 @@ Markdown version headers:
   - [`pythonista_job_runner/app/webui_css/README.md`](pythonista_job_runner/app/webui_css/README.md)
   - [`pythonista_job_runner/app/webui_js/README.md`](pythonista_job_runner/app/webui_js/README.md)
   The Web UI build will fail if any of those files contains a `<!-- Version: ... -->` line.
+
+## Documentation maintenance
+
+Use the docs files for different jobs so they do not drift into copies of each other:
+
+- [`README.md`](README.md): repository overview, Home Assistant repository install, first successful run, and top-level screenshots. Update this when the first-run path or repository-level positioning changes.
+- [`pythonista_job_runner/README.md`](pythonista_job_runner/README.md): short add-on introduction. Keep it brief and focused on what the add-on does and the fastest route to success.
+- [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md): full user guide. Update this for configuration, API behaviour, Pythonista examples, troubleshooting, and advanced usage.
+- [`SECURITY.md`](SECURITY.md): token, Ingress, direct API, CIDR allowlist, and execution-user security behaviour. Update this whenever access control or trust boundaries change.
+- [`pythonista_job_runner/CHANGELOG.md`](pythonista_job_runner/CHANGELOG.md): user-visible behaviour, documentation, and repo hygiene changes worth calling out in a release note.
+- [`docs/screenshots/README.md`](docs/screenshots/README.md): screenshot purpose, filenames, and replacement guidance. Update this when screenshot filenames or capture expectations change.
+
+Before you finish a docs change, check whether the same behaviour is described in more than one file and make sure the short files point to the detailed file instead of repeating it.
 
 ## Web UI build
 
@@ -67,7 +80,7 @@ Build guardrails enforced by [`webui_build.py`](pythonista_job_runner/app/webui_
 - HTML `id` attributes must be unique across all HTML partials.
 - Root-relative URLs are forbidden in HTML, CSS, and JavaScript (for example `href="/..."`, `url(/...)`, `fetch("/...")`).
 - JavaScript part files must not contain their own `VERSION:` headers.
-- `WEBUI_VERSION` is the single source of truth for Web UI versioning. The build checks version headers in `webui_src.html`, `webui.html`, `webui.css`, and `webui.js`.
+- `WEBUI_VERSION` is the single source of truth for Web UI versioning. The build checks version headers in [`pythonista_job_runner/app/webui_src.html`](pythonista_job_runner/app/webui_src.html), [`pythonista_job_runner/app/webui.html`](pythonista_job_runner/app/webui.html), [`pythonista_job_runner/app/webui.css`](pythonista_job_runner/app/webui.css), and [`pythonista_job_runner/app/webui.js`](pythonista_job_runner/app/webui.js).
 
 ## Testing
 
@@ -81,7 +94,10 @@ Typical local checks:
 2. If you changed the Web UI sources, also run:
    - `python pythonista_job_runner/app/webui_build.py --check`
 
-3. Manual smoke test (recommended):
+3. If you changed Markdown, internal doc links, or screenshots, also run:
+   - `python -m pytest -q pythonista_job_runner/tests/test_docs_links_exist.py pythonista_job_runner/tests/test_readme_screenshot_assets.py pythonista_job_runner/tests/test_screenshot_filename_contract.py`
+
+4. Manual smoke test (recommended):
    - Jobs list loads
    - Details view loads
    - Logs stream correctly
@@ -90,3 +106,26 @@ Typical local checks:
 ## Releases
 
 This repository is intended to be installed as a third-party repository in Home Assistant. Home Assistant will build the add-on image from the contents of `pythonista_job_runner/` when the user installs or updates it.
+
+## Updating screenshots
+
+When you replace the placeholder images under [`docs/screenshots/`](docs/screenshots/):
+
+- Prefer PNG.
+- Aim for roughly 1200 to 1600 pixels wide so the image still reads clearly in GitHub and on phones.
+- Crop tightly so the important controls are legible.
+- Check for tokens, usernames, IP addresses, hostnames, file paths, repository URLs, or other sensitive details before you commit.
+- Keep the approved screenshot filenames stable unless the screenshot purpose changes, because the root [`README.md`](README.md) links to those names directly.
+
+The screenshot filenames are a contract between [`README.md`](README.md), [`docs/screenshots/README.md`](docs/screenshots/README.md), and the actual PNG files in [`docs/screenshots/`](docs/screenshots/). If you add, remove, or rename an embedded screenshot, update all three in the same change.
+
+## Generated artefacts and caches
+
+Do not commit packaging artefacts or local test caches. In particular:
+
+- `PR_METADATA.json`
+- `CHANGES_MANIFEST.json`
+- `.pytest_cache/`
+- `__pycache__/`
+
+These files are not part of the add-on source and make review noisier.

@@ -1,10 +1,24 @@
-<!-- Version: 0.6.12-docs.5 -->
+<!-- Version: 0.6.12-docs.6 -->
 # Changelog
 
 ## Unreleased
 
-- Docs: expand user documentation and add Pythonista examples.
-- Docs: add advanced Web UI customisation section (source folders and rebuild/check commands).
+### Docs
+
+- Clarify the roles of the repository README, add-on README, and full add-on guide.
+- Add an "Ingress versus direct API access" section with a concrete Pythonista example.
+- Add placeholder screenshots and clearer screenshot replacement guidance.
+- Tighten internal Markdown links so the main docs are easier to navigate.
+
+### Web UI build and contributor guidance
+
+- Document the split Web UI source folders and rebuild/check workflow more clearly.
+- Add contributor guidance for updating screenshots and avoiding generated artefacts in commits.
+
+### Tests and repo hygiene
+
+- Add a Markdown links test that validates local file targets and section anchors.
+- Remove local caches and packaging artefacts from the tracked repo contents.
 
 ## 0.6.12
 

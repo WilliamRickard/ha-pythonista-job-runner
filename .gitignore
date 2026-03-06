@@ -1,3 +1,4 @@
+# Version: 0.6.12-docs.1
 # Python
 __pycache__/
 *.pyc
@@ -17,3 +18,6 @@ pythonista_job_runner_logs/
 # PR tooling
 PR_METADATA.json
 pr_metadata.json
+
+CHANGES_MANIFEST.json
+changes_manifest.json

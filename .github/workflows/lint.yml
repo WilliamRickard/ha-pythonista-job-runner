@@ -1,3 +1,4 @@
+# Version: 0.6.12-docs.2
 ---
 name: Lint
 
@@ -39,6 +40,30 @@ jobs:
         with:
           recursive: true
           dockerfile: pythonista_job_runner/Dockerfile
+
+  docs:
+    name: Docs checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest
+      - name: Check generated Web UI bundle
+        run: |
+          python pythonista_job_runner/app/webui_build.py --check
+      - name: Run docs checks
+        run: |
+          python -m pytest -q \
+            pythonista_job_runner/tests/test_docs_links_exist.py \
+            pythonista_job_runner/tests/test_readme_screenshot_assets.py \
+            pythonista_job_runner/tests/test_screenshot_filename_contract.py
 
   pytest:
     name: Python tests
