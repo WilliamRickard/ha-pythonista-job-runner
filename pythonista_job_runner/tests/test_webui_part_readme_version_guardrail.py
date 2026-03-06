@@ -1,5 +1,5 @@
-# Version: 0.6.12-webui.12
-"""Tests for Web UI part README version guardrail."""
+# Version: 0.6.12-webui.13
+"""Tests for Web UI part README guardrail (no per-folder version headers)."""
 
 from __future__ import annotations
 
@@ -19,11 +19,11 @@ from webui_build import (
 
 def _write_minimal_tree(
     tmp: Path,
-    readme_versions: dict[str, str] | None = None,
+    readme_folders_with_version_header: set[str] | None = None,
 ) -> WebUiPaths:
     """Create a minimal webui build tree in tmp and return paths."""
 
-    readme_versions = readme_versions or {}
+    readme_folders_with_version_header = readme_folders_with_version_header or set()
 
     src_html = tmp / "webui_src.html"
     css = tmp / "webui.css"
@@ -60,49 +60,37 @@ def _write_minimal_tree(
         (css_dir / name).write_text("/* css */\n", encoding="utf-8")
 
     # Optional READMEs
-    for folder, version in readme_versions.items():
+    for folder in ("webui_html", "webui_css", "webui_js"):
         (tmp / folder).mkdir(exist_ok=True)
-        (tmp / folder / "README.md").write_text(
-            f"<!-- Version: {version} -->\n# Readme\n",
-            encoding="utf-8",
-        )
+        readme = tmp / folder / "README.md"
+        if folder in readme_folders_with_version_header:
+            readme.write_text(
+                f"<!-- Version: {WEBUI_VERSION} -->\n# Readme\n",
+                encoding="utf-8",
+            )
+        else:
+            readme.write_text("# Readme\n", encoding="utf-8")
 
     return WebUiPaths(src_html=src_html, css=css, js=js, out_html=out_html)
 
 
-def test_readme_version_mismatch_fails(tmp_path: Path) -> None:
-    """If a part README declares a mismatched version, the build should fail."""
+def test_part_readme_version_header_is_forbidden(tmp_path: Path) -> None:
+    """If a part README declares a version header, the build should fail."""
 
-    paths = _write_minimal_tree(
-        tmp_path,
-        readme_versions={"webui_html": "bad-version"},
-    )
+    paths = _write_minimal_tree(tmp_path, readme_folders_with_version_header={"webui_html"})
 
     with pytest.raises(RuntimeError) as excinfo:
         build_webui(paths)
 
     msg = str(excinfo.value)
-    assert "webui_html/README.md VERSION" in msg
-    assert "does not match WEBUI_VERSION" in msg
+    assert "webui_html/README.md" in msg
+    assert "must not declare a version header" in msg
 
 
-def test_readme_version_omitted_is_allowed(tmp_path: Path) -> None:
-    """README files may omit the version header entirely."""
+def test_part_readmes_without_version_headers_are_allowed(tmp_path: Path) -> None:
+    """Part README files without version headers are allowed."""
 
     paths = _write_minimal_tree(tmp_path)
 
     out = build_webui(paths)
     assert out.startswith("<!doctype html")
-
-
-def test_readme_malformed_lowercase_version_header_fails(tmp_path: Path) -> None:
-    """Malformed README version headers should fail regardless of case."""
-
-    paths = _write_minimal_tree(tmp_path)
-    (tmp_path / "webui_html" / "README.md").write_text("version: nope\n# Readme\n", encoding="utf-8")
-
-    with pytest.raises(RuntimeError) as excinfo:
-        build_webui(paths)
-
-    msg = str(excinfo.value)
-    assert "webui_html/README.md first line must be" in msg

@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.1 -->
+<!-- Version: 0.6.12-docs.6 -->
 # Pythonista Job Runner
 
 Pythonista Job Runner is a Home Assistant add-on that:
@@ -29,7 +29,7 @@ If you have not added this GitHub repository to Home Assistant yet, add it via:
 - Settings -> Add-ons -> Add-on Store -> menu -> Repositories
 - Add: `https://github.com/WilliamRickard/ha-pythonista-job-runner`
 
-Home Assistant also supports a "My Home Assistant" link that opens the repository dialog pre-filled. See the repository root `README.md`.
+Home Assistant also supports a "My Home Assistant" link that opens the repository dialog pre-filled. See the [repository root README](../README.md).
 
 Home Assistant documentation (developer docs):
 - https://developers.home-assistant.io/docs/apps/repository/
@@ -400,6 +400,47 @@ Fix:
 
 ## Developer notes
 
-- `pythonista_job_runner/README.md` is the short entry.
-- `pythonista_job_runner/DOCS.md` is the full user documentation shown in the add-on UI.
-- `pythonista_job_runner/CHANGELOG.md` tracks add-on changes.
+- [`README.md`](README.md) is the short entry.
+- [`DOCS.md`](DOCS.md) is the full user documentation shown in the add-on UI.
+- [`CHANGELOG.md`](CHANGELOG.md) tracks add-on changes.
+- [`../CONTRIBUTING.md`](../CONTRIBUTING.md) covers contributor workflow, Web UI build rules, and local checks.
+
+## Advanced: Web UI customisation
+
+This section is for contributors who want to change the built-in Web UI. For normal usage, you do not need this.
+
+The add-on serves the Web UI as a single Ingress-safe file ([`app/webui.html`](app/webui.html)). Do not edit that file directly. It is generated.
+
+Edit these source files instead:
+
+- [`app/webui_src.html`](app/webui_src.html) (HTML wrapper and placeholders)
+- [`app/webui_html/`](app/webui_html/) (`*.html`, HTML body partials)
+- [`app/webui_css/`](app/webui_css/) (`*.css`, CSS parts)
+- [`app/webui_js/`](app/webui_js/) (`*.js`, JavaScript parts)
+
+Rebuild generated outputs:
+
+- `python pythonista_job_runner/app/webui_build.py`
+
+Check that generated outputs are up to date:
+
+- `python pythonista_job_runner/app/webui_build.py --check`
+
+Generated outputs (do not edit by hand):
+
+- [`app/webui.html`](app/webui.html)
+- [`app/webui.css`](app/webui.css)
+- [`app/webui.js`](app/webui.js)
+
+Build rules enforced by [`app/webui_build.py`](app/webui_build.py):
+
+- Deterministic part ordering: the builder enforces explicit ordered lists for HTML, CSS, and JS parts.
+- No root-relative URLs: references like `href="/..."`, `fetch("/...")`, or `url(/...)` are rejected because Home Assistant Ingress runs under a path prefix.
+- HTML ids must be unique across all partials.
+- JS parts must not declare their own `VERSION:` headers; the generated `webui.js` header is the single source of truth.
+
+After rebuilding, run the test suite:
+
+- `pytest -q` (from the `pythonista_job_runner/` folder)
+
+For the contributor-focused version of this workflow, see [../CONTRIBUTING.md](../CONTRIBUTING.md#web-ui-build).

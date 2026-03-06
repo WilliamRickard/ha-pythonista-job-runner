@@ -1,9 +1,9 @@
-<!-- Version: 0.6.12-docs.2 -->
+<!-- Version: 0.6.12-docs.4 -->
 # Pythonista Job Runner (Home Assistant add-on repository)
 
 Run Python jobs from Pythonista (iOS) on your Home Assistant host, and download the results as a zip. The add-on includes an Ingress Web UI for job status and logs.
 
-For the full guide (configuration, API reference, Pythonista client examples, troubleshooting), see `pythonista_job_runner/DOCS.md`.
+For the full guide (configuration, API reference, Pythonista client examples, troubleshooting), see [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 
 [![Add this add-on repository to your Home Assistant instance](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FWilliamRickard%2Fha-pythonista-job-runner)
 [![Open the add-on in Home Assistant](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=pythonista_job_runner)
@@ -118,7 +118,7 @@ with open("result.zip", "wb") as f:
 print("Saved result.zip")
 ```
 
-For a fuller client (stream logs, cancel jobs, download results by job id), see `pythonista_job_runner/DOCS.md`.
+For a fuller client (stream logs, cancel jobs, download results by job id), see [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 
 ## Screenshots
 
@@ -142,7 +142,7 @@ Once you add the images, you can embed them here.
 - Keep port 8787 on your local network only. Do not expose it to the public internet.
 - The Ingress Web UI runs inside Home Assistant and uses Home Assistant authentication.
 
-For more detail and hardening ideas, see `SECURITY.md`.
+For more detail and hardening ideas, see [`SECURITY.md`](SECURITY.md).
 
 ## Troubleshooting
 
@@ -151,16 +151,36 @@ For more detail and hardening ideas, see `SECURITY.md`.
 - **Upload fails immediately**: your zip must contain `run.py` at the zip root (not inside a subfolder).
 - **Result zip is missing your files**: your script must write them under `outputs/`.
 
-More troubleshooting is in `pythonista_job_runner/DOCS.md`.
+More troubleshooting is in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 
 ## Documentation map
 
-- `README.md` (this file): quick start
-- `pythonista_job_runner/DOCS.md`: full user guide and API reference
-- `pythonista_job_runner/README.md`: short add-on intro
-- `SECURITY.md`: security model and safe setup
+- [`README.md`](README.md) (this file): quick start
+- [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md): full user guide and API reference
+- [`pythonista_job_runner/README.md`](pythonista_job_runner/README.md): short add-on intro
+- [`SECURITY.md`](SECURITY.md): security model and safe setup
+
+## Development
+
+Contributor guide: see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+Web UI sources live under `pythonista_job_runner/app/`:
+
+- HTML wrapper: [`webui_src.html`](pythonista_job_runner/app/webui_src.html)
+- HTML partials: [`webui_html/*.html`](pythonista_job_runner/app/webui_html/)
+- CSS partials: [`webui_css/*.css`](pythonista_job_runner/app/webui_css/)
+- JavaScript parts: [`webui_js/*.js`](pythonista_job_runner/app/webui_js/)
+
+Generated outputs (do not edit by hand):
+
+- [`webui.html`](pythonista_job_runner/app/webui.html), [`webui.css`](pythonista_job_runner/app/webui.css), [`webui.js`](pythonista_job_runner/app/webui.js)
+
+Rebuild and validate:
+
+- `python pythonista_job_runner/app/webui_build.py`
+- `python pythonista_job_runner/app/webui_build.py --check`
 
 ## Support
 
-- For usage and troubleshooting, start with `pythonista_job_runner/DOCS.md`.
+- For usage and troubleshooting, start with [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 - For bugs and feature requests, open a GitHub issue in this repository.

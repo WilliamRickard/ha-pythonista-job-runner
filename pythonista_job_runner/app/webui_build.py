@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.12
+# Version: 0.6.12-webui.13
 from __future__ import annotations
 
 """Build the Home Assistant Ingress-safe Web UI template.
@@ -28,9 +28,9 @@ from pathlib import Path
 import re
 
 
-WEBUI_VERSION = "0.6.12-webui.12"
+WEBUI_VERSION = "0.6.12-webui.13"
 
-_RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*|<!--)\s*VERSION\s*:", re.IGNORECASE)
+_RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*)\s*VERSION\s*:", re.IGNORECASE)
 
 _SRC_HTML_VERSION_RE = re.compile(
     r'^\s*<!doctype\s+html><!--\s*VERSION:\s*([^ ]+)\s*-->\s*$',
@@ -50,9 +50,16 @@ _README_VERSION_RE = re.compile(
 
 
 def _assert_parts_readme_versions(p: "WebUiPaths") -> None:
-    """Ensure webui_* part README versions match WEBUI_VERSION (or omit version line).
+    """Ensure webui_* part README files do not declare a version header.
 
-    This avoids a second, drifting "documentation version" for the Web UI parts.
+    The Web UI version is controlled centrally by WEBUI_VERSION in this builder.
+    Allowing per-folder README version headers creates a second, drifting "doc version"
+    that is easy to forget to update.
+
+    Rule:
+    - README.md may exist or not.
+    - If it exists, it must not contain an HTML comment of the form:
+        <!-- Version: ... -->
     """
 
     base = p.src_html.parent
@@ -60,25 +67,31 @@ def _assert_parts_readme_versions(p: "WebUiPaths") -> None:
         readme = base / folder / "README.md"
         if not readme.is_file():
             continue
+
+        # Fail if a version header appears anywhere in the README.
+        # We check the first few lines for speed, then fall back to a full scan
+        # if needed (the files are small).
         text = readme.read_text(encoding="utf-8")
-        first_line = text.splitlines()[0] if text else ""
-        m = _README_VERSION_RE.match(first_line)
-# Keep stricter pattern matching to avoid false positives
-if "Version:" in first_line or "VERSION:" in first_line:
-    if not _README_VERSION_RE.match(first_line):
-        raise RuntimeError(...)
-            # Allow README files without a version line, but fail fast on malformed
-            # "Version:" headers that don't match our expected format.
-            if "version:" in first_line.strip().lower():
-                raise RuntimeError(
-                    f"{folder}/README.md first line must be '<!-- Version: {WEBUI_VERSION} -->' "
-                    f"or omit the version header (found {first_line!r})"
-                )
-            continue
-        found = m.group(1)
-        if found != WEBUI_VERSION:
+        lines = text.splitlines()
+        scan_lines = lines[:10] if lines else []
+        found_line = None
+        for i, line in enumerate(scan_lines, start=1):
+            if _README_VERSION_RE.match(line):
+                found_line = (i, line)
+                break
+        if found_line is None:
+            # Full scan only if the token appears, to avoid work on normal files.
+            if "Version:" in text or "VERSION:" in text:
+                for i, line in enumerate(lines, start=1):
+                    if _README_VERSION_RE.match(line):
+                        found_line = (i, line)
+                        break
+
+        if found_line is not None:
+            i, line = found_line
             raise RuntimeError(
-                f"{folder}/README.md VERSION ({found}) does not match WEBUI_VERSION ({WEBUI_VERSION})"
+                f"{folder}/README.md must not declare a version header; "
+                f"remove the line {line!r} (line {i})"
             )
 
 
@@ -283,6 +296,8 @@ def _read_html_parts(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8").rstrip()
+        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
+            raise RuntimeError(f"HTML part must not declare VERSION header: {part}")
         for pat in banned_patterns:
             if pat.search(txt):
                 raise RuntimeError(f"HTML part contains forbidden tag/pattern ({pat.pattern}): {part}")
@@ -372,7 +387,7 @@ def _read_css_bundle(p: WebUiPaths) -> str:
     texts: list[str] = []
     for part in expected_paths:
         txt = part.read_text(encoding="utf-8")
-        if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
+        if any("VERSION:" in line for line in txt.splitlines()[0:3]):
             raise RuntimeError(f"CSS part must not declare VERSION header: {part}")
 
         _check_root_relative_in_text(
@@ -452,6 +467,7 @@ def write_webui(paths: WebUiPaths | None = None) -> None:
     """Write webui.html, webui.css, and webui.js in-place."""
 
     p = paths or _default_paths()
+    _assert_parts_readme_versions(p)
     css = _build_css(p)
     js = _build_js(p)
     out = build_webui(p)
