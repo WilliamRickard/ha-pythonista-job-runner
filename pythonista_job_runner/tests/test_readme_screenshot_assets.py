@@ -73,7 +73,11 @@ def test_readme_screenshot_alt_text_is_descriptive() -> None:
                 f'{image_path.name} is not in ALT_TEXT_KEYWORDS. '
                 f'Add it to the dictionary or remove the unexpected screenshot file.'
             )
-        keywords = ALT_TEXT_KEYWORDS[image_path.name]
+        keywords = ALT_TEXT_KEYWORDS.get(image_path.name)
+        assert keywords is not None, (
+            f'{image_path.name} is not present in ALT_TEXT_KEYWORDS; please add expected keyword(s) for this '
+            f'screenshot to {__file__} (ALT_TEXT_KEYWORDS dict)'
+        )
         matches = sum(1 for keyword in keywords if keyword in lowered)
         assert matches >= 2, (
             f'{image_path.name} alt text should mention its purpose; expected keywords {keywords!r}, got {alt_text!r}'
