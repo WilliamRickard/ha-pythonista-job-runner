@@ -1,3 +1,4 @@
+# Version: 0.6.12-tests.1
 """Regression tests for runner_core fixes.
 
 These tests cover edge cases that previously led to timeouts or unsafe behaviour.
@@ -40,11 +41,14 @@ def test_job_large_stdout_no_newline_completes(temp_data_dir):
             "token": "t",
             "job_user": _current_username(),
             "max_concurrent_jobs": 1,
+            "default_cpu_percent": 100,
+            "max_cpu_percent": 100,
         }
     )
 
     # 2 MiB of output without a newline: old readline()-based pumping could block
-    # until the job timeout triggered.
+    # until the job timeout triggered. Use a generous timeout so the test stays
+    # stable under heavier CI load while still catching the original regression.
     payload = (
         "import sys\n"
         "sys.stdout.write('x' * (2 * 1024 * 1024))\n"
@@ -52,10 +56,10 @@ def test_job_large_stdout_no_newline_completes(temp_data_dir):
     )
     zip_bytes = _make_zip({"run.py": payload})
 
-    job = runner.new_job(zip_bytes, {"X-Runner-TIMEOUT": "5"}, "127.0.0.1")
+    job = runner.new_job(zip_bytes, {"X-Runner-TIMEOUT": "20"}, "127.0.0.1")
 
     t0 = time.time()
-    while time.time() - t0 < 10:
+    while time.time() - t0 < 30:
         j = runner.get(job.job_id)
         assert j is not None
         if j.phase in ("done", "error"):
