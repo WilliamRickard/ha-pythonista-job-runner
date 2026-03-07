@@ -197,7 +197,15 @@ function parseUtcSeconds(v) {
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(sortMode === "newest" ? "Newest" : (sortMode === "oldest" ? "Oldest" : (sortMode === "active" ? "Active first" : "Errors first")));
+    const sortModeLabels = {
+      newest: "Newest",
+      oldest: "Oldest",
+      active: "Active first",
+    };
+    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
+      ? sortModeLabels[sortMode]
+      : (sortMode ? String(sortMode) : "Errors first");
+    bits.push(sortLabel);
     if (q) bits.push(`Search: ${q}`);
     if (filterHasResult) bits.push("Result ready");
     els.sticky_summary.textContent = bits.join(" · ");
