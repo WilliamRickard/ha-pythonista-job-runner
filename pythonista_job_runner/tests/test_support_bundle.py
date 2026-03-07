@@ -50,6 +50,8 @@ def test_support_bundle_endpoint(temp_data_dir):
         body = json.loads(resp.read().decode("utf-8"))
         assert resp.status == 200
         assert body["service"] == "pythonista_job_runner"
+        # Verify sensitive fields are redacted
+        assert body.get("options", {}).get("token") == "***REDACTED***"
     finally:
         conn.close()
         httpd.shutdown()
