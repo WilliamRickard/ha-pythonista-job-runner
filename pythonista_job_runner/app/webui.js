@@ -194,26 +194,41 @@ function parseUtcSeconds(v) {
   }
 
   /**
-   * Update the sticky summary bar to reflect the current job view, sort mode, active search term and whether results are ready.
+   * Update the sticky summary text to reflect current view, sort, search and result-filter state.
    *
-   * If the sticky summary element is not present the function performs no action.
+   * If the sticky summary element is not present, the function returns without action.
+   *
+   * The summary shows a base view label ("All jobs" or "State: <view>"), a human-friendly
+   * sort label ("Newest", "Oldest", "Active first" or "Errors first" for other modes),
+   * an optional search fragment ("Search: <query>") when a search is active, and an optional
+   * "Result ready" token when the result filter is enabled. Parts are joined with " · ".
    */
   function updateStickySummary() {
     if (!els.sticky_summary) return;
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(sortMode === "newest" ? "Newest" : (sortMode === "oldest" ? "Oldest" : (sortMode === "active" ? "Active first" : "Errors first")));
+    const sortModeLabels = {
+      newest: "Newest",
+      oldest: "Oldest",
+      active: "Active first",
+    };
+    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
+      ? sortModeLabels[sortMode]
+      : (sortMode ? String(sortMode) : "Errors first");
+    bits.push(sortLabel);
     if (q) bits.push(`Search: ${q}`);
     if (filterHasResult) bits.push("Result ready");
     els.sticky_summary.textContent = bits.join(" · ");
   }
 
   /**
-   * Update live controls and status indicators to reflect current follow and pause state.
+   * Update live/paused UI controls to reflect the current follow and paused state.
    *
-   * Updates button active states and ARIA attributes, shows or hides the "jump to latest" control,
-   * adjusts the live-status pill class (ok/warn/err) and sets the textual state to "Live", "Paused" or "Scroll".
+   * Updates button active states and `aria-pressed` attributes, sets the pause/resume
+   * button label, toggles visibility of the "jump to latest" control, and adjusts
+   * the live status pill's styling and text based on whether logs are live, paused,
+   * or in a scrollable state.
    */
   function updateLiveUi() {
     if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
@@ -625,7 +640,7 @@ function parseUtcSeconds(v) {
       setPaused(true, "scroll");
     }
   }
-  function escapeHtml(s) {
+function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -780,10 +795,10 @@ function applyFilters() {
   }
 
   /**
-   * Ensure a table row exists for the given job id and return it.
-   * Creates a new row with labelled cells for Job, State, Age, Duration, User and Actions (including a View button and a "More" overflow with Zip and Copy id) when none exists.
-   * @param {string} jobId - The job identifier to ensure a row for. If falsy, the function returns null.
-   * @returns {HTMLTableRowElement|null} The existing or newly created table row for the job, or `null` when `jobId` is falsy.
+   * Ensure a table row exists for the given job id, creating and initialising one with controls if necessary.
+   * The created row contains job metadata cells, action controls (View, Zip, Copy id) and attaches the appropriate event handlers.
+   * @param {string} jobId - The job identifier.
+   * @returns {HTMLTableRowElement|null} The existing or newly created table row element for the job, or `null` if `jobId` is falsy.
    */
   function _ensureRow(jobId) {
     if (!jobId) return null;
@@ -925,12 +940,12 @@ function applyFilters() {
   }
 
   /**
-   * Render the provided list of jobs into the jobs table and update the empty-state messaging.
+   * Render a list of job objects into the jobs table and update the empty-state UI.
    *
-   * Populates or updates table rows for each job (using each job's `job_id`), removes rows no longer present, and adjusts the visible empty-state title, body and action text based on connection and filter state.
+   * Updates the jobs table body to reflect the provided jobs: ensures rows exist, updates each row's content, removes stale rows, and appends the current set. When no jobs are supplied, updates the empty-state visibility and adjusts the empty title, body and action text based on the current view, query and connection/loading state.
    *
-   * @param {Array<Object>} jobs - Array of job objects; each object must include a `job_id` property used to identify rows.
-   * @param {string|undefined} query - Current search/filter query string used to select an appropriate empty-state message when there are no jobs.
+   * @param {Array<Object>} jobs - Array of job objects to display; each should include a `job_id` property.
+   * @param {string} [query] - Current search/filter query used to choose appropriate empty-state messaging.
    */
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
@@ -1511,7 +1526,7 @@ function closeAbout() {
     setTab(currentTab);
     await Promise.all([refreshMetaAndTail({ forceTail: true }), refreshOverview()]);
   }
-  async function refreshOverview() {
+async function refreshOverview() {
     if (!currentJob) return;
 
     try {
@@ -1671,14 +1686,12 @@ Client IP: ${ip || ""}`;
   }
 
   /**
-   * Refreshes global data and the current job's detail, updating UI connection state.
+   * Refreshes application state: stats, job list and, if a job is selected, its meta/tail and overview.
    *
-   * Performs concurrent refresh of stats and job list; if a job is selected, also refreshes its meta, tail and overview.
-   * On success updates connection status, hides any jobs banner and records the last-updated time.
-   * On failure sets the disconnected state, shows a jobs banner with the error and (unless silenced) displays a toast.
+   * Runs concurrently where possible, prevents concurrent refreshes, and updates UI state on success or error.
+   * The function sets an internal `refreshing` flag while the operation runs and clears it on completion.
    *
-   * @param {Object} [opts] - Optional settings for the refresh.
-   * @param {boolean} [opts.silent=false] - When true, suppresses user-facing error toasts.
+   * @param {{silent?: boolean}=} opts - Optional settings. If `silent` is true, suppresses the error toast on failure.
    */
   async function refreshAll(opts) {
     if (refreshing) return;
@@ -1714,7 +1727,7 @@ Client IP: ${ip || ""}`;
     }
     tickTimer = window.setTimeout(tick, pollMs);
   }
-  function toggleAuto() {
+function toggleAuto() {
     auto = !auto;
     els.autostate.textContent = auto ? "on" : "off";
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
@@ -1735,7 +1748,7 @@ Client IP: ${ip || ""}`;
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
-        if (action === "focus-filters" && els.job_sort) els.job_sort.focus();
+        if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
@@ -2003,11 +2016,12 @@ Client IP: ${ip || ""}`;
   }
 
   /**
-   * Initialises the web UI: restores persisted settings, binds handlers and starts live refresh.
+   * Initialise the UI: cache DOM elements, bind event handlers and restore persisted state.
    *
-   * Restores UI state from localStorage, caches DOM elements, attaches event listeners,
-   * applies log and pane settings, triggers the initial data refresh, selects a job from
-   * the query string if present, and starts the periodic tick loop and unload cleanup.
+   * Loads settings from localStorage (view, tab, poll interval, auto, search, sort, filters, follow,
+   * wrap, font, pause, hilite, pane), updates the UI to reflect those settings, loads highlight terms,
+   * applies log styling and pane layout, attaches scroll/resize and window lifecycle listeners, triggers
+   * an initial full refresh and restores any selected job, then starts the regular tick loop.
    */
   async function init() {
     cacheEls();
@@ -2073,7 +2087,7 @@ Client IP: ${ip || ""}`;
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 0;
+        const show = isNarrow() && r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });

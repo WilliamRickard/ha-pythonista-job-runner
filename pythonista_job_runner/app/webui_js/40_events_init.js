@@ -19,7 +19,7 @@ function toggleAuto() {
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
-        if (action === "focus-filters" && els.job_sort) els.job_sort.focus();
+        if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
@@ -358,7 +358,7 @@ function toggleAuto() {
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 0;
+        const show = isNarrow() && r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });

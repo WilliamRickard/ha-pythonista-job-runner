@@ -91,3 +91,17 @@ def test_row_overflow_actions_used_instead_of_many_inline_buttons() -> None:
 
     assert 'row-overflow' in render
     assert 'Copy id' in render
+
+
+def test_sticky_command_focus_action_targets_search() -> None:
+    events = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+
+    assert 'action === "focus-search"' in events
+    assert 'els.search.focus();' in events
+
+
+def test_jobs_command_row_keeps_refresh_in_primary_surface() -> None:
+    html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "20_jobs.html")
+
+    assert 'class="searchbar-row command-row"' in html
+    assert 'data-action="refresh" aria-label="Refresh jobs now"' in html

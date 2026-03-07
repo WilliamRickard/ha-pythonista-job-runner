@@ -71,7 +71,7 @@ def test_bundle_has_mobile_jobs_toolbar_and_panels() -> None:
     html = build_webui()
 
     assert 'class="jobs-toolbar"' in html
-    assert 'class="searchbar-row"' in html
+    assert 'class="searchbar-row command-row"' in html
     assert 'class="state-filters"' in html
     assert 'id="about_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
     assert 'id="adv_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
@@ -93,7 +93,7 @@ def test_bundle_has_sort_secondary_filters_and_sticky_command_bar() -> None:
     assert 'id="job_sort"' in html
     assert 'id="filter_has_result"' in html
     assert 'id="sticky_command"' in html
-    assert 'data-action="focus-filters"' in html
+    assert 'data-action="focus-search"' in html
 
 
 def test_bundle_has_initial_jobs_skeleton_state() -> None:
@@ -123,3 +123,33 @@ def test_help_advanced_mobile_surface_and_wrap_safety() -> None:
     assert 'summary>API reference<' in html
     assert 'summary>Quick actions<' in html
     assert '#about_api .api-path{overflow-wrap:anywhere;}' in overlays
+
+
+def test_bundle_jobs_command_surface_is_cohesive_on_mobile() -> None:
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert 'class="searchbar-row command-row"' in html
+    assert 'class="jobs-control-row command-row"' in html
+    assert 'data-action="refresh" aria-label="Refresh jobs now"' in html
+    assert ".command-row{" in css
+
+
+def test_sticky_command_bar_is_compact_and_mobile_oriented() -> None:
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+    responsive = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "50_responsive.css").read_text(encoding="utf-8")
+    events = _read_js_part("40_events_init.js")
+
+    assert ".sticky-command{" in css
+    assert "flex-wrap:nowrap;" in css
+    assert ".sticky-command .muted" in css
+    assert "isNarrow() && r.bottom < 0" in events
+    assert ".sticky-command{top:6px;gap:6px;padding:6px 8px;}" in responsive
+
+
+def test_empty_state_copy_distinguishes_disconnected_zero_and_filtered() -> None:
+    js = _read_js_part("10_render_search.js")
+
+    assert "Try Refresh. If it persists, open Help for troubleshooting steps." in js
+    assert "Use Clear to reset search and filters quickly." in js
+    assert "Runner is connected but idle." in js
