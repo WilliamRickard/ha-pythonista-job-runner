@@ -163,11 +163,11 @@ a:hover{ text-decoration: underline; }
 }
 
 .header-meta{
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(20,24,36,0.5);
-  padding: 7px 10px;
+  background: color-mix(in srgb, var(--panel2) 82%, transparent);
+  padding: 5px 9px;
 }
 
 .header-meta summary{
@@ -227,7 +227,7 @@ a:hover{ text-decoration: underline; }
 
 .card-quiet{
   box-shadow: none;
-  background: rgba(20,24,36,0.72);
+  background: var(--card-quiet-background, color-mix(in srgb, var(--panel) 72%, transparent));
 }
 
 .compact-header{
@@ -523,39 +523,46 @@ label{
 }
 
 .jobs-surface{
-  border-color: rgba(138,180,255,0.25);
+  border-color: color-mix(in srgb, var(--line) 80%, rgba(138,180,255,0.30));
 }
 
 .jobs-header h2{
   font-size: 18px;
+  letter-spacing: 0.1px;
 }
+
+#jobs_hint{font-size:12px;color:var(--muted);}
 
 .jobs-body{
   padding-top: 10px;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:9px;margin-bottom:8px;}
+.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.command-row{padding:8px;border:1px solid color-mix(in srgb, var(--line) 88%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel2) 75%, transparent);}
 .searchbar-row{display:flex;align-items:center;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;}
-.clear-inline{flex:0 0 auto;min-width:74px;}
+.clear-inline{flex:0 0 auto;min-width:70px;}
 .state-filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
-.state-filters .chip{flex:0 0 auto;padding:9px 12px;min-height:42px;border-radius:10px;}
+.state-filters .chip{flex:0 0 auto;padding:8px 11px;min-height:40px;border-radius:10px;}
 .table-region{min-height:300px;display:flex;flex-direction:column;}
 .destructive-group button{border-color:rgba(255,92,92,0.6);}
 .utility-group button{background:transparent;color:var(--muted);}
 .jobs-control-row{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;}
 .secondary-filters{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.secondary-filters select{min-height:42px;border-radius:10px;}
+.secondary-filters select{min-height:40px;border-radius:10px;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);}
 .secondary-panel{position:relative;}
-.secondary-panel summary{list-style:none;cursor:pointer;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:13px;}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:13px;color:var(--muted);}
 .secondary-panel[open] .secondary-panel-body{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:170px;}
-.sticky-command{position:sticky;top:8px;z-index:15;display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--toastBg);margin-bottom:8px;flex-wrap:wrap;}
-.status-inline{display:inline-flex;align-items:center;font-size:12px;color:var(--muted);}
+.sticky-command{position:sticky;top:8px;z-index:15;display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid color-mix(in srgb, var(--line) 85%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel) 86%, transparent);margin-bottom:8px;flex-wrap:nowrap;box-shadow:none;}
+.status-inline{display:inline-flex;align-items:center;font-size:12px;color:var(--muted);white-space:nowrap;}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
 .jobs-skeleton .sk:not(.sk-lg){width:62%;}
 @keyframes sk-pulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
+
+.sticky-command .muted{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;}
+.sticky-command button{min-height:38px;padding:8px 10px;}
 .banner{
   margin-bottom: 10px;
   padding: 9px 11px;
@@ -603,7 +610,7 @@ th{
   }
 }
 
-tr:hover{ background: rgba(120, 140, 180, 0.10); }
+tr:hover{ background: color-mix(in srgb, var(--panel2) 92%, rgba(138,180,255,0.16)); }
 tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 
 
@@ -651,10 +658,10 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   display:inline-flex;
   gap: 6px;
   align-items: center;
-  padding: 2px 9px;
+  padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
-  border: 1px dashed var(--line);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
   background: transparent;
   color: var(--muted);
 }
@@ -689,11 +696,11 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 }
 
 .empty{
-  margin-top: 12px;
+  margin-top: 10px;
   padding: 14px;
-  border: 1px dashed var(--line);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
   border-radius: 12px;
-  background: var(--panel2);
+  background: color-mix(in srgb, var(--panel2) 88%, transparent);
   color: var(--muted);
 }
 
@@ -828,7 +835,7 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 #empty{min-height:112px;}
 
 .row-overflow{display:inline-block;position:relative;margin-left:6px;}
-.row-overflow summary{list-style:none;cursor:pointer;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-size:12px;min-height:42px;display:flex;align-items:center;}
+.row-overflow summary{list-style:none;cursor:pointer;padding:8px 9px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-size:12px;min-height:40px;display:flex;align-items:center;}
 .row-overflow-menu{position:absolute;right:0;top:calc(100% + 5px);display:flex;flex-direction:column;gap:6px;min-width:120px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;z-index:6;}
 .row-overflow:not([open]) .row-overflow-menu{display:none;}
 #logview .logline{
@@ -1115,6 +1122,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   .header-actions{width:100%;justify-content:flex-start;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
+  .searchbar-row .primary{min-width:84px;}
   .clear-inline{padding:10px 11px;min-width:68px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
@@ -1134,9 +1142,10 @@ details[open] summary::after{ transform: rotate(0deg); }
   #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
-  .sticky-command{top:6px;}
+  .sticky-command{top:6px;gap:6px;padding:6px 8px;}
   .sticky-command button{min-height:40px;padding:8px 10px;}
   .jobs-control-row{align-items:stretch;}
+  .command-row{padding:7px;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
@@ -1144,6 +1153,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
   .secondary-filters{width:100%;justify-content:space-between;}
+  .sticky-command .muted{max-width:44vw;}
   .secondary-filters select{flex:1 1 auto;min-width:0;}
 }
 
@@ -1236,7 +1246,7 @@ details[open] summary::after{ transform: rotate(0deg); }
         <div class="card-header jobs-header">
           <h2>Jobs</h2>
           <div class="actionsbar right">
-            <span class="muted" id="jobs_hint">Main workflow: search, filter, sort, and open details.</span>
+            <span class="muted" id="jobs_hint">Search, filter, sort, then open details.</span>
           </div>
         </div>
         <div class="card-body jobs-body">
@@ -1252,13 +1262,14 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
 
           <div class="jobs-toolbar" aria-label="Jobs controls">
-            <div class="searchbar-row">
+            <div class="searchbar-row command-row">
               <label for="search" class="sr-only">Search jobs</label>
               <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
               <button type="button" class="small secondary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
+              <button type="button" class="small primary" data-action="refresh" aria-label="Refresh jobs now">Refresh</button>
             </div>
 
-            <div class="jobs-control-row" aria-label="Sort and filter controls">
+            <div class="jobs-control-row command-row" aria-label="Sort and filter controls">
               <div class="state-filters" role="group" aria-label="Primary job state filters">
                 <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
@@ -1288,7 +1299,7 @@ details[open] summary::after{ transform: rotate(0deg); }
             <span id="sticky_status" class="status-inline">Connecting…</span>
             <span id="sticky_summary" class="muted">All jobs</span>
             <button type="button" class="small" data-action="refresh">Refresh</button>
-            <button type="button" class="small secondary" data-action="focus-filters">Filters</button>
+            <button type="button" class="small secondary" data-action="focus-search">Search</button>
           </div>
 
           <div class="table-region" aria-live="polite">
@@ -1738,17 +1749,43 @@ function parseUtcSeconds(v) {
     els.lastupdated.textContent = ts;
   }
 
+  /**
+   * Update the sticky summary text to reflect current view, sort, search and result-filter state.
+   *
+   * If the sticky summary element is not present, the function returns without action.
+   *
+   * The summary shows a base view label ("All jobs" or "State: <view>"), a human-friendly
+   * sort label ("Newest", "Oldest", "Active first" or "Errors first" for other modes),
+   * an optional search fragment ("Search: <query>") when a search is active, and an optional
+   * "Result ready" token when the result filter is enabled. Parts are joined with " · ".
+   */
   function updateStickySummary() {
     if (!els.sticky_summary) return;
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(sortMode === "newest" ? "Newest" : (sortMode === "oldest" ? "Oldest" : (sortMode === "active" ? "Active first" : "Errors first")));
+    const sortModeLabels = {
+      newest: "Newest",
+      oldest: "Oldest",
+      active: "Active first",
+    };
+    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
+      ? sortModeLabels[sortMode]
+      : (sortMode ? String(sortMode) : "Errors first");
+    bits.push(sortLabel);
     if (q) bits.push(`Search: ${q}`);
     if (filterHasResult) bits.push("Result ready");
     els.sticky_summary.textContent = bits.join(" · ");
   }
 
+  /**
+   * Update live/paused UI controls to reflect the current follow and paused state.
+   *
+   * Updates button active states and `aria-pressed` attributes, sets the pause/resume
+   * button label, toggles visibility of the "jump to latest" control, and adjusts
+   * the live status pill's styling and text based on whether logs are live, paused,
+   * or in a scrollable state.
+   */
   function updateLiveUi() {
     if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
 
@@ -2159,7 +2196,7 @@ function parseUtcSeconds(v) {
       setPaused(true, "scroll");
     }
   }
-  function escapeHtml(s) {
+function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -2313,6 +2350,12 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  /**
+   * Ensure a table row exists for the given job id, creating and initialising one with controls if necessary.
+   * The created row contains job metadata cells, action controls (View, Zip, Copy id) and attaches the appropriate event handlers.
+   * @param {string} jobId - The job identifier.
+   * @returns {HTMLTableRowElement|null} The existing or newly created table row element for the job, or `null` if `jobId` is falsy.
+   */
   function _ensureRow(jobId) {
     if (!jobId) return null;
     let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
@@ -2452,6 +2495,14 @@ function applyFilters() {
     if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
   }
 
+  /**
+   * Render a list of job objects into the jobs table and update the empty-state UI.
+   *
+   * Updates the jobs table body to reflect the provided jobs: ensures rows exist, updates each row's content, removes stale rows, and appends the current set. When no jobs are supplied, updates the empty-state visibility and adjusts the empty title, body and action text based on the current view, query and connection/loading state.
+   *
+   * @param {Array<Object>} jobs - Array of job objects to display; each should include a `job_id` property.
+   * @param {string} [query] - Current search/filter query used to choose appropriate empty-state messaging.
+   */
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
@@ -3031,7 +3082,7 @@ function closeAbout() {
     setTab(currentTab);
     await Promise.all([refreshMetaAndTail({ forceTail: true }), refreshOverview()]);
   }
-  async function refreshOverview() {
+async function refreshOverview() {
     if (!currentJob) return;
 
     try {
@@ -3190,6 +3241,14 @@ Client IP: ${ip || ""}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  /**
+   * Refreshes application state: stats, job list and, if a job is selected, its meta/tail and overview.
+   *
+   * Runs concurrently where possible, prevents concurrent refreshes, and updates UI state on success or error.
+   * The function sets an internal `refreshing` flag while the operation runs and clears it on completion.
+   *
+   * @param {{silent?: boolean}=} opts - Optional settings. If `silent` is true, suppresses the error toast on failure.
+   */
   async function refreshAll(opts) {
     if (refreshing) return;
     refreshing = true;
@@ -3224,7 +3283,7 @@ Client IP: ${ip || ""}`;
     }
     tickTimer = window.setTimeout(tick, pollMs);
   }
-  function toggleAuto() {
+function toggleAuto() {
     auto = !auto;
     els.autostate.textContent = auto ? "on" : "off";
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
@@ -3245,7 +3304,7 @@ Client IP: ${ip || ""}`;
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
-        if (action === "focus-filters" && els.job_sort) els.job_sort.focus();
+        if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
@@ -3512,6 +3571,14 @@ Client IP: ${ip || ""}`;
     els.findbar = document.getElementById("findbar");
   }
 
+  /**
+   * Initialise the UI: cache DOM elements, bind event handlers and restore persisted state.
+   *
+   * Loads settings from localStorage (view, tab, poll interval, auto, search, sort, filters, follow,
+   * wrap, font, pause, hilite, pane), updates the UI to reflect those settings, loads highlight terms,
+   * applies log styling and pane layout, attaches scroll/resize and window lifecycle listeners, triggers
+   * an initial full refresh and restores any selected job, then starts the regular tick loop.
+   */
   async function init() {
     cacheEls();
     bindEvents();
@@ -3576,7 +3643,7 @@ Client IP: ${ip || ""}`;
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 0;
+        const show = isNarrow() && r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });
