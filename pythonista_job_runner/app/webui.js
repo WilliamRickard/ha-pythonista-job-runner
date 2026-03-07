@@ -848,6 +848,7 @@ function applyFilters() {
     }
 
     const tdState = tr.children[1];
+    if (!tdState) return;
     tdState.textContent = "";
     tdState.appendChild(badgeEl(state));
 
@@ -983,6 +984,7 @@ function applyFilters() {
 
     const endpoints = i.endpoints || {};
     const keys = Object.keys(endpoints).sort();
+    const core = ["health", "run", "jobs", "stats", "info", "tail", "job", "result", "cancel", "purge"];
     els.about_api.textContent = "";
 
     for (const k of keys) {
@@ -1011,7 +1013,6 @@ function applyFilters() {
       btn.setAttribute("data-endpoint", k);
 
       const p = parseEndpointPath(raw);
-      const core = ["health", "run", "jobs", "stats", "info", "tail", "job", "result", "cancel", "purge"];
       const canCopy = core.some((n) => k.toLowerCase().includes(n));
       if (p && canCopy) {
         btn.setAttribute("data-copy", apiUrl(p));
