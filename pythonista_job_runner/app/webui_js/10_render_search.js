@@ -256,6 +256,7 @@ function applyFilters() {
     }
 
     const tdState = tr.children[1];
+    if (!tdState) return;
     tdState.textContent = "";
     tdState.appendChild(badgeEl(state));
 
