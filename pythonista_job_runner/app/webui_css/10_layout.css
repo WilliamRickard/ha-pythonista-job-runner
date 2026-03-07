@@ -141,7 +141,7 @@
 
 .card-quiet{
   box-shadow: none;
-  background: rgba(20,24,36,0.72);
+  background: var(--card-quiet-background, color-mix(in srgb, var(--panel) 72%, transparent));
 }
 
 .compact-header{
