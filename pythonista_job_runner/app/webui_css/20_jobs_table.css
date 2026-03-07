@@ -267,3 +267,8 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 
 #jobs_loading{min-height:22px;}
 #empty{min-height:112px;}
+
+.row-overflow{display:inline-block;position:relative;margin-left:6px;}
+.row-overflow summary{list-style:none;cursor:pointer;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:12px;}
+.row-overflow-menu{position:absolute;right:0;top:calc(100% + 5px);display:flex;flex-direction:column;gap:6px;min-width:120px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;z-index:6;}
+.row-overflow:not([open]) .row-overflow-menu{display:none;}
