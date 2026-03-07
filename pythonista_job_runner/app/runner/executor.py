@@ -226,6 +226,16 @@ def run_job(runner: object, job_id: str) -> None:
             j.error = f"job exited rc={rc}"
         j.phase = "done"
         getattr(runner, "_write_status")(j)
+        try:
+            getattr(runner, "record_audit_event")(
+                "job_complete",
+                {"client_ip": j.client_ip, "via_ingress": bool(j.ingress_path), "user_id": j.submitted_by_id, "user_name": j.submitted_by_name, "display_name": j.submitted_by_display_name, "ingress_path": j.ingress_path},
+                job_id=j.job_id,
+                details={"state": j.state, "exit_code": j.exit_code},
+                persist_status=True,
+            )
+        except Exception:
+            pass
 
         getattr(runner, "_make_result_zip")(j)
         getattr(runner, "_notify_done")(j)

@@ -208,3 +208,18 @@ Rebuild and validate:
 - A custom `apparmor.txt` profile is included and the add-on config explicitly declares non-privileged runtime flags.
 - Job and control actions are written to `/data/audit_events.jsonl` with ingress identity metadata when Home Assistant provides `X-Remote-User-*` headers.
 - Companion Home Assistant integration is available under `custom_components/pythonista_job_runner` with sensors, system health, and repair issue hooks.
+
+
+## Release channels
+
+This repository supports two usage channels:
+
+- **Stable**: the `main` branch and tagged releases.
+- **Next/Canary**: the `next` branch for pre-release validation and breaking-change soak.
+
+See [docs/RELEASE_CHANNELS.md](docs/RELEASE_CHANNELS.md) for the operational process and user guidance.
+
+
+## Diagnostics and support bundle
+
+The add-on exposes a redacted support-bundle endpoint at `/support_bundle.json` (requires token auth). It includes configuration summary, stats, queue/job metadata, and recent audit events while excluding secrets and raw outputs.

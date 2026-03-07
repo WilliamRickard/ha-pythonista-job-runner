@@ -16,3 +16,12 @@ DEFAULT_SCAN_INTERVAL = 15
 
 ISSUE_UNREACHABLE = "endpoint_unreachable"
 ISSUE_AUTH = "auth_failed"
+
+EVENT_JOB_UPDATED = "pythonista_job_runner.job_updated"
+EVENT_JOB_FINISHED = "pythonista_job_runner.job_finished"
+
+SERVICE_PURGE_JOBS = "purge_jobs"
+SERVICE_PURGE_DONE_JOBS = "purge_done_jobs"
+SERVICE_PURGE_FAILED_JOBS = "purge_failed_jobs"
+SERVICE_REFRESH = "refresh"
+SERVICE_CANCEL_JOB = "cancel_job"

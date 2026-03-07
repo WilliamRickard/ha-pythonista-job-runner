@@ -23,3 +23,18 @@ def test_translations_include_issue_strings() -> None:
     assert "issues" in data
     assert "endpoint_unreachable" in data["issues"]
     assert "auth_failed" in data["issues"]
+
+
+def test_manifest_has_diagnostics() -> None:
+    manifest = json.loads(Path("custom_components/pythonista_job_runner/manifest.json").read_text(encoding="utf-8"))
+    assert manifest.get("diagnostics") is True
+
+
+def test_required_files_include_diagnostics() -> None:
+    assert Path("custom_components/pythonista_job_runner/diagnostics.py").exists()
+
+
+def test_service_translation_keys_present() -> None:
+    data = json.loads(Path("custom_components/pythonista_job_runner/translations/en.json").read_text(encoding="utf-8"))
+    for key in ["purge_jobs", "purge_done_jobs", "purge_failed_jobs", "refresh", "cancel_job"]:
+        assert key in data.get("services", {})

@@ -33,6 +33,7 @@ from runner import stats as _stats
 from runner import store as _store
 
 from audit import actor_from_headers, append_audit_event
+from support_bundle import build_support_bundle
 from utils import (
     SafeZipLimits,
     TailBuffer,
@@ -282,6 +283,8 @@ class Runner:
 
         self.audit_log_path = self.data_dir / "audit_events.jsonl"
         self._audit_lock = threading.Lock()
+        self.telemetry_mqtt_enabled = bool(opts.get("telemetry_mqtt_enabled", False))
+        self.telemetry_topic_prefix = str(opts.get("telemetry_topic_prefix") or "pythonista_job_runner").strip() or "pythonista_job_runner"
 
         self.job_user = str(opts.get("job_user") or "jobrunner").strip() or "jobrunner"
         self._job_uid, self._job_gid = _resolve_user_ids(self.job_user)
@@ -489,6 +492,10 @@ class Runner:
             "details": safe_details,
         }
         append_audit_event(self.audit_log_path, self._audit_lock, event)
+        try:
+            self.publish_telemetry("audit", {"action": action, "job_id": job_id, "actor": actor, "details": safe_details})
+        except Exception:
+            pass
 
         if not persist_status or not job_id:
             return
@@ -510,6 +517,30 @@ class Runner:
         except Exception:
             return
         self._write_status(j)
+
+    def support_bundle_dict(self) -> Dict[str, Any]:
+        """Return redacted support-bundle payload for troubleshooting."""
+        return build_support_bundle(self)
+
+    def publish_telemetry(self, event_type: str, payload: Dict[str, Any]) -> None:
+        """Publish optional telemetry over Home Assistant MQTT service."""
+        if not self.telemetry_mqtt_enabled:
+            return
+        if not SUPERVISOR_TOKEN:
+            return
+        topic = f"{self.telemetry_topic_prefix.rstrip('/')}/{event_type.strip('/') or 'event'}"
+        body = json.dumps(payload, separators=(",", ":"))
+        req = Request(
+            url=f"{SUPERVISOR_CORE_API}/services/mqtt/publish",
+            data=json.dumps({"topic": topic, "payload": body, "retain": False}).encode("utf-8"),
+            headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}", "Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urlopen(req, timeout=10) as resp:  # noqa: S310
+                _ = resp.read()
+        except Exception:
+            return
 
     def _write_status(self, j: Job) -> None:
         return self._job_store.write_status(j)

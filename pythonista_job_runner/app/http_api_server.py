@@ -203,6 +203,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/jobs.json":
             self._json(200, {"jobs": [j.status_dict() for j in runner.list_jobs()]})
             return
+        if path == "/support_bundle.json":
+            self._json(200, runner.support_bundle_dict())
+            return
         if path.startswith("/job/") and path.endswith(".json"):
             j = self._get_job_or_404("/job/", ".json")
             if j:

@@ -55,3 +55,16 @@ class RunnerClient:
 
     def purge(self, states: list[str], older_than_hours: int = 0, dry_run: bool = False) -> dict:
         return self._json_post("/purge", {"states": states, "older_than_hours": older_than_hours, "dry_run": dry_run})
+
+
+    def jobs(self) -> dict:
+        """Return current jobs payload."""
+        return self._json_get("/jobs.json")
+
+    def support_bundle(self) -> dict:
+        """Return redacted support bundle from add-on API."""
+        return self._json_get("/support_bundle.json")
+
+    def cancel(self, job_id: str) -> dict:
+        """Cancel a job by id."""
+        return self._json_post(f"/cancel/{job_id}", {})

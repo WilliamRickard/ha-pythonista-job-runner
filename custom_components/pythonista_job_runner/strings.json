@@ -37,5 +37,27 @@
       "title": "Pythonista Job Runner authentication failed",
       "description": "The integration could not authenticate against the endpoint. Details: {detail}. Update the configured access token."
     }
+  },
+  "services": {
+    "purge_jobs": {
+      "name": "Purge runner jobs",
+      "description": "Purge jobs from the add-on queue/history."
+    },
+    "purge_done_jobs": {
+      "name": "Purge completed jobs",
+      "description": "Purge jobs currently in done state."
+    },
+    "purge_failed_jobs": {
+      "name": "Purge failed jobs",
+      "description": "Purge jobs currently in error state."
+    },
+    "refresh": {
+      "name": "Refresh runner data",
+      "description": "Trigger an immediate coordinator refresh for one integration entry."
+    },
+    "cancel_job": {
+      "name": "Cancel job",
+      "description": "Request cancellation of a queued or running job."
+    }
   }
 }
