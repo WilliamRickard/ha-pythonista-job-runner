@@ -1,4 +1,4 @@
-/* VERSION: 0.6.12-webui.13 */
+/* VERSION: 0.6.12-webui.14 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -615,8 +615,7 @@ function parseUtcSeconds(v) {
     const sliceStart = truncated ? (txt.length - MAX_RENDER) : 0;
     const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
 
-    const lines = slice.split("
-");
+    const lines = slice.split("\n");
     const out = [];
 
     // New line window: mark recently appended lines for a short period.
@@ -658,8 +657,7 @@ function parseUtcSeconds(v) {
       out.push(`<span class="${cls}">${esc}</span>`);
     }
 
-    els.logview.innerHTML = out.join("
-");
+    els.logview.innerHTML = out.join("\n");
     applyLogStyle();
   }
 
