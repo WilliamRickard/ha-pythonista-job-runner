@@ -193,6 +193,11 @@ function parseUtcSeconds(v) {
     els.lastupdated.textContent = ts;
   }
 
+  /**
+   * Update the sticky summary bar to reflect the current job view, sort mode, active search term and whether results are ready.
+   *
+   * If the sticky summary element is not present the function performs no action.
+   */
   function updateStickySummary() {
     if (!els.sticky_summary) return;
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
@@ -204,6 +209,12 @@ function parseUtcSeconds(v) {
     els.sticky_summary.textContent = bits.join(" · ");
   }
 
+  /**
+   * Update live controls and status indicators to reflect current follow and pause state.
+   *
+   * Updates button active states and ARIA attributes, shows or hides the "jump to latest" control,
+   * adjusts the live-status pill class (ok/warn/err) and sets the textual state to "Live", "Paused" or "Scroll".
+   */
   function updateLiveUi() {
     if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
 
@@ -768,6 +779,12 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  /**
+   * Ensure a table row exists for the given job id and return it.
+   * Creates a new row with labelled cells for Job, State, Age, Duration, User and Actions (including a View button and a "More" overflow with Zip and Copy id) when none exists.
+   * @param {string} jobId - The job identifier to ensure a row for. If falsy, the function returns null.
+   * @returns {HTMLTableRowElement|null} The existing or newly created table row for the job, or `null` when `jobId` is falsy.
+   */
   function _ensureRow(jobId) {
     if (!jobId) return null;
     let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
@@ -907,6 +924,14 @@ function applyFilters() {
     if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
   }
 
+  /**
+   * Render the provided list of jobs into the jobs table and update the empty-state messaging.
+   *
+   * Populates or updates table rows for each job (using each job's `job_id`), removes rows no longer present, and adjusts the visible empty-state title, body and action text based on connection and filter state.
+   *
+   * @param {Array<Object>} jobs - Array of job objects; each object must include a `job_id` property used to identify rows.
+   * @param {string|undefined} query - Current search/filter query string used to select an appropriate empty-state message when there are no jobs.
+   */
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
@@ -1645,6 +1670,16 @@ Client IP: ${ip || ""}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  /**
+   * Refreshes global data and the current job's detail, updating UI connection state.
+   *
+   * Performs concurrent refresh of stats and job list; if a job is selected, also refreshes its meta, tail and overview.
+   * On success updates connection status, hides any jobs banner and records the last-updated time.
+   * On failure sets the disconnected state, shows a jobs banner with the error and (unless silenced) displays a toast.
+   *
+   * @param {Object} [opts] - Optional settings for the refresh.
+   * @param {boolean} [opts.silent=false] - When true, suppresses user-facing error toasts.
+   */
   async function refreshAll(opts) {
     if (refreshing) return;
     refreshing = true;
@@ -1967,6 +2002,13 @@ Client IP: ${ip || ""}`;
     els.findbar = document.getElementById("findbar");
   }
 
+  /**
+   * Initialises the web UI: restores persisted settings, binds handlers and starts live refresh.
+   *
+   * Restores UI state from localStorage, caches DOM elements, attaches event listeners,
+   * applies log and pane settings, triggers the initial data refresh, selects a job from
+   * the query string if present, and starts the periodic tick loop and unload cleanup.
+   */
   async function init() {
     cacheEls();
     bindEvents();

@@ -34,6 +34,14 @@ def test_bundle_has_detail_lifecycle_sections() -> None:
 
 
 def test_js_tracks_empty_state_messages_and_row_selection() -> None:
+    """
+    Verify the search-rendering JavaScript assigns expected empty-state messages and sets ARIA selection on rows.
+    
+    Asserts that the JavaScript part "10_render_search.js" contains:
+    - assignment of emptyTitle.textContent to "No matching jobs", "No jobs yet" and "Cannot connect";
+    - a check for the disconnected view state (`jobsViewState === "disconnected"`);
+    - setting of `aria-selected` on table rows via `tr.setAttribute("aria-selected", isSelected ? "true" : "false")`.
+    """
     js = _read_js_part("10_render_search.js")
 
     assert 'emptyTitle.textContent = "No matching jobs"' in js
@@ -89,6 +97,11 @@ def test_bundle_has_sort_secondary_filters_and_sticky_command_bar() -> None:
 
 
 def test_bundle_has_initial_jobs_skeleton_state() -> None:
+    """
+    Asserts the generated web UI bundle includes skeleton loading indicators for the jobs list.
+    
+    Checks that the HTML produced by build_webui() contains the elements used for skeleton loaders: an element with class "jobs-skeleton" and an element with classes "sk sk-lg".
+    """
     html = build_webui()
 
     assert 'class="jobs-skeleton"' in html

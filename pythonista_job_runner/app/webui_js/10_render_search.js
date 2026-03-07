@@ -1,4 +1,4 @@
-  function escapeHtml(s) {
+function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -152,6 +152,12 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  /**
+   * Ensure a table row exists for the given job id, creating and initialising one with controls if necessary.
+   * The created row contains job metadata cells, action controls (View, Zip, Copy id) and attaches the appropriate event handlers.
+   * @param {string} jobId - The job identifier.
+   * @returns {HTMLTableRowElement|null} The existing or newly created table row element for the job, or `null` if `jobId` is falsy.
+   */
   function _ensureRow(jobId) {
     if (!jobId) return null;
     let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
@@ -291,6 +297,14 @@ function applyFilters() {
     if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
   }
 
+  /**
+   * Render a list of job objects into the jobs table and update the empty-state UI.
+   *
+   * Updates the jobs table body to reflect the provided jobs: ensures rows exist, updates each row's content, removes stale rows, and appends the current set. When no jobs are supplied, updates the empty-state visibility and adjusts the empty title, body and action text based on the current view, query and connection/loading state.
+   *
+   * @param {Array<Object>} jobs - Array of job objects to display; each should include a `job_id` property.
+   * @param {string} [query] - Current search/filter query used to choose appropriate empty-state messaging.
+   */
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
