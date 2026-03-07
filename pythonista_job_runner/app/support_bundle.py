@@ -66,8 +66,11 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
                 "duration_seconds": status.get("duration_seconds"),
                 "exit_code": status.get("exit_code"),
                 "error": status.get("error"),
-                "submitted_by": status.get("submitted_by"),
-                "client_ip": status.get("client_ip"),
+                "duration_seconds": status.get("duration_seconds"),
+                "exit_code": status.get("exit_code"),
+                "error": status.get("error"),
+             }
+         )
             }
         )
 
