@@ -334,3 +334,27 @@ def test_purge_rejects_non_object_json(temp_data_dir):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_run_runtime_error_code_is_sanitized(temp_data_dir, minimal_job_zip, monkeypatch):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+
+    def _bad(*_args, **_kwargs):
+        raise RuntimeError("Bad runtime text with spaces")
+
+    monkeypatch.setattr(runner, "new_job", _bad)
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/run",
+            minimal_job_zip,
+            {"X-Runner-Token": "t", "Content-Length": str(len(minimal_job_zip))},
+        )
+        assert status == 400
+        assert json.loads(data.decode("utf-8")) == {"error": "job_creation_failed"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

@@ -46,13 +46,15 @@ Option B: manual
 
 ## Supported architectures
 
-This repository now declares support for these Home Assistant app architectures:
+This repository currently **declares** these Home Assistant add-on architectures:
 
 - `amd64`
 - `aarch64`
 - `armv7`
 
-These values are wired through both [`pythonista_job_runner/config.yaml`](pythonista_job_runner/config.yaml) and [`pythonista_job_runner/build.yaml`](pythonista_job_runner/build.yaml) using Home Assistant base Python images for each architecture.
+`config.yaml` and `build.yaml` are kept in lockstep and point to Home Assistant base Python images for the same architecture keys. CI validates this declaration alignment and packaging consistency.
+
+Important truthfulness note: the automated test suite in this repository executes on `amd64` CI runners. For `aarch64` and `armv7`, this repository currently validates build metadata and image selection, but does not run full runtime integration tests on native hardware in CI.
 
 
 1. In the Add-on Store, open **Pythonista Job Runner** and install it.

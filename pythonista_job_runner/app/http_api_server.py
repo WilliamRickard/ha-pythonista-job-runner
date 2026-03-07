@@ -2,16 +2,22 @@ from __future__ import annotations
 
 """HTTP API server and request handlers for job runner endpoints."""
 
-import hmac
 import json
-import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 from zipfile import BadZipFile
 
-from runner_core import ADDON_VERSION, INGRESS_PROXY_IP, Runner, read_options
-from utils import ip_in_cidrs, read_file_delta, stream_file
+from http_api_auth import auth_ok
+from http_api_helpers import (
+    info_payload,
+    is_allowed_content_type,
+    job_id_from_path,
+    parse_int,
+    safe_runtime_error_code,
+)
+from runner_core import ADDON_VERSION, Runner, read_options
+from utils import read_file_delta, stream_file
 from webui import html_page
 
 
@@ -56,78 +62,21 @@ class Handler(BaseHTTPRequestHandler):
         self._write_bytes(data)
 
     def _json(self, code: int, obj: Any) -> None:
-        self._send_bytes(code, "application/json; charset=utf-8", json.dumps(obj, separators=(",", ":")).encode("utf-8"))
+        data = json.dumps(obj, separators=(",", ":")).encode("utf-8")
+        self._send_bytes(code, "application/json; charset=utf-8", data)
 
-    @staticmethod
-    def _parse_int(value: str | None, default: int) -> int:
-        if value is None:
-            return default
-        try:
-            return int(value)
-        except (ValueError, TypeError):
-            return default
-
-    def _info_payload(self) -> dict[str, Any]:
-        return {
-            "service": "pythonista_job_runner",
-            "version": ADDON_VERSION,
-            "endpoints": {
-                "health": "/health",
-                "run": "POST /run",
-                "tail": "/tail/<job_id>.json",
-                "result": "/result/<job_id>.zip",
-                "jobs": "/jobs.json",
-                "job": "/job/<job_id>.json",
-                "stdout": "/stdout/<job_id>.txt",
-                "stderr": "/stderr/<job_id>.txt",
-                "stats": "/stats.json",
-                "purge": "POST /purge",
-                "cancel": "POST /cancel/<job_id>",
-                "delete": "DELETE /job/<job_id>",
-            },
-        }
-
-    def _get_client_ip(self) -> str:
-        try:
-            return (self.client_address[0] or "").strip()
-        except Exception:
-            return ""
-
-    def _is_ingress(self) -> bool:
-        return self._get_client_ip() == INGRESS_PROXY_IP
-
-    def _auth_ok(self) -> bool:
-        runner = self.server.runner
-        if runner.ingress_strict and not self._is_ingress():
-            return False
-
-        path = urlparse(self.path).path
-        if path == "/health":
+    def _validate_content_type(self, allowed_types: set[str], *, optional: bool = True) -> bool:
+        """Validate request content type against an allowlist."""
+        if is_allowed_content_type(self.headers.get("Content-Type"), allowed_types, optional=optional):
             return True
-        if self._is_ingress():
-            return True
-
-        tok = self.headers.get("X-Runner-Token", "")
-        if not runner.token or not hmac.compare_digest(tok, runner.token):
-            return False
-
-        cidrs = runner.api_allow_cidrs
-        return ip_in_cidrs(self._get_client_ip(), list(cidrs)) if cidrs else True
+        self._json(415, {"error": "unsupported_content_type"})
+        return False
 
     def _job_id_from_suffix(self, prefix: str, suffix: str) -> str:
-        path = urlparse(self.path).path
-        if not path.startswith(prefix) or (suffix and not path.endswith(suffix)):
-            return ""
-        tail = path[len(prefix) :]
-        if suffix:
-            tail = tail[: -len(suffix)]
-        job_id = tail.strip("/")
-        if not job_id or "/" in job_id or job_id in (".", ".."):
-            return ""
-        return job_id
+        return job_id_from_path(self.path, prefix, suffix)
 
     def _require_auth(self) -> bool:
-        if self._auth_ok():
+        if auth_ok(self):
             return True
         self._json(401, {"error": "unauthorised"})
         return False
@@ -144,8 +93,8 @@ class Handler(BaseHTTPRequestHandler):
         return job
 
     def _send_text_delta_or_stream(self, file_path: Any, query: dict[str, list[str]], tail_chars: int) -> None:
-        from_off = self._parse_int((query.get("from") or [None])[0], -1)
-        max_bytes = self._parse_int((query.get("max_bytes") or [None])[0], 0)
+        from_off = parse_int((query.get("from") or [None])[0], -1)
+        max_bytes = parse_int((query.get("max_bytes") or [None])[0], 0)
 
         if from_off >= 0 or max_bytes > 0:
             from_off = max(0, from_off)
@@ -189,7 +138,7 @@ class Handler(BaseHTTPRequestHandler):
                 return True
             self._send_bytes(200, "text/html; charset=utf-8", html_page(ADDON_VERSION))
             return True
-        self._json(200, self._info_payload())
+        self._json(200, info_payload(ADDON_VERSION))
         return True
 
     def do_GET(self) -> None:  # noqa: N802
@@ -200,7 +149,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"status": "ok", "version": ADDON_VERSION})
             return
         if path == "/info.json":
-            self._json(200, self._info_payload())
+            self._json(200, info_payload(ADDON_VERSION))
             return
         if not self._require_auth():
             return
@@ -236,10 +185,10 @@ class Handler(BaseHTTPRequestHandler):
         if not j:
             return
         q = parse_qs(urlparse(self.path).query)
-        stdout_from = self._parse_int((q.get("stdout_from") or [None])[0], -1)
-        stderr_from = self._parse_int((q.get("stderr_from") or [None])[0], -1)
+        stdout_from = parse_int((q.get("stdout_from") or [None])[0], -1)
+        stderr_from = parse_int((q.get("stderr_from") or [None])[0], -1)
         max_bytes_default = runner.tail_chars * 2
-        max_bytes = self._parse_int((q.get("max_bytes") or [str(max_bytes_default)])[0], max_bytes_default)
+        max_bytes = parse_int((q.get("max_bytes") or [str(max_bytes_default)])[0], max_bytes_default)
         if max_bytes <= 0:
             max_bytes = max_bytes_default
         max_bytes = min(max_bytes, 1024 * 1024)
@@ -309,30 +258,6 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(404, {"error": "not_found"})
 
-    @staticmethod
-    def _normalised_content_type(content_type_header: str | None) -> str:
-        """Return a lower-cased media type without optional parameters."""
-        return (content_type_header or "").split(";", 1)[0].strip().lower()
-
-    def _validate_content_type(self, allowed_types: set[str], *, optional: bool = True) -> bool:
-        """Validate request content type against an allowlist."""
-        content_type = self._normalised_content_type(self.headers.get("Content-Type"))
-        if not content_type and optional:
-            return True
-        if content_type in allowed_types:
-            return True
-        self._json(415, {"error": "unsupported_content_type"})
-        return False
-
-    @staticmethod
-    def _safe_runtime_error_code(exc: RuntimeError) -> str:
-        """Return a safe API error code derived from RuntimeError text."""
-        err = str(exc).strip()
-        primary = err.split(":", 1)[0].strip()
-        if re.fullmatch(r"[a-z0-9_]+", primary):
-            return primary
-        return "job_creation_failed"
-
     def _handle_cancel_post(self) -> None:
         if not self._require_auth():
             return
@@ -343,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self._require_auth():
             return
         cl = self.headers.get("Content-Length")
-        ln = self._parse_int(cl, 0) if cl else 0
+        ln = parse_int(cl, 0) if cl else 0
         if ln < 0 or ln > 16 * 1024:
             self._json(413, {"error": "payload_too_large"})
             return
@@ -370,7 +295,7 @@ class Handler(BaseHTTPRequestHandler):
         if not isinstance(states, list):
             states = []
         older_hours = payload.get("older_than_hours")
-        older_hours_i = self._parse_int(str(older_hours) if older_hours is not None else None, 0)
+        older_hours_i = parse_int(str(older_hours) if older_hours is not None else None, 0)
         dry_run = bool(payload.get("dry_run", False))
         self._json(200, self.server.runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run))
 
@@ -384,7 +309,7 @@ class Handler(BaseHTTPRequestHandler):
         if not cl:
             self._json(411, {"error": "length_required"})
             return
-        ln = self._parse_int(cl, -1)
+        ln = parse_int(cl, -1)
         if ln <= 0:
             self._json(400, {"error": "bad_content_length"})
             return
@@ -401,16 +326,16 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
-            j = runner.new_job(body, self.headers, self._get_client_ip())
+            j = runner.new_job(body, self.headers, self.client_address[0])
         except BadZipFile:
             self._json(400, {"error": "invalid_zip"})
             return
-        except RuntimeError as e:
-            self.log_error("Error creating job: %r", e)
-            self._json(400, {"error": self._safe_runtime_error_code(e)})
+        except RuntimeError as exc:
+            self.log_error("Error creating job: %r", exc)
+            self._json(400, {"error": safe_runtime_error_code(exc)})
             return
-        except (OSError, ValueError, TypeError) as e:
-            self.log_error("Error creating job: %r", e)
+        except (OSError, ValueError, TypeError) as exc:
+            self.log_error("Error creating job: %r", exc)
             self._json(400, {"error": "job_creation_failed"})
             return
 

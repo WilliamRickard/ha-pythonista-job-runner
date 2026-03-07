@@ -65,7 +65,9 @@ Remote access tip: do not expose the add-on port directly to the internet. If yo
 
 ## Packaging and architecture notes
 
-This add-on declares support for `amd64`, `aarch64`, and `armv7` in [`config.yaml`](config.yaml). The build matrix in [`build.yaml`](build.yaml) pins Home Assistant base Python images for each supported architecture.
+This add-on declares support for `amd64`, `aarch64`, and `armv7` in [`config.yaml`](config.yaml). The build matrix in [`build.yaml`](build.yaml) pins Home Assistant base Python images for the same architecture keys, and CI guardrails verify that these declarations remain aligned.
+
+Repository truthfulness note: automated runtime tests in this repository execute on `amd64` CI runners. For `aarch64` and `armv7`, repository checks currently verify build metadata and packaging alignment; run a native smoke test on target hardware before production rollout.
 
 Security-oriented configuration reminders:
 

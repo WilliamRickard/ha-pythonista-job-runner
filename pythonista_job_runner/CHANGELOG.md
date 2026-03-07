@@ -20,6 +20,17 @@
 - Add a Markdown links test that validates local file targets and section anchors.
 - Remove local caches and packaging artefacts from the tracked repo contents.
 
+### API and reliability close-out
+
+- Remove leftover backup artefact `app/runner_core.py.bak` from the tracked repository.
+- Refactor HTTP API internals into focused helper modules (`http_api_helpers.py`, `http_api_auth.py`) while preserving route behaviour and response shapes.
+- Add regression coverage for runtime error code sanitisation in `/run` and Pythonista client timeout/invalid-JSON handling.
+
+### Architecture claims truthfulness
+
+- Clarify architecture messaging to distinguish declared add-on architectures from what CI runtime tests currently exercise (`amd64`).
+- Add docs guardrail tests that fail if this validation-scope note is removed accidentally.
+
 ## 0.6.12
 
 - Web UI: fix a JavaScript strict-mode startup error (stray initialTailForJob assignment).
