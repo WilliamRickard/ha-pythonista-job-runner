@@ -1,7 +1,7 @@
 <!-- Version: 0.6.12-webui.1 -->
-<!-- Section: Help modal -->
+<!-- Section: Help panel -->
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
+    <div class="modal mobile-panel" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="about_title">Help</div>
@@ -24,7 +24,7 @@
 
         <details>
           <summary>API and endpoints</summary>
-          <div class="hint" style="margin-top:8px;">These are the endpoints exposed by the runner. Tap Copy to copy a full URL.</div>
+          <div class="hint" style="margin-top:8px;">Core endpoints include compact copy actions. Extra endpoints are still listed for reference.</div>
           <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
 
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -32,7 +32,7 @@
             <button type="button" class="small" data-action="open-info">Open raw info.json</button>
           </div>
 
-          <textarea id="about_curl" rows="9" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
+          <textarea id="about_curl" rows="7" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
           <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
         </details>
 

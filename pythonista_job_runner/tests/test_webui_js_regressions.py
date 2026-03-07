@@ -55,3 +55,15 @@ def test_render_log_uses_escaped_newline_literals() -> None:
     built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
     assert 'slice.split("\\n")' in built
     assert 'out.join("\\n")' in built
+
+
+def test_jobs_refresh_uses_silent_mode_and_in_place_rows() -> None:
+    """Routine polling should be silent and avoid full tbody rebuilds."""
+
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert "await refreshAll({ silent: true });" in refresh
+    assert "if (els.jobs_loading && !silent)" in render
+    assert "function _patchRow(tr, j)" in render
+    assert 'tbody.textContent = ""' not in render

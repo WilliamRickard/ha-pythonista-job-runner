@@ -140,9 +140,135 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  function _ensureRow(jobId) {
+    if (!jobId) return null;
+    let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
+    if (tr) return tr;
+
+    tr = document.createElement("tr");
+    tr.dataset.jobId = jobId;
+
+    const tdJob = document.createElement("td");
+    tdJob.setAttribute("data-label", "Job");
+    const wrap = document.createElement("div");
+    wrap.className = "jobcell";
+    const line = document.createElement("div");
+    line.className = "jobline";
+
+    const btnJob = document.createElement("button");
+    btnJob.type = "button";
+    btnJob.className = "small jobbtn";
+    btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
+
+    const btnCopy = document.createElement("button");
+    btnCopy.type = "button";
+    btnCopy.className = "small secondary copybtn";
+    btnCopy.textContent = "Copy";
+    btnCopy.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const id = tr.dataset.jobId || "";
+      if (!id) return;
+      try {
+        await copyTextToClipboard(id);
+        toast("ok", "Copied", "Job id copied");
+      } catch (err) {
+        toast("err", "Copy failed", String(err && err.message ? err.message : err));
+      }
+    });
+
+    line.append(btnJob, btnCopy);
+
+    const meta = document.createElement("div");
+    meta.className = "jobmeta";
+
+    wrap.append(line, meta);
+    tdJob.appendChild(wrap);
+
+    const tdState = document.createElement("td");
+    tdState.setAttribute("data-label", "State");
+
+    const tdAge = document.createElement("td");
+    tdAge.setAttribute("data-label", "Age");
+
+    const tdDur = document.createElement("td");
+    tdDur.setAttribute("data-label", "Duration");
+
+    const tdUser = document.createElement("td");
+    tdUser.setAttribute("data-label", "User");
+
+    const tdActions = document.createElement("td");
+    tdActions.className = "actions";
+    tdActions.setAttribute("data-label", "Actions");
+
+    const btnView = document.createElement("button");
+    btnView.type = "button";
+    btnView.className = "small secondary";
+    btnView.textContent = "View";
+    btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
+
+    const zip = document.createElement("a");
+    zip.className = "linkbtn secondary";
+    zip.textContent = "Zip";
+    zip.target = "_blank";
+    zip.rel = "noopener noreferrer";
+
+    tdActions.append(btnView, document.createTextNode(" "), zip);
+    tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
+    return tr;
+  }
+
+  function _patchRow(tr, j) {
+    const jobId = j.job_id || "";
+    const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
+    const state = j.state || "queued";
+    const age = fmtAge(j.created_utc);
+    const dur = fmtDuration(j.duration_seconds);
+
+    tr.dataset.jobId = jobId;
+    const isSelected = !!(currentJob && jobId === currentJob);
+    tr.classList.toggle("selected", isSelected);
+    tr.setAttribute("aria-selected", isSelected ? "true" : "false");
+
+    const tdJob = tr.children[0];
+    const btnJob = tdJob.querySelector(".jobbtn");
+    if (btnJob) {
+      btnJob.textContent = jobId;
+      btnJob.title = jobId;
+    }
+
+    const meta = tdJob.querySelector(".jobmeta");
+    if (meta) {
+      meta.textContent = "";
+      const addMeta = (label, value) => {
+        const v = String(value || "");
+        if (!v) return;
+        const span = document.createElement("span");
+        span.className = "meta";
+        span.textContent = `${label}: ${v}`;
+        meta.appendChild(span);
+      };
+
+      addMeta("age", age);
+      addMeta("dur", dur);
+      addMeta("user", user);
+      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") addMeta("exit", String(j.exit_code));
+    }
+
+    const tdState = tr.children[1];
+    tdState.textContent = "";
+    tdState.appendChild(badgeEl(state));
+
+    tr.children[2].textContent = age;
+    tr.children[3].textContent = dur;
+    tr.children[4].textContent = user;
+
+    const zip = tr.children[5].querySelector("a");
+    if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
+  }
+
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
-    tbody.textContent = "";
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
 
@@ -160,116 +286,26 @@ function applyFilters() {
       }
     }
 
+    const seen = new Set();
     const frag = document.createDocumentFragment();
 
     for (const j of jobs) {
       const jobId = j.job_id || "";
-      const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
-      const state = j.state || "queued";
-      const age = fmtAge(j.created_utc);
-      const dur = fmtDuration(j.duration_seconds);
-
-      const tr = document.createElement("tr");
-      const isSelected = !!(currentJob && jobId === currentJob);
-      if (isSelected) tr.classList.add("selected");
-      tr.setAttribute("aria-selected", isSelected ? "true" : "false");
-
-      const tdJob = document.createElement("td");
-      tdJob.setAttribute("data-label", "Job");
-
-      const wrap = document.createElement("div");
-      wrap.className = "jobcell";
-
-      const line = document.createElement("div");
-      line.className = "jobline";
-
-      const btnJob = document.createElement("button");
-      btnJob.type = "button";
-      btnJob.className = "small jobbtn";
-      btnJob.textContent = jobId;
-      btnJob.title = jobId;
-      btnJob.addEventListener("click", () => selectJob(jobId));
-
-      const btnCopy = document.createElement("button");
-      btnCopy.type = "button";
-      btnCopy.className = "small copybtn";
-      btnCopy.textContent = "Copy";
-      btnCopy.addEventListener("click", async (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        try {
-          await copyTextToClipboard(jobId);
-          toast("ok", "Copied", "Job id copied");
-        } catch (err) {
-          toast("err", "Copy failed", String(err && err.message ? err.message : err));
-        }
-      });
-
-      line.append(btnJob, btnCopy);
-
-      const meta = document.createElement("div");
-      meta.className = "jobmeta";
-
-      const addMeta = (label, value) => {
-        const v = String(value || "");
-        if (!v) return;
-        const span = document.createElement("span");
-        span.className = "meta";
-        span.textContent = `${label}: ${v}`;
-        meta.appendChild(span);
-      };
-
-      addMeta("age", age);
-      addMeta("dur", dur);
-      addMeta("user", user);
-      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") {
-        addMeta("exit", String(j.exit_code));
-      }
-
-      wrap.append(line, meta);
-      tdJob.appendChild(wrap);
-
-      const tdState = document.createElement("td");
-      tdState.setAttribute("data-label", "State");
-      tdState.appendChild(badgeEl(state));
-
-      const tdAge = document.createElement("td");
-      tdAge.setAttribute("data-label", "Age");
-      tdAge.textContent = age;
-
-      const tdDur = document.createElement("td");
-      tdDur.setAttribute("data-label", "Duration");
-      tdDur.textContent = dur;
-
-      const tdUser = document.createElement("td");
-      tdUser.setAttribute("data-label", "User");
-      tdUser.textContent = user;
-
-      const tdActions = document.createElement("td");
-      tdActions.className = "actions";
-      tdActions.setAttribute("data-label", "Actions");
-
-      const btnView = document.createElement("button");
-      btnView.type = "button";
-      btnView.className = "small";
-      btnView.textContent = "View";
-      btnView.addEventListener("click", () => selectJob(jobId));
-
-      const zip = document.createElement("a");
-      zip.className = "linkbtn";
-      zip.textContent = "Zip";
-      zip.href = `result/${encodeURIComponent(jobId)}.zip`;
-      zip.target = "_blank";
-      zip.rel = "noopener noreferrer";
-
-      tdActions.append(btnView, document.createTextNode(" "), zip);
-
-      tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
+      if (!jobId) continue;
+      let tr = _ensureRow(jobId);
+      if (!tr) continue;
+      _patchRow(tr, j);
+      seen.add(jobId);
       frag.appendChild(tr);
+    }
+
+    for (const row of Array.from(tbody.querySelectorAll("tr[data-job-id]"))) {
+      if (!seen.has(row.dataset.jobId || "")) row.remove();
     }
 
     tbody.appendChild(frag);
   }
+
 
   function renderStats(stats) {
     const s = stats || {};
@@ -312,14 +348,15 @@ function applyFilters() {
     renderStats(s);
   }
 
-  async function refreshJobs() {
-    if (els.jobs_loading) els.jobs_loading.hidden = false;
+  async function refreshJobs(opts) {
+    const silent = !!(opts && opts.silent);
+    if (els.jobs_loading && !silent) els.jobs_loading.hidden = false;
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
-      if (els.jobs_loading) els.jobs_loading.hidden = true;
+      if (els.jobs_loading && !silent) els.jobs_loading.hidden = true;
     }
   }
 
@@ -376,17 +413,18 @@ function applyFilters() {
 
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "small";
+      btn.className = "small secondary";
       btn.textContent = "Copy";
       btn.setAttribute("data-action", "copy-endpoint");
       btn.setAttribute("data-endpoint", k);
 
       const p = parseEndpointPath(raw);
-      if (p) {
+      const core = ["health", "run", "jobs", "stats", "info", "tail", "job", "result", "cancel", "purge"];
+      const canCopy = core.some((n) => k.toLowerCase().includes(n));
+      if (p && canCopy) {
         btn.setAttribute("data-copy", apiUrl(p));
       } else {
-        btn.disabled = true;
-        btn.title = "No URL available";
+        btn.hidden = true;
       }
 
       row.append(left, btn);

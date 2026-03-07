@@ -157,16 +157,18 @@ Client IP: ${ip || ""}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  async function refreshAll() {
+  async function refreshAll(opts) {
     if (refreshing) return;
     refreshing = true;
+    const silent = !!(opts && opts.silent);
     try {
-      await Promise.all([refreshStats(), refreshJobs()]);
+      await Promise.all([refreshStats(), refreshJobs({ silent })]);
       if (currentJob) {
         await Promise.all([refreshMetaAndTail(), refreshOverview()]);
       }
       setStatus("ok", "Connected");
       setLastUpdated(new Date().toLocaleTimeString());
+      if (els.jobs_banner) els.jobs_banner.hidden = true;
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
@@ -174,7 +176,7 @@ Client IP: ${ip || ""}`;
         els.jobs_banner.hidden = false;
         els.jobs_banner.textContent = `Connection problem: ${msg}`;
       }
-      toast("err", "Request failed", msg);
+      if (!silent) toast("err", "Request failed", msg);
     }
     finally {
       refreshing = false;
@@ -183,7 +185,7 @@ Client IP: ${ip || ""}`;
 
   async function tick() {
     if (auto) {
-      await refreshAll();
+      await refreshAll({ silent: true });
     }
     tickTimer = window.setTimeout(tick, pollMs);
   }

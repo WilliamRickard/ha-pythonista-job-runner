@@ -50,8 +50,43 @@
 
 .toplinks{
   display:flex;
-  gap: 10px;
+  gap: 8px;
   align-items:center;
+  flex-wrap: wrap;
+}
+
+.monitor-header{
+  align-items:center;
+  margin-bottom: 10px;
+}
+
+.monitor-subline{
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.meta-text{
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.passive-pill{
+  background: var(--panel2);
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.passive-pill .dot{
+  background: var(--muted);
+  opacity: 0.75;
+}
+
+.status-pill{
+  font-weight: 600;
+}
+
+.header-actions .secondary{
+  background: transparent;
 }
 
 .card{
@@ -67,8 +102,8 @@
   display:flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 14px 10px 14px;
+  gap: 10px;
+  padding: 11px 12px 8px 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -80,9 +115,11 @@
   color: var(--text);
 }
 
-.card-body{ padding: 14px; }
+.card-body{ padding: 12px; }
+.card-body.compact{ padding: 10px 12px; }
 
 button, .linkbtn{
+  cursor: pointer;
   appearance: none;
   touch-action: manipulation;
   background: var(--chip);
@@ -102,7 +139,12 @@ button:disabled{ opacity: 0.55; }
 
 button.primary{
   background: var(--chip2);
-  border-color: rgba(138,180,255,0.35);
+  border-color: rgba(138,180,255,0.45);
+}
+
+button.secondary, .linkbtn.secondary{
+  background: transparent;
+  color: var(--muted);
 }
 
 button.danger{
@@ -175,14 +217,14 @@ label{
 .kpis{
   display:grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .kpi{
   background: var(--panel2);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 8px 10px;
   text-align:left;
 }
 
@@ -192,8 +234,8 @@ label{
 }
 
 .kpi .value{
-  margin-top: 6px;
-  font-size: 20px;
+  margin-top: 3px;
+  font-size: 18px;
   letter-spacing: 0.2px;
 }
 
@@ -211,7 +253,7 @@ label{
 }
 
 .meta-strip{
-  margin-top: 10px;
+  margin-top: 8px;
   display:flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -342,3 +384,14 @@ label{
   margin-top: 8px;
   display:block;
 }
+
+.jobs-toolbar{display:flex;flex-direction:column;gap:10px;}
+.searchbar-row{display:flex;align-items:center;gap:8px;}
+.searchbar-row input{flex:1 1 auto;min-width:0;}
+.clear-inline{flex:0 0 auto;min-width:78px;}
+.state-filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.state-filters .chip{flex:0 0 auto;}
+.table-region{min-height:320px;display:flex;flex-direction:column;}
+.passive-meta .pill{background:transparent;color:var(--muted);border-style:dashed;padding:2px 9px;}
+.destructive-group button{border-color:rgba(255,92,92,0.6);}
+.utility-group button{background:transparent;color:var(--muted);}

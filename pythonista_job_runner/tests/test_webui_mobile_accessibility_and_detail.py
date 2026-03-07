@@ -55,3 +55,23 @@ def test_js_includes_keyboard_shortcut_for_search_focus() -> None:
 
     assert 'if (ev.key !== "/") return;' in js
     assert "els.search.focus();" in js
+
+
+def test_bundle_has_mobile_jobs_toolbar_and_panels() -> None:
+    html = build_webui()
+
+    assert 'class="jobs-toolbar"' in html
+    assert 'class="searchbar-row"' in html
+    assert 'class="state-filters"' in html
+    assert 'id="about_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
+    assert 'id="adv_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
+
+
+def test_css_has_mobile_panel_and_filter_scroll_rules() -> None:
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "40_overlays.css").read_text(encoding="utf-8")
+    layout = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert ".mobile-panel" in css
+    assert "min-height:100dvh" in css
+    assert "state-filters" in layout
+    assert "overflow-x:auto" in layout

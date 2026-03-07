@@ -11,25 +11,24 @@
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
           <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>Loading jobs…</div>
 
-          <div class="fieldrow">
-            <div class="field">
-              <label for="search">Search</label>
-              <div class="inputrow">
-                <input id="search" type="search" placeholder="Job id, user, state…" autocomplete="off"/>
-                <button type="button" class="iconbtn" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
-              </div>
+          <div class="jobs-toolbar" aria-label="Jobs controls">
+            <div class="searchbar-row">
+              <label for="search" class="sr-only">Search jobs</label>
+              <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
+              <button type="button" class="small secondary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
             </div>
-          </div>
 
-          <div class="actionsbar" style="margin-top:12px;" role="group" aria-label="Job state filters">
+            <div class="state-filters" role="group" aria-label="Job state filters">
             <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
             <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
             <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
             <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
             <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
           </div>
+          </div>
 
-          <div class="tablewrap" style="margin-top:12px;">
+          <div class="table-region" aria-live="polite">
+          <div class="tablewrap" style="margin-top:10px;">
             <table id="jobtable" aria-describedby="jobs_hint">
               <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
               <thead>
@@ -50,6 +49,7 @@
             <div id="empty_title" style="font-weight:700;color:var(--text);">No jobs yet</div>
             <div id="empty_body" style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
             <div style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
+          </div>
           </div>
         </div>
       </section>
