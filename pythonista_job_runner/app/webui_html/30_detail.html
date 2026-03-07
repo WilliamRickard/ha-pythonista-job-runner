@@ -1,6 +1,6 @@
 <!-- Version: 0.6.12-webui.1 -->
 <!-- Section: Job detail panel and closes main container -->
-      <section id="pane_detail" class="card" style="margin-top:14px;">
+      <section id="pane_detail" class="card" style="margin-top:14px;" aria-label="Selected job details">
         <div class="card-header">
           <h2>Job details</h2>
           <div class="actionsbar right">
@@ -10,18 +10,46 @@
         </div>
 
         <div class="card-body">
-          <div id="detail_empty" class="empty">Select a job from the list to see logs, metadata, and download the result zip.</div>
+          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job from the list to see logs, lifecycle state, metadata, and download the result zip.</div>
 
           <section id="detail" hidden aria-label="Job detail">
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
-              <div style="font-size:16px;font-weight:800;">Job <span id="jobid"></span></div>
-              <div class="actionsbar">
+            <div class="detail-topline">
+              <div class="detail-title">Job <span id="jobid"></span></div>
+              <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
                 <button type="button" class="small primary" data-action="download-zip">Download zip</button>
                 <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
                 <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
                 <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
                 <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
               </div>
+            </div>
+
+            <section id="detail_state_banner" class="state-banner" role="status" aria-live="polite" style="margin-top:10px;" hidden>
+              <div class="state-banner-main">
+                <span class="badge" id="state_badge">queued</span>
+                <strong id="state_title">Queued</strong>
+              </div>
+              <div id="state_description" class="state-description"></div>
+            </section>
+
+            <section class="lifecycle" aria-label="Lifecycle timeline" style="margin-top:10px;">
+              <h3 class="sr-only">Lifecycle timeline</h3>
+              <ul id="detail_timeline" class="timeline"></ul>
+            </section>
+
+            <div class="detail-insights" style="margin-top:12px;">
+              <article class="insight-card">
+                <h3>Result and outputs</h3>
+                <div id="detail_result_summary" class="muted">Result not yet available.</div>
+              </article>
+              <article class="insight-card">
+                <h3>Execution limits</h3>
+                <div id="detail_limits_summary" class="muted">Limits unavailable.</div>
+              </article>
+              <article class="insight-card">
+                <h3>Failure hints</h3>
+                <div id="detail_failure_summary" class="muted">No failure detected.</div>
+              </article>
             </div>
 
             <div style="margin-top:10px;">
@@ -86,7 +114,7 @@
               <button type="button" class="small" data-action="find-prev">Prev</button>
               <button type="button" class="small" data-action="find-next">Next</button>
               <button type="button" class="small" data-action="clear-search">Clear</button>
-              <span class="count" id="matchcount"></span>
+              <span class="count" id="matchcount" role="status" aria-live="polite"></span>
             </div>
 
             <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">

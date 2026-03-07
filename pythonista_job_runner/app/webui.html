@@ -306,6 +306,138 @@ label{
 }
 
 .meta-strip .pill{ background: var(--panel2); }
+
+
+.skip-link{
+  position: absolute;
+  left: 12px;
+  top: -120px;
+  z-index: 100;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+}
+
+.skip-link:focus-visible{
+  top: 12px;
+}
+
+.detail-topline{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.detail-title{
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.detail-primary-actions{
+  row-gap: 8px;
+}
+
+.state-banner{
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel2);
+  padding: 10px 12px;
+}
+
+.state-banner-main{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.state-description{
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.state-banner.running{ border-color: rgba(49,130,206,0.6); }
+.state-banner.done{ border-color: rgba(31,139,76,0.6); }
+.state-banner.error{ border-color: rgba(197,48,48,0.6); }
+.state-banner.queued{ border-color: rgba(241,196,15,0.55); }
+
+.timeline{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.timeline li{
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  border-radius: 10px;
+  padding: 8px;
+  min-height: 58px;
+}
+
+.timeline .step-title{
+  display:block;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.timeline .step-value{
+  margin-top: 4px;
+  display:block;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.timeline li.pending .step-value{
+  color: var(--muted);
+}
+
+.detail-insights{
+  display:grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.insight-card{
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--panel2);
+  min-height: 84px;
+}
+
+.insight-card h3{
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+}
+
+.insight-card .muted{
+  margin-top: 8px;
+  display:block;
+}
+.banner{
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,92,92,0.45);
+  border-radius: 12px;
+  background: rgba(255,92,92,0.08);
+  color: var(--text);
+  font-size: 13px;
+}
+
 .tablewrap{
   overflow-x: auto;
   border-radius: 12px;
@@ -808,12 +940,26 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 980px){
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-insights{ grid-template-columns: 1fr 1fr; }
+  .timeline{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   table{ min-width: 620px; }
 }
 
 @media (max-width: 720px){
   .page-header{ align-items: flex-start; }
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-insights{ grid-template-columns: 1fr; }
+  .timeline{ grid-template-columns: 1fr; }
+  .detail-primary-actions{
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .detail-primary-actions button{
+    flex: 0 0 auto;
+  }
 
   /* Compact mobile list: keep table rows and hide secondary columns */
   table{ min-width: 0 !important; }
@@ -849,6 +995,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 <body>
 <!-- Version: 0.6.12-webui.1 -->
 <!-- Section: Shell header and main container open -->
+  <a class="skip-link" href="#main_content">Skip to main content</a>
   <div class="container">
     <header class="page-header">
       <div class="brand">
@@ -876,7 +1023,7 @@ details[open] summary::after{ transform: rotate(0deg); }
       </div>
     </header>
 
-    <main>
+    <main id="main_content" tabindex="-1">
 <!-- Version: 0.6.12-webui.1 -->
 <!-- Section: Overview stats panel -->
       <section id="stats" class="card" hidden>
@@ -922,7 +1069,7 @@ details[open] summary::after{ transform: rotate(0deg); }
       </section>
 <!-- Version: 0.6.12-webui.1 -->
 <!-- Section: Jobs list and filters -->
-      <section id="pane_jobs" class="card">
+      <section id="pane_jobs" class="card" aria-label="Jobs list and filters">
         <div class="card-header">
           <h2>Jobs</h2>
           <div class="actionsbar right">
@@ -930,8 +1077,8 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
         </div>
         <div class="card-body">
-          <div id="jobs_banner" class="banner" hidden></div>
-          <div id="jobs_loading" class="loading" hidden>Loading jobs…</div>
+          <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
+          <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>Loading jobs…</div>
 
           <div class="fieldrow">
             <div class="field">
@@ -943,7 +1090,7 @@ details[open] summary::after{ transform: rotate(0deg); }
             </div>
           </div>
 
-          <div class="actionsbar" style="margin-top:12px;">
+          <div class="actionsbar" style="margin-top:12px;" role="group" aria-label="Job state filters">
             <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
             <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
             <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
@@ -952,31 +1099,32 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
 
           <div class="tablewrap" style="margin-top:12px;">
-            <table id="jobtable">
+            <table id="jobtable" aria-describedby="jobs_hint">
+              <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
               <thead>
                 <tr>
-                  <th>Job</th>
-                  <th>State</th>
-                  <th>Age</th>
-                  <th>Duration</th>
-                  <th>User</th>
-                  <th>Actions</th>
+                  <th scope="col">Job</th>
+                  <th scope="col">State</th>
+                  <th scope="col">Age</th>
+                  <th scope="col">Duration</th>
+                  <th scope="col">User</th>
+                  <th scope="col">Actions</th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
           </div>
 
-          <div id="empty" class="empty" hidden>
-            <div style="font-weight:700;color:var(--text);">No jobs yet</div>
-            <div style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
+          <div id="empty" class="empty" role="status" aria-live="polite" hidden>
+            <div id="empty_title" style="font-weight:700;color:var(--text);">No jobs yet</div>
+            <div id="empty_body" style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
             <div style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
           </div>
         </div>
       </section>
 <!-- Version: 0.6.12-webui.1 -->
 <!-- Section: Job detail panel and closes main container -->
-      <section id="pane_detail" class="card" style="margin-top:14px;">
+      <section id="pane_detail" class="card" style="margin-top:14px;" aria-label="Selected job details">
         <div class="card-header">
           <h2>Job details</h2>
           <div class="actionsbar right">
@@ -986,18 +1134,46 @@ details[open] summary::after{ transform: rotate(0deg); }
         </div>
 
         <div class="card-body">
-          <div id="detail_empty" class="empty">Select a job from the list to see logs, metadata, and download the result zip.</div>
+          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job from the list to see logs, lifecycle state, metadata, and download the result zip.</div>
 
           <section id="detail" hidden aria-label="Job detail">
-            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
-              <div style="font-size:16px;font-weight:800;">Job <span id="jobid"></span></div>
-              <div class="actionsbar">
+            <div class="detail-topline">
+              <div class="detail-title">Job <span id="jobid"></span></div>
+              <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
                 <button type="button" class="small primary" data-action="download-zip">Download zip</button>
                 <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
                 <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
                 <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
                 <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
               </div>
+            </div>
+
+            <section id="detail_state_banner" class="state-banner" role="status" aria-live="polite" style="margin-top:10px;" hidden>
+              <div class="state-banner-main">
+                <span class="badge" id="state_badge">queued</span>
+                <strong id="state_title">Queued</strong>
+              </div>
+              <div id="state_description" class="state-description"></div>
+            </section>
+
+            <section class="lifecycle" aria-label="Lifecycle timeline" style="margin-top:10px;">
+              <h3 class="sr-only">Lifecycle timeline</h3>
+              <ul id="detail_timeline" class="timeline"></ul>
+            </section>
+
+            <div class="detail-insights" style="margin-top:12px;">
+              <article class="insight-card">
+                <h3>Result and outputs</h3>
+                <div id="detail_result_summary" class="muted">Result not yet available.</div>
+              </article>
+              <article class="insight-card">
+                <h3>Execution limits</h3>
+                <div id="detail_limits_summary" class="muted">Limits unavailable.</div>
+              </article>
+              <article class="insight-card">
+                <h3>Failure hints</h3>
+                <div id="detail_failure_summary" class="muted">No failure detected.</div>
+              </article>
             </div>
 
             <div style="margin-top:10px;">
@@ -1062,7 +1238,7 @@ details[open] summary::after{ transform: rotate(0deg); }
               <button type="button" class="small" data-action="find-prev">Prev</button>
               <button type="button" class="small" data-action="find-next">Next</button>
               <button type="button" class="small" data-action="clear-search">Clear</button>
-              <span class="count" id="matchcount"></span>
+              <span class="count" id="matchcount" role="status" aria-live="polite"></span>
             </div>
 
             <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
@@ -1906,13 +2082,28 @@ function applyFilters() {
       });
     }
 
-    renderJobs(jobs);
+    renderJobs(jobs, q);
   }
 
-  function renderJobs(jobs) {
+  function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     tbody.textContent = "";
-    els.empty.hidden = (jobs.length !== 0);
+    const hasJobs = jobs.length !== 0;
+    els.empty.hidden = hasJobs;
+
+    if (!hasJobs) {
+      const emptyTitle = document.getElementById("empty_title");
+      const emptyBody = document.getElementById("empty_body");
+      if (emptyTitle && emptyBody) {
+        if (view !== "all" || (query && String(query).trim())) {
+          emptyTitle.textContent = "No matching jobs";
+          emptyBody.textContent = "Try clearing search text or switching back to All to inspect previous jobs.";
+        } else {
+          emptyTitle.textContent = "No jobs yet";
+          emptyBody.textContent = "Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.";
+        }
+      }
+    }
 
     const frag = document.createDocumentFragment();
 
@@ -1924,7 +2115,9 @@ function applyFilters() {
       const dur = fmtDuration(j.duration_seconds);
 
       const tr = document.createElement("tr");
-      if (currentJob && jobId === currentJob) tr.classList.add("selected");
+      const isSelected = !!(currentJob && jobId === currentJob);
+      if (isSelected) tr.classList.add("selected");
+      tr.setAttribute("aria-selected", isSelected ? "true" : "false");
 
       const tdJob = document.createElement("td");
       tdJob.setAttribute("data-label", "Job");
@@ -2363,6 +2556,116 @@ function closeAbout() {
     if (els.btn_delete) els.btn_delete.style.display = canDelete ? "inline-flex" : "none";
   }
 
+  function _fmtWhen(value) {
+    const ts = parseUtcSeconds(value);
+    if (!ts) return "Not yet";
+    try {
+      return new Date(ts * 1000).toLocaleString();
+    } catch (_e) {
+      return String(value || "");
+    }
+  }
+
+  function _setStateBanner(st) {
+    if (!els.detail_state_banner) return;
+
+    const state = String((st && st.state) || "queued");
+    const phase = String((st && st.phase) || state);
+    const titleMap = {
+      queued: "Queued for execution",
+      running: "Running",
+      done: "Completed",
+      error: "Failed",
+    };
+
+    els.detail_state_banner.hidden = false;
+    els.detail_state_banner.classList.remove("queued", "running", "done", "error");
+    els.detail_state_banner.classList.add(state);
+
+    if (els.state_badge) {
+      els.state_badge.className = `badge ${state}`;
+      els.state_badge.textContent = state;
+    }
+    if (els.state_title) els.state_title.textContent = titleMap[state] || "Unknown state";
+
+    let desc = `Phase: ${phase}`;
+    if (state === "queued") {
+      desc += ". Waiting for an execution slot.";
+    } else if (state === "running") {
+      desc += ". Logs update live below.";
+    } else if (state === "done") {
+      desc += ". Result archive should be available.";
+    } else if (state === "error") {
+      const err = st && st.error ? String(st.error) : "Unknown failure";
+      desc += `. ${err}`;
+    }
+
+    if (els.state_description) els.state_description.textContent = desc;
+  }
+
+  function _renderTimeline(st) {
+    if (!els.detail_timeline) return;
+
+    const timeline = [
+      { key: "created", label: "Created", value: _fmtWhen(st && st.created_utc), done: !!(st && st.created_utc) },
+      { key: "started", label: "Started", value: _fmtWhen(st && st.started_utc), done: !!(st && st.started_utc) },
+      { key: "finished", label: "Finished", value: _fmtWhen(st && st.finished_utc), done: !!(st && st.finished_utc) },
+      { key: "duration", label: "Duration", value: fmtDuration(st && st.duration_seconds) || "Not yet", done: !!(st && st.duration_seconds !== null && st.duration_seconds !== undefined) },
+    ];
+
+    els.detail_timeline.textContent = "";
+    for (const step of timeline) {
+      const li = document.createElement("li");
+      li.className = step.done ? "done" : "pending";
+
+      const title = document.createElement("span");
+      title.className = "step-title";
+      title.textContent = step.label;
+
+      const value = document.createElement("span");
+      value.className = "step-value";
+      value.textContent = step.value;
+
+      li.append(title, value);
+      els.detail_timeline.appendChild(li);
+    }
+  }
+
+  function _renderInsights(st) {
+    if (!st) return;
+    const limits = st.limits || {};
+
+    if (els.detail_limits_summary) {
+      const cpu = (limits.cpu_percent === null || limits.cpu_percent === undefined) ? "?" : String(limits.cpu_percent);
+      const mem = (limits.mem_mb === null || limits.mem_mb === undefined) ? "?" : String(limits.mem_mb);
+      const threads = (limits.threads === null || limits.threads === undefined) ? "?" : String(limits.threads);
+      els.detail_limits_summary.textContent = `CPU ${cpu}% · Memory ${mem} MB · Threads ${threads}`;
+    }
+
+    if (els.detail_result_summary) {
+      const filename = st.result_filename ? String(st.result_filename) : "result archive";
+      if (st.state === "done") {
+        els.detail_result_summary.textContent = `${filename} is expected to be ready. Use Download zip to inspect outputs and status.json.`;
+      } else if (st.state === "error") {
+        els.detail_result_summary.textContent = `Job failed before final results were guaranteed. Check stderr and status details.`;
+      } else {
+        els.detail_result_summary.textContent = `Result archive not ready yet. Current state: ${String(st.state || "queued")}.`;
+      }
+    }
+
+    if (els.detail_failure_summary) {
+      if (st.state === "error") {
+        const err = st.error ? String(st.error) : "Unknown error";
+        const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : ` (exit ${st.exit_code})`;
+        els.detail_failure_summary.textContent = `${err}${exit}`;
+      } else if (st.state === "done") {
+        els.detail_failure_summary.textContent = "No failure detected. Inspect stdout/stderr for warnings if needed.";
+      } else {
+        els.detail_failure_summary.textContent = "Failure diagnosis becomes available when the job finishes.";
+      }
+    }
+  }
+
   function renderMeta(st) {
     const s = st || {};
     const lim = s.limits || {};
@@ -2379,6 +2682,8 @@ function closeAbout() {
       ["Duration", fmtDuration(s.duration_seconds)],
       ["User", by],
       ["Client IP", s.client_ip || ""],
+      ["Result file", s.result_filename || ""],
+      ["Input SHA256", s.input_sha256 || ""],
       ["CPU %", (lim.cpu_percent === null || lim.cpu_percent === undefined) ? "" : String(lim.cpu_percent)],
       ["CPU mode", lim.cpu_limit_mode || ""],
       ["CPU effective %", (lim.cpu_cpulimit_pct === null || lim.cpu_cpulimit_pct === undefined) ? "" : String(lim.cpu_cpulimit_pct)],
@@ -2396,6 +2701,10 @@ function closeAbout() {
       dd.textContent = v;
       els.meta.append(dt, dd);
     }
+
+    _setStateBanner(s);
+    _renderTimeline(s);
+    _renderInsights(s);
   }
 
   async function selectJob(jobId) {
@@ -2592,8 +2901,13 @@ Client IP: ${ip || ""}`;
       setStatus("ok", "Connected");
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (e) {
+      const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
-      toast("err", "Request failed", String(e && e.message ? e.message : e));
+      if (els.jobs_banner) {
+        els.jobs_banner.hidden = false;
+        els.jobs_banner.textContent = `Connection problem: ${msg}`;
+      }
+      toast("err", "Request failed", msg);
     }
     finally {
       refreshing = false;
@@ -2770,6 +3084,17 @@ Client IP: ${ip || ""}`;
       });
     }
     window.addEventListener("resize", ensurePaneForViewport);
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.defaultPrevented) return;
+      if (ev.key !== "/") return;
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+      if (isTyping) return;
+      if (!els.search) return;
+      ev.preventDefault();
+      els.search.focus();
+    });
   }
 
   function cacheEls() {
@@ -2803,6 +3128,14 @@ Client IP: ${ip || ""}`;
     els.detail_empty = document.getElementById("detail_empty");
     els.jobid = document.getElementById("jobid");
     els.meta = document.getElementById("meta");
+    els.detail_state_banner = document.getElementById("detail_state_banner");
+    els.state_badge = document.getElementById("state_badge");
+    els.state_title = document.getElementById("state_title");
+    els.state_description = document.getElementById("state_description");
+    els.detail_timeline = document.getElementById("detail_timeline");
+    els.detail_result_summary = document.getElementById("detail_result_summary");
+    els.detail_limits_summary = document.getElementById("detail_limits_summary");
+    els.detail_failure_summary = document.getElementById("detail_failure_summary");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");

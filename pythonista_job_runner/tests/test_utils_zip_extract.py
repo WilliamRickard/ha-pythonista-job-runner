@@ -54,3 +54,18 @@ def test_safe_extract_allows_normal_files(tmp_path: Path) -> None:
     safe_extract_zip_bytes(z, out, SafeZipLimits())
 
     assert (out / "a" / "b" / "run.py").exists()
+
+
+def test_safe_extract_rejects_bad_zip_bytes(tmp_path: Path) -> None:
+    with pytest.raises(zipfile.BadZipFile):
+        safe_extract_zip_bytes(b"not-a-zip", tmp_path / "out", SafeZipLimits())
+
+
+def test_safe_extract_rejects_too_many_members(tmp_path: Path) -> None:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("run.py", "print('ok')\n")
+        zf.writestr("extra.txt", "x")
+
+    with pytest.raises(RuntimeError, match=r"zip_too_many_members"):
+        safe_extract_zip_bytes(buf.getvalue(), tmp_path / "out", SafeZipLimits(max_members=1))

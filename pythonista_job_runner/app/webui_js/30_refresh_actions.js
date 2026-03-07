@@ -168,8 +168,13 @@ Client IP: ${ip || ""}`;
       setStatus("ok", "Connected");
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (e) {
+      const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
-      toast("err", "Request failed", String(e && e.message ? e.message : e));
+      if (els.jobs_banner) {
+        els.jobs_banner.hidden = false;
+        els.jobs_banner.textContent = `Connection problem: ${msg}`;
+      }
+      toast("err", "Request failed", msg);
     }
     finally {
       refreshing = false;

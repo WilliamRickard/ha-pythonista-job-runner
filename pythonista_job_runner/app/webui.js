@@ -731,13 +731,28 @@ function applyFilters() {
       });
     }
 
-    renderJobs(jobs);
+    renderJobs(jobs, q);
   }
 
-  function renderJobs(jobs) {
+  function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     tbody.textContent = "";
-    els.empty.hidden = (jobs.length !== 0);
+    const hasJobs = jobs.length !== 0;
+    els.empty.hidden = hasJobs;
+
+    if (!hasJobs) {
+      const emptyTitle = document.getElementById("empty_title");
+      const emptyBody = document.getElementById("empty_body");
+      if (emptyTitle && emptyBody) {
+        if (view !== "all" || (query && String(query).trim())) {
+          emptyTitle.textContent = "No matching jobs";
+          emptyBody.textContent = "Try clearing search text or switching back to All to inspect previous jobs.";
+        } else {
+          emptyTitle.textContent = "No jobs yet";
+          emptyBody.textContent = "Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.";
+        }
+      }
+    }
 
     const frag = document.createDocumentFragment();
 
@@ -749,7 +764,9 @@ function applyFilters() {
       const dur = fmtDuration(j.duration_seconds);
 
       const tr = document.createElement("tr");
-      if (currentJob && jobId === currentJob) tr.classList.add("selected");
+      const isSelected = !!(currentJob && jobId === currentJob);
+      if (isSelected) tr.classList.add("selected");
+      tr.setAttribute("aria-selected", isSelected ? "true" : "false");
 
       const tdJob = document.createElement("td");
       tdJob.setAttribute("data-label", "Job");
@@ -1188,6 +1205,116 @@ function closeAbout() {
     if (els.btn_delete) els.btn_delete.style.display = canDelete ? "inline-flex" : "none";
   }
 
+  function _fmtWhen(value) {
+    const ts = parseUtcSeconds(value);
+    if (!ts) return "Not yet";
+    try {
+      return new Date(ts * 1000).toLocaleString();
+    } catch (_e) {
+      return String(value || "");
+    }
+  }
+
+  function _setStateBanner(st) {
+    if (!els.detail_state_banner) return;
+
+    const state = String((st && st.state) || "queued");
+    const phase = String((st && st.phase) || state);
+    const titleMap = {
+      queued: "Queued for execution",
+      running: "Running",
+      done: "Completed",
+      error: "Failed",
+    };
+
+    els.detail_state_banner.hidden = false;
+    els.detail_state_banner.classList.remove("queued", "running", "done", "error");
+    els.detail_state_banner.classList.add(state);
+
+    if (els.state_badge) {
+      els.state_badge.className = `badge ${state}`;
+      els.state_badge.textContent = state;
+    }
+    if (els.state_title) els.state_title.textContent = titleMap[state] || "Unknown state";
+
+    let desc = `Phase: ${phase}`;
+    if (state === "queued") {
+      desc += ". Waiting for an execution slot.";
+    } else if (state === "running") {
+      desc += ". Logs update live below.";
+    } else if (state === "done") {
+      desc += ". Result archive should be available.";
+    } else if (state === "error") {
+      const err = st && st.error ? String(st.error) : "Unknown failure";
+      desc += `. ${err}`;
+    }
+
+    if (els.state_description) els.state_description.textContent = desc;
+  }
+
+  function _renderTimeline(st) {
+    if (!els.detail_timeline) return;
+
+    const timeline = [
+      { key: "created", label: "Created", value: _fmtWhen(st && st.created_utc), done: !!(st && st.created_utc) },
+      { key: "started", label: "Started", value: _fmtWhen(st && st.started_utc), done: !!(st && st.started_utc) },
+      { key: "finished", label: "Finished", value: _fmtWhen(st && st.finished_utc), done: !!(st && st.finished_utc) },
+      { key: "duration", label: "Duration", value: fmtDuration(st && st.duration_seconds) || "Not yet", done: !!(st && st.duration_seconds !== null && st.duration_seconds !== undefined) },
+    ];
+
+    els.detail_timeline.textContent = "";
+    for (const step of timeline) {
+      const li = document.createElement("li");
+      li.className = step.done ? "done" : "pending";
+
+      const title = document.createElement("span");
+      title.className = "step-title";
+      title.textContent = step.label;
+
+      const value = document.createElement("span");
+      value.className = "step-value";
+      value.textContent = step.value;
+
+      li.append(title, value);
+      els.detail_timeline.appendChild(li);
+    }
+  }
+
+  function _renderInsights(st) {
+    if (!st) return;
+    const limits = st.limits || {};
+
+    if (els.detail_limits_summary) {
+      const cpu = (limits.cpu_percent === null || limits.cpu_percent === undefined) ? "?" : String(limits.cpu_percent);
+      const mem = (limits.mem_mb === null || limits.mem_mb === undefined) ? "?" : String(limits.mem_mb);
+      const threads = (limits.threads === null || limits.threads === undefined) ? "?" : String(limits.threads);
+      els.detail_limits_summary.textContent = `CPU ${cpu}% · Memory ${mem} MB · Threads ${threads}`;
+    }
+
+    if (els.detail_result_summary) {
+      const filename = st.result_filename ? String(st.result_filename) : "result archive";
+      if (st.state === "done") {
+        els.detail_result_summary.textContent = `${filename} is expected to be ready. Use Download zip to inspect outputs and status.json.`;
+      } else if (st.state === "error") {
+        els.detail_result_summary.textContent = `Job failed before final results were guaranteed. Check stderr and status details.`;
+      } else {
+        els.detail_result_summary.textContent = `Result archive not ready yet. Current state: ${String(st.state || "queued")}.`;
+      }
+    }
+
+    if (els.detail_failure_summary) {
+      if (st.state === "error") {
+        const err = st.error ? String(st.error) : "Unknown error";
+        const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : ` (exit ${st.exit_code})`;
+        els.detail_failure_summary.textContent = `${err}${exit}`;
+      } else if (st.state === "done") {
+        els.detail_failure_summary.textContent = "No failure detected. Inspect stdout/stderr for warnings if needed.";
+      } else {
+        els.detail_failure_summary.textContent = "Failure diagnosis becomes available when the job finishes.";
+      }
+    }
+  }
+
   function renderMeta(st) {
     const s = st || {};
     const lim = s.limits || {};
@@ -1204,6 +1331,8 @@ function closeAbout() {
       ["Duration", fmtDuration(s.duration_seconds)],
       ["User", by],
       ["Client IP", s.client_ip || ""],
+      ["Result file", s.result_filename || ""],
+      ["Input SHA256", s.input_sha256 || ""],
       ["CPU %", (lim.cpu_percent === null || lim.cpu_percent === undefined) ? "" : String(lim.cpu_percent)],
       ["CPU mode", lim.cpu_limit_mode || ""],
       ["CPU effective %", (lim.cpu_cpulimit_pct === null || lim.cpu_cpulimit_pct === undefined) ? "" : String(lim.cpu_cpulimit_pct)],
@@ -1221,6 +1350,10 @@ function closeAbout() {
       dd.textContent = v;
       els.meta.append(dt, dd);
     }
+
+    _setStateBanner(s);
+    _renderTimeline(s);
+    _renderInsights(s);
   }
 
   async function selectJob(jobId) {
@@ -1417,8 +1550,13 @@ Client IP: ${ip || ""}`;
       setStatus("ok", "Connected");
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (e) {
+      const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
-      toast("err", "Request failed", String(e && e.message ? e.message : e));
+      if (els.jobs_banner) {
+        els.jobs_banner.hidden = false;
+        els.jobs_banner.textContent = `Connection problem: ${msg}`;
+      }
+      toast("err", "Request failed", msg);
     }
     finally {
       refreshing = false;
@@ -1595,6 +1733,17 @@ Client IP: ${ip || ""}`;
       });
     }
     window.addEventListener("resize", ensurePaneForViewport);
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.defaultPrevented) return;
+      if (ev.key !== "/") return;
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+      if (isTyping) return;
+      if (!els.search) return;
+      ev.preventDefault();
+      els.search.focus();
+    });
   }
 
   function cacheEls() {
@@ -1628,6 +1777,14 @@ Client IP: ${ip || ""}`;
     els.detail_empty = document.getElementById("detail_empty");
     els.jobid = document.getElementById("jobid");
     els.meta = document.getElementById("meta");
+    els.detail_state_banner = document.getElementById("detail_state_banner");
+    els.state_badge = document.getElementById("state_badge");
+    els.state_title = document.getElementById("state_title");
+    els.state_description = document.getElementById("state_description");
+    els.detail_timeline = document.getElementById("detail_timeline");
+    els.detail_result_summary = document.getElementById("detail_result_summary");
+    els.detail_limits_summary = document.getElementById("detail_limits_summary");
+    els.detail_failure_summary = document.getElementById("detail_failure_summary");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");

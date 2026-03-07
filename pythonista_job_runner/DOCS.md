@@ -63,6 +63,16 @@ Typical setup for Pythonista usage:
 
 Remote access tip: do not expose the add-on port directly to the internet. If you need remote access, prefer a VPN or Home Assistant Cloud, and keep your Home Assistant instance secured.
 
+## Packaging and architecture notes
+
+This add-on declares support for `amd64`, `aarch64`, and `armv7` in [`config.yaml`](config.yaml). The build matrix in [`build.yaml`](build.yaml) pins Home Assistant base Python images for each supported architecture.
+
+Security-oriented configuration reminders:
+
+- Keep **Access token** set for direct API usage.
+- Prefer **Ingress only** (`ingress_strict`) when you do not need direct API access.
+- If direct API is required, use **Allowed client CIDRs** (`api_allow_cidrs`) to narrow exposure.
+
 ## How to reach the API
 
 The add-on exposes its HTTP API on port 8787 (by default). The base URL will look like one of these:
@@ -169,6 +179,32 @@ When the job completes (success or failure), the result zip includes:
 - Optional: `pip_install_stdout.txt`, `pip_install_stderr.txt` (only if requirements installation was used)
 - Your files under `outputs/` (if any)
 
+
+## API contract (OpenAPI)
+
+The machine-readable direct API contract lives at [`api/openapi.json`](api/openapi.json).
+
+- Format: OpenAPI 3.0.3 JSON
+- Scope: direct HTTP API routes exposed by the add-on
+- Source of truth: contract entries are derived from [`app/http_api_server.py`](app/http_api_server.py) and validated by tests
+
+This contract is intended for client tooling, documentation sync, and regression detection in contributor workflows.
+
+## Reusable Pythonista client toolkit
+
+A lightweight client module is provided at [`app/pythonista_client.py`](app/pythonista_client.py).
+
+Key capabilities:
+
+- Upload zip bytes or files (`submit_zip_bytes`, `submit_zip_file`)
+- Poll status (`wait_for_completion`)
+- Fetch tails (`get_tail`)
+- Cancel/delete (`cancel_job`, `delete_job`)
+- Download and extract results (`download_result_zip`, `extract_result_zip`)
+- End-to-end helper (`run_zip_and_collect`)
+
+A runnable example script is included at [`examples/pythonista_run_job.py`](examples/pythonista_run_job.py).
+
 ## HTTP API reference
 
 All endpoints are served by the add-on.
@@ -193,7 +229,7 @@ Send the token in this header:
 Endpoints:
 
 - `POST /run`  
-  Submit a job zip as raw bytes in the request body. Response is HTTP 202 with JSON:
+  Submit a job zip as raw bytes in the request body. Supported media types are `application/zip` and `application/octet-stream` (missing `Content-Type` is accepted for compatibility). Response is HTTP 202 with JSON:
 
   ```json
   {
@@ -235,7 +271,7 @@ Endpoints:
   Delete a job and its artefacts.
 
 - `POST /purge`  
-  Purge multiple jobs. Body is JSON, for example:
+  Purge multiple jobs. Body must be a JSON object (`application/json` or `text/json`, or no `Content-Type` header), for example:
 
   ```json
   {

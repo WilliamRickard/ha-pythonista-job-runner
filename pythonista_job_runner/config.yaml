@@ -8,6 +8,8 @@ description: >-
 url: "https://github.com/WilliamRickard/ha-pythonista-job-runner"
 arch:
   - amd64
+  - aarch64
+  - armv7
 startup: services
 boot: auto
 init: false
