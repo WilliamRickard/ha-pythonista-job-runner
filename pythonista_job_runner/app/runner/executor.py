@@ -234,8 +234,8 @@ def run_job(runner: object, job_id: str) -> None:
                 details={"state": j.state, "exit_code": j.exit_code},
                 persist_status=True,
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"WARNING: failed to record job_complete audit event for job {j.job_id}: {e}", flush=True)
 
         getattr(runner, "_make_result_zip")(j)
         getattr(runner, "_notify_done")(j)
