@@ -200,3 +200,11 @@ Rebuild and validate:
 
 - For usage and troubleshooting, start with [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 - For bugs and feature requests, open a GitHub issue in this repository.
+
+
+## Platform hardening notes
+
+- Add-on ingress now enables streamed uploads (`ingress_stream: true`) for safer large payload handling through Home Assistant ingress.
+- A custom `apparmor.txt` profile is included and the add-on config explicitly declares non-privileged runtime flags.
+- Job and control actions are written to `/data/audit_events.jsonl` with ingress identity metadata when Home Assistant provides `X-Remote-User-*` headers.
+- Companion Home Assistant integration is available under `custom_components/pythonista_job_runner` with sensors, system health, and repair issue hooks.

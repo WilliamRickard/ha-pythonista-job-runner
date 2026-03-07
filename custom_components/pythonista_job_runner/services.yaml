@@ -1,0 +1,20 @@
+purge_jobs:
+  name: Purge runner jobs
+  description: Purge jobs from the add-on queue/history.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    states:
+      selector:
+        object:
+    older_than_hours:
+      selector:
+        number:
+          min: 0
+          max: 720
+          mode: box
+    dry_run:
+      selector:
+        boolean:

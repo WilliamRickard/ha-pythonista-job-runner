@@ -228,3 +228,46 @@ def test_http_stress_lifecycle_churn_and_concurrent_reads(temp_data_dir, minimal
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_audit_trail_captures_ingress_identity_and_actions(temp_data_dir, minimal_job_zip, monkeypatch):
+    runner = _make_runner_with_fake_worker(temp_data_dir, monkeypatch)
+    runner.ingress_proxy_ip = "127.0.0.1"
+    httpd, host, port = _start_server(runner)
+    headers = {
+        "X-Runner-Token": "t",
+        "Content-Length": str(len(minimal_job_zip)),
+        "X-Remote-User-Id": "user-1",
+        "X-Remote-User-Name": "alice",
+        "X-Remote-User-Display-Name": "Alice A",
+        "X-Ingress-Path": "/api/hassio_ingress/xyz",
+    }
+    try:
+        status, _hdrs, data = _request("POST", host, port, "/run", minimal_job_zip, headers)
+        assert status == 202
+        job_id = json.loads(data.decode("utf-8"))["job_id"]
+
+        _await_state(host, port, "t", job_id, {"done", "error"})
+
+        status, _hdrs, _ = _request("POST", host, port, f"/cancel/{job_id}", None, {"X-Runner-Token": "t", "X-Remote-User-Display-Name": "Alice A"})
+        assert status == 200
+
+        status, _hdrs, _ = _request("GET", host, port, f"/result/{job_id}.zip", None, {"X-Runner-Token": "t", "X-Remote-User-Display-Name": "Alice A"})
+        assert status in (200, 404)
+
+        status, _hdrs, payload = _request("GET", host, port, f"/job/{job_id}.json", None, {"X-Runner-Token": "t"})
+        assert status == 200
+        job_payload = json.loads(payload.decode("utf-8"))
+        status_data = job_payload.get("status", job_payload)
+        events = status_data.get("audit_events", [])
+        assert any(e.get("action") == "job_submit" for e in events)
+        assert any(e.get("actor", {}).get("display_name") == "Alice A" for e in events)
+
+        audit_log = temp_data_dir / "audit_events.jsonl"
+        assert audit_log.exists()
+        lines = [ln for ln in audit_log.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        assert any("job_submit" in ln for ln in lines)
+        assert not any("X-Runner-Token" in ln for ln in lines)
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

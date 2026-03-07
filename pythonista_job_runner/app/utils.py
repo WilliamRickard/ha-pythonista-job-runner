@@ -325,6 +325,17 @@ def safe_extract_zip_bytes(
                     dst.write(b)
 
 
+
+
+def safe_extract_zip_path(
+    zip_path: Path,
+    dst_dir: Path,
+    limits: SafeZipLimits,
+) -> None:
+    """Safely extract a zip file from disk into dst_dir with guardrails."""
+    with zip_path.open("rb") as f:
+        data = f.read()
+    safe_extract_zip_bytes(data, dst_dir, limits)
 def ip_in_cidrs(ip_str: str, cidrs: List[str]) -> bool:
     """Return True if ip_str is contained in any CIDR in cidrs.
 

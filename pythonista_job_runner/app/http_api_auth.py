@@ -19,13 +19,10 @@ def client_ip(handler: Any) -> str:
 
 
 def is_ingress(handler: Any) -> bool:
-    """Return whether the request is coming from Home Assistant ingress proxy."""
+    """Return whether request is from Home Assistant ingress proxy."""
     return client_ip(handler) == INGRESS_PROXY_IP
 
 
-def auth_ok(handler: Any) -> bool:
-    """Return whether a request is authorised according to runner settings."""
-    runner = handler.server.runner
 def auth_ok(handler: Any) -> bool:
     """Return whether a request is authorised according to runner settings."""
     runner = handler.server.runner
@@ -35,8 +32,6 @@ def auth_ok(handler: Any) -> bool:
 
     if runner.ingress_strict and not is_ingress(handler):
         return False
-    if is_ingress(handler):
-        return True
     if is_ingress(handler):
         return True
 
