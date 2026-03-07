@@ -1,6 +1,7 @@
 # Release Channels
 
 This repository uses a practical two-channel model.
+This repository uses a practical two-channel model.
 
 ## Stable channel
 - Source of truth: `main` branch.
