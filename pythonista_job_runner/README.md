@@ -9,6 +9,11 @@ This file is the short add-on introduction. For the full guide, API reference, t
 
 ## Quick start
 
+## Architecture support
+
+The add-on declares support for `amd64`, `aarch64`, and `armv7`, using Home Assistant base Python images configured in [`build.yaml`](build.yaml).
+
+
 1. Install the add-on and start it.
 2. Open the add-on configuration and set a strong **Access token**.
 3. Optional: restrict direct access (see [DOCS.md](DOCS.md) for security recommendations).
@@ -46,6 +51,8 @@ See [DOCS.md](DOCS.md) for:
 - Installation, configuration, and security notes
 - Job zip format and result zip format
 - Pythonista client scripts (including polling logs and downloading results)
+- Machine-readable API contract ([`api/openapi.json`](api/openapi.json))
+- Reusable Pythonista client toolkit ([`app/pythonista_client.py`](app/pythonista_client.py)) and runnable example ([`examples/pythonista_run_job.py`](examples/pythonista_run_job.py))
 - Full HTTP API reference
 - Troubleshooting
 - [Ingress versus direct API access](DOCS.md#ingress-versus-direct-api-access)

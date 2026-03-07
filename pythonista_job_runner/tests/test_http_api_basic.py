@@ -187,3 +187,150 @@ def test_stdout_supports_delta_query(temp_data_dir):
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_info_is_public_but_stats_requires_auth(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request("GET", host, port, "/info.json", None, {})
+        assert status == 200
+        payload = json.loads(data.decode("utf-8"))
+        assert payload["service"] == "pythonista_job_runner"
+
+        status, _hdrs, data = _request("GET", host, port, "/stats.json", None, {})
+        assert status == 401
+        assert json.loads(data.decode("utf-8")) == {"error": "unauthorised"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_run_rejects_unsupported_content_type(temp_data_dir, minimal_job_zip, monkeypatch):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    monkeypatch.setattr(runner, "new_job", lambda *_args, **_kwargs: SimpleNamespace(job_id="x"))
+
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/run",
+            minimal_job_zip,
+            {
+                "X-Runner-Token": "t",
+                "Content-Length": str(len(minimal_job_zip)),
+                "Content-Type": "application/json",
+            },
+        )
+        assert status == 415
+        assert json.loads(data.decode("utf-8")) == {"error": "unsupported_content_type"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_run_rejects_invalid_content_length(temp_data_dir, minimal_job_zip):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/run",
+            minimal_job_zip,
+            {"X-Runner-Token": "t", "Content-Length": "not-an-int"},
+        )
+        assert status == 400
+        assert json.loads(data.decode("utf-8")) == {"error": "bad_content_length"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_run_rejects_invalid_zip_error(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    runner._is_root = False
+    bad_zip = b"not-a-zip"
+
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/run",
+            bad_zip,
+            {
+                "X-Runner-Token": "t",
+                "Content-Length": str(len(bad_zip)),
+                "Content-Type": "application/zip",
+            },
+        )
+        assert status == 400
+        assert json.loads(data.decode("utf-8")) == {"error": "invalid_zip"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_purge_rejects_unsupported_content_type(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+    body = b"{}"
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/purge",
+            body,
+            {"X-Runner-Token": "t", "Content-Length": str(len(body)), "Content-Type": "text/plain"},
+        )
+        assert status == 415
+        assert json.loads(data.decode("utf-8")) == {"error": "unsupported_content_type"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_purge_rejects_invalid_json(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+    body = b"{"
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/purge",
+            body,
+            {"X-Runner-Token": "t", "Content-Length": str(len(body)), "Content-Type": "application/json"},
+        )
+        assert status == 400
+        assert json.loads(data.decode("utf-8")) == {"error": "invalid_json"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_purge_rejects_non_object_json(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+    body = b"[]"
+    try:
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/purge",
+            body,
+            {"X-Runner-Token": "t", "Content-Length": str(len(body)), "Content-Type": "application/json"},
+        )
+        assert status == 400
+        assert json.loads(data.decode("utf-8")) == {"error": "invalid_json"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

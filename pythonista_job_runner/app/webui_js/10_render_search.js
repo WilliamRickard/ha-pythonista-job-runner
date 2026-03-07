@@ -139,13 +139,28 @@ function applyFilters() {
       });
     }
 
-    renderJobs(jobs);
+    renderJobs(jobs, q);
   }
 
-  function renderJobs(jobs) {
+  function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     tbody.textContent = "";
-    els.empty.hidden = (jobs.length !== 0);
+    const hasJobs = jobs.length !== 0;
+    els.empty.hidden = hasJobs;
+
+    if (!hasJobs) {
+      const emptyTitle = document.getElementById("empty_title");
+      const emptyBody = document.getElementById("empty_body");
+      if (emptyTitle && emptyBody) {
+        if (view !== "all" || (query && String(query).trim())) {
+          emptyTitle.textContent = "No matching jobs";
+          emptyBody.textContent = "Try clearing search text or switching back to All to inspect previous jobs.";
+        } else {
+          emptyTitle.textContent = "No jobs yet";
+          emptyBody.textContent = "Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.";
+        }
+      }
+    }
 
     const frag = document.createDocumentFragment();
 
@@ -157,7 +172,9 @@ function applyFilters() {
       const dur = fmtDuration(j.duration_seconds);
 
       const tr = document.createElement("tr");
-      if (currentJob && jobId === currentJob) tr.classList.add("selected");
+      const isSelected = !!(currentJob && jobId === currentJob);
+      if (isSelected) tr.classList.add("selected");
+      tr.setAttribute("aria-selected", isSelected ? "true" : "false");
 
       const tdJob = document.createElement("td");
       tdJob.setAttribute("data-label", "Job");

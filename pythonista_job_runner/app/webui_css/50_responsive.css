@@ -5,12 +5,26 @@
 
 @media (max-width: 980px){
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-insights{ grid-template-columns: 1fr 1fr; }
+  .timeline{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   table{ min-width: 620px; }
 }
 
 @media (max-width: 720px){
   .page-header{ align-items: flex-start; }
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-insights{ grid-template-columns: 1fr; }
+  .timeline{ grid-template-columns: 1fr; }
+  .detail-primary-actions{
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .detail-primary-actions button{
+    flex: 0 0 auto;
+  }
 
   /* Compact mobile list: keep table rows and hide secondary columns */
   table{ min-width: 0 !important; }

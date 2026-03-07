@@ -44,6 +44,17 @@ Option B: manual
 
 ## Install and configure the add-on
 
+## Supported architectures
+
+This repository now declares support for these Home Assistant app architectures:
+
+- `amd64`
+- `aarch64`
+- `armv7`
+
+These values are wired through both [`pythonista_job_runner/config.yaml`](pythonista_job_runner/config.yaml) and [`pythonista_job_runner/build.yaml`](pythonista_job_runner/build.yaml) using Home Assistant base Python images for each architecture.
+
+
 1. In the Add-on Store, open **Pythonista Job Runner** and install it.
 2. Open the add-on configuration:
    - Set **Access token** to a long, random value

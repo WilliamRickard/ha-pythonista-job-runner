@@ -162,6 +162,17 @@
       });
     }
     window.addEventListener("resize", ensurePaneForViewport);
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.defaultPrevented) return;
+      if (ev.key !== "/") return;
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.isContentEditable);
+      if (isTyping) return;
+      if (!els.search) return;
+      ev.preventDefault();
+      els.search.focus();
+    });
   }
 
   function cacheEls() {
@@ -195,6 +206,14 @@
     els.detail_empty = document.getElementById("detail_empty");
     els.jobid = document.getElementById("jobid");
     els.meta = document.getElementById("meta");
+    els.detail_state_banner = document.getElementById("detail_state_banner");
+    els.state_badge = document.getElementById("state_badge");
+    els.state_title = document.getElementById("state_title");
+    els.state_description = document.getElementById("state_description");
+    els.detail_timeline = document.getElementById("detail_timeline");
+    els.detail_result_summary = document.getElementById("detail_result_summary");
+    els.detail_limits_summary = document.getElementById("detail_limits_summary");
+    els.detail_failure_summary = document.getElementById("detail_failure_summary");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");

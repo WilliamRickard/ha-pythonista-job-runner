@@ -123,8 +123,8 @@ The screenshot filenames are a contract between [`README.md`](README.md), [`docs
 
 Do not commit packaging artefacts or local test caches. In particular:
 
-- `PR_METADATA.json`
-- `CHANGES_MANIFEST.json`
+- [`PR_METADATA.json`](PR_METADATA.json)
+- [`CHANGES_MANIFEST.json`](CHANGES_MANIFEST.json)
 - `.pytest_cache/`
 - `__pycache__/`
 
