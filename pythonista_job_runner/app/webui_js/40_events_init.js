@@ -1,4 +1,4 @@
-  function toggleAuto() {
+function toggleAuto() {
     auto = !auto;
     els.autostate.textContent = auto ? "on" : "off";
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
@@ -286,6 +286,14 @@
     els.findbar = document.getElementById("findbar");
   }
 
+  /**
+   * Initialise the UI: cache DOM elements, bind event handlers and restore persisted state.
+   *
+   * Loads settings from localStorage (view, tab, poll interval, auto, search, sort, filters, follow,
+   * wrap, font, pause, hilite, pane), updates the UI to reflect those settings, loads highlight terms,
+   * applies log styling and pane layout, attaches scroll/resize and window lifecycle listeners, triggers
+   * an initial full refresh and restores any selected job, then starts the regular tick loop.
+   */
   async function init() {
     cacheEls();
     bindEvents();
@@ -350,7 +358,7 @@
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 8;
+        const show = r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });

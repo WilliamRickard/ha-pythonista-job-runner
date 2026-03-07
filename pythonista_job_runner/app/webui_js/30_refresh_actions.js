@@ -1,4 +1,4 @@
-  async function refreshOverview() {
+async function refreshOverview() {
     if (!currentJob) return;
 
     try {
@@ -157,6 +157,14 @@ Client IP: ${ip || ""}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  /**
+   * Refreshes application state: stats, job list and, if a job is selected, its meta/tail and overview.
+   *
+   * Runs concurrently where possible, prevents concurrent refreshes, and updates UI state on success or error.
+   * The function sets an internal `refreshing` flag while the operation runs and clears it on completion.
+   *
+   * @param {{silent?: boolean}=} opts - Optional settings. If `silent` is true, suppresses the error toast on failure.
+   */
   async function refreshAll(opts) {
     if (refreshing) return;
     refreshing = true;
@@ -167,11 +175,13 @@ Client IP: ${ip || ""}`;
         await Promise.all([refreshMetaAndTail(), refreshOverview()]);
       }
       setStatus("ok", "Connected");
+      jobsViewState = "connected";
       setLastUpdated(new Date().toLocaleTimeString());
       if (els.jobs_banner) els.jobs_banner.hidden = true;
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
+      jobsViewState = "disconnected";
       if (els.jobs_banner) {
         els.jobs_banner.hidden = false;
         els.jobs_banner.textContent = `Connection problem: ${msg}`;

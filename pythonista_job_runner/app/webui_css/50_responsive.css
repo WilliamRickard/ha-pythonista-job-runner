@@ -11,12 +11,11 @@
 }
 
 @media (max-width: 720px){
-  .page-header{ align-items: flex-start; }
-  .monitor-header{gap:8px;margin-bottom:8px;}
-  .monitor-subline{gap:5px;}
+  .monitor-header{gap:8px;margin-bottom:6px;}
   .header-actions{width:100%;justify-content:flex-start;}
+  .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
-  .clear-inline{padding:10px 11px;min-width:70px;}
+  .clear-inline{padding:10px 11px;min-width:68px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
@@ -26,20 +25,23 @@
   table{ min-width: 0 !important; }
   #jobtable thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   #jobtable,#jobtable tbody,#jobtable tr,#jobtable td{display:block;width:100%;}
-  #jobtable tr{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);}
-  #jobtable td{border-bottom:0;padding:10px;}
-  #jobtable td::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;}
-  #jobtable td.actions{display:flex;gap:8px;align-items:center;}
+  #jobtable tr{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);padding:2px;}
+  #jobtable td{border-bottom:0;padding:8px 10px;}
+  #jobtable td::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+  #jobtable td.actions{display:flex;gap:8px;align-items:center;justify-content:flex-start;}
+  #jobtable td:nth-child(3),
+  #jobtable td:nth-child(4),
+  #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
   .sticky-command{top:6px;}
+  .sticky-command button{min-height:40px;padding:8px 10px;}
   .jobs-control-row{align-items:stretch;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
 
 @media (max-width: 430px){
-  .subline .passive-pill{font-size:11px;padding:2px 8px;}
   .toplinks .linkbtn{padding:10px 12px;}
   .secondary-filters{width:100%;justify-content:space-between;}
   .secondary-filters select{flex:1 1 auto;min-width:0;}
@@ -47,4 +49,5 @@
 
 @media (max-width: 360px){
   .searchbar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}
+  .header-title-row{align-items:flex-start;}
 }

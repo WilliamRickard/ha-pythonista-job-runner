@@ -1,4 +1,4 @@
-  function escapeHtml(s) {
+function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -152,6 +152,12 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  /**
+   * Ensure a table row exists for the given job id, creating and initialising one with controls if necessary.
+   * The created row contains job metadata cells, action controls (View, Zip, Copy id) and attaches the appropriate event handlers.
+   * @param {string} jobId - The job identifier.
+   * @returns {HTMLTableRowElement|null} The existing or newly created table row element for the job, or `null` if `jobId` is falsy.
+   */
   function _ensureRow(jobId) {
     if (!jobId) return null;
     let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
@@ -172,24 +178,7 @@ function applyFilters() {
     btnJob.className = "small jobbtn";
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    const btnCopy = document.createElement("button");
-    btnCopy.type = "button";
-    btnCopy.className = "small secondary copybtn";
-    btnCopy.textContent = "Copy";
-    btnCopy.addEventListener("click", async (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const id = tr.dataset.jobId || "";
-      if (!id) return;
-      try {
-        await copyTextToClipboard(id);
-        toast("ok", "Copied", "Job id copied");
-      } catch (err) {
-        toast("err", "Copy failed", String(err && err.message ? err.message : err));
-      }
-    });
-
-    line.append(btnJob, btnCopy);
+    line.append(btnJob);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
@@ -308,6 +297,14 @@ function applyFilters() {
     if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
   }
 
+  /**
+   * Render a list of job objects into the jobs table and update the empty-state UI.
+   *
+   * Updates the jobs table body to reflect the provided jobs: ensures rows exist, updates each row's content, removes stale rows, and appends the current set. When no jobs are supplied, updates the empty-state visibility and adjusts the empty title, body and action text based on the current view, query and connection/loading state.
+   *
+   * @param {Array<Object>} jobs - Array of job objects to display; each should include a `job_id` property.
+   * @param {string} [query] - Current search/filter query used to choose appropriate empty-state messaging.
+   */
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
@@ -317,12 +314,29 @@ function applyFilters() {
       const emptyTitle = document.getElementById("empty_title");
       const emptyBody = document.getElementById("empty_body");
       if (emptyTitle && emptyBody) {
-        if (view !== "all" || (query && String(query).trim())) {
+        if (jobsViewState === "initial") {
+          emptyTitle.textContent = "Loading jobs";
+          emptyBody.textContent = "Connecting and fetching jobs now. The jobs list will appear automatically.";
+        } else if (jobsViewState === "disconnected") {
+          emptyTitle.textContent = "Cannot connect";
+          emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
+        } else if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
           emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
+        }
+
+        const emptyAction = document.getElementById("empty_action");
+        if (emptyAction) {
+          if (jobsViewState === "disconnected") {
+            emptyAction.textContent = "Try Refresh. If it persists, open Help for troubleshooting steps.";
+          } else if (view !== "all" || (query && String(query).trim())) {
+            emptyAction.textContent = "Use Clear to reset search and filters quickly.";
+          } else {
+            emptyAction.textContent = "Need setup help? Open Help for quick start and endpoint examples.";
+          }
         }
       }
     }

@@ -20,6 +20,7 @@
   let sortMode = "newest";
   let filterHasResult = false;
   let firstJobsLoad = true;
+  let jobsViewState = "initial";
 
   let jobsCache = [];
   let follow = true;
@@ -191,17 +192,43 @@ function parseUtcSeconds(v) {
     els.lastupdated.textContent = ts;
   }
 
+  /**
+   * Update the sticky summary text to reflect current view, sort, search and result-filter state.
+   *
+   * If the sticky summary element is not present, the function returns without action.
+   *
+   * The summary shows a base view label ("All jobs" or "State: <view>"), a human-friendly
+   * sort label ("Newest", "Oldest", "Active first" or "Errors first" for other modes),
+   * an optional search fragment ("Search: <query>") when a search is active, and an optional
+   * "Result ready" token when the result filter is enabled. Parts are joined with " · ".
+   */
   function updateStickySummary() {
     if (!els.sticky_summary) return;
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(`Sort: ${sortMode}`);
+    const sortModeLabels = {
+      newest: "Newest",
+      oldest: "Oldest",
+      active: "Active first",
+    };
+    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
+      ? sortModeLabels[sortMode]
+      : (sortMode ? String(sortMode) : "Errors first");
+    bits.push(sortLabel);
     if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("has result");
-    els.sticky_summary.textContent = bits.join(" • ");
+    if (filterHasResult) bits.push("Result ready");
+    els.sticky_summary.textContent = bits.join(" · ");
   }
 
+  /**
+   * Update live/paused UI controls to reflect the current follow and paused state.
+   *
+   * Updates button active states and `aria-pressed` attributes, sets the pause/resume
+   * button label, toggles visibility of the "jump to latest" control, and adjusts
+   * the live status pill's styling and text based on whether logs are live, paused,
+   * or in a scrollable state.
+   */
   function updateLiveUi() {
     if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
 

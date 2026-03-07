@@ -1,13 +1,13 @@
-<!-- Version: 0.6.13-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Jobs list and filters -->
-      <section id="pane_jobs" class="card" aria-label="Jobs list and filters">
-        <div class="card-header">
+      <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
+        <div class="card-header jobs-header">
           <h2>Jobs</h2>
           <div class="actionsbar right">
-            <span class="muted" id="jobs_hint">Search, sort, and filter jobs. Tap View for details.</span>
+            <span class="muted" id="jobs_hint">Main workflow: search, filter, sort, and open details.</span>
           </div>
         </div>
-        <div class="card-body">
+        <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
 
           <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>
@@ -34,7 +34,7 @@
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-              <div class="secondary-filters">
+              <div class="secondary-filters" aria-label="Secondary jobs controls">
                 <label for="job_sort" class="sr-only">Sort jobs</label>
                 <select id="job_sort" aria-label="Sort jobs">
                   <option value="newest">Newest first</option>
@@ -43,7 +43,7 @@
                   <option value="errors">Errors first</option>
                 </select>
                 <details class="secondary-panel">
-                  <summary>More</summary>
+                  <summary>More filters</summary>
                   <div class="secondary-panel-body">
                     <label class="tog"><input id="filter_has_result" type="checkbox"/> has result</label>
                   </div>
@@ -53,14 +53,14 @@
           </div>
 
           <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick command bar" hidden>
-            <span id="sticky_status" class="pill passive-pill">Connecting…</span>
-            <button type="button" class="small" data-action="refresh">Refresh</button>
+            <span id="sticky_status" class="status-inline">Connecting…</span>
             <span id="sticky_summary" class="muted">All jobs</span>
+            <button type="button" class="small" data-action="refresh">Refresh</button>
             <button type="button" class="small secondary" data-action="focus-filters">Filters</button>
           </div>
 
           <div class="table-region" aria-live="polite">
-            <div class="tablewrap" style="margin-top:10px;">
+            <div class="tablewrap">
               <table id="jobtable" aria-describedby="jobs_hint">
                 <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
                 <thead>
@@ -78,9 +78,9 @@
             </div>
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
-              <div id="empty_title" style="font-weight:700;color:var(--text);">No jobs yet</div>
-              <div id="empty_body" style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
-              <div id="empty_action" style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
+              <div id="empty_title" class="empty-title">No jobs yet</div>
+              <div id="empty_body" class="empty-body">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
+              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and endpoint examples.</div>
             </div>
           </div>
         </div>

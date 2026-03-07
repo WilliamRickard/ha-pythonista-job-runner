@@ -21,6 +21,7 @@
   let sortMode = "newest";
   let filterHasResult = false;
   let firstJobsLoad = true;
+  let jobsViewState = "initial";
 
   let jobsCache = [];
   let follow = true;
@@ -192,17 +193,28 @@ function parseUtcSeconds(v) {
     els.lastupdated.textContent = ts;
   }
 
+  /**
+   * Update the sticky summary bar to reflect the current job view, sort mode, active search term and whether results are ready.
+   *
+   * If the sticky summary element is not present the function performs no action.
+   */
   function updateStickySummary() {
     if (!els.sticky_summary) return;
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(`Sort: ${sortMode}`);
+    bits.push(sortMode === "newest" ? "Newest" : (sortMode === "oldest" ? "Oldest" : (sortMode === "active" ? "Active first" : "Errors first")));
     if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("has result");
-    els.sticky_summary.textContent = bits.join(" • ");
+    if (filterHasResult) bits.push("Result ready");
+    els.sticky_summary.textContent = bits.join(" · ");
   }
 
+  /**
+   * Update live controls and status indicators to reflect current follow and pause state.
+   *
+   * Updates button active states and ARIA attributes, shows or hides the "jump to latest" control,
+   * adjusts the live-status pill class (ok/warn/err) and sets the textual state to "Live", "Paused" or "Scroll".
+   */
   function updateLiveUi() {
     if (!els.btn_live || !els.btn_pause_resume || !els.livepill || !els.livestate) return;
 
@@ -767,6 +779,12 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  /**
+   * Ensure a table row exists for the given job id and return it.
+   * Creates a new row with labelled cells for Job, State, Age, Duration, User and Actions (including a View button and a "More" overflow with Zip and Copy id) when none exists.
+   * @param {string} jobId - The job identifier to ensure a row for. If falsy, the function returns null.
+   * @returns {HTMLTableRowElement|null} The existing or newly created table row for the job, or `null` when `jobId` is falsy.
+   */
   function _ensureRow(jobId) {
     if (!jobId) return null;
     let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
@@ -787,24 +805,7 @@ function applyFilters() {
     btnJob.className = "small jobbtn";
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    const btnCopy = document.createElement("button");
-    btnCopy.type = "button";
-    btnCopy.className = "small secondary copybtn";
-    btnCopy.textContent = "Copy";
-    btnCopy.addEventListener("click", async (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const id = tr.dataset.jobId || "";
-      if (!id) return;
-      try {
-        await copyTextToClipboard(id);
-        toast("ok", "Copied", "Job id copied");
-      } catch (err) {
-        toast("err", "Copy failed", String(err && err.message ? err.message : err));
-      }
-    });
-
-    line.append(btnJob, btnCopy);
+    line.append(btnJob);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
@@ -857,9 +858,13 @@ function applyFilters() {
       ev.preventDefault();
       const id = tr.dataset.jobId || "";
       if (!id) return;
-      await copyTextToClipboard(id);
-      toast("ok", "Copied", "Job id copied");
-      overflow.open = false;
+      try {
+        await copyTextToClipboard(id);
+        toast("ok", "Copied", "Job id copied");
+        overflow.open = false;
+      } catch (err) {
+        toast("err", "Copy failed", (err && err.message) ? err.message : "Could not copy job id to clipboard");
+      }
     });
 
     menu.append(zip, copyId);
@@ -919,6 +924,14 @@ function applyFilters() {
     if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
   }
 
+  /**
+   * Render the provided list of jobs into the jobs table and update the empty-state messaging.
+   *
+   * Populates or updates table rows for each job (using each job's `job_id`), removes rows no longer present, and adjusts the visible empty-state title, body and action text based on connection and filter state.
+   *
+   * @param {Array<Object>} jobs - Array of job objects; each object must include a `job_id` property used to identify rows.
+   * @param {string|undefined} query - Current search/filter query string used to select an appropriate empty-state message when there are no jobs.
+   */
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
@@ -928,12 +941,29 @@ function applyFilters() {
       const emptyTitle = document.getElementById("empty_title");
       const emptyBody = document.getElementById("empty_body");
       if (emptyTitle && emptyBody) {
-        if (view !== "all" || (query && String(query).trim())) {
+        if (jobsViewState === "initial") {
+          emptyTitle.textContent = "Loading jobs";
+          emptyBody.textContent = "Connecting and fetching jobs now. The jobs list will appear automatically.";
+        } else if (jobsViewState === "disconnected") {
+          emptyTitle.textContent = "Cannot connect";
+          emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
+        } else if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
           emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
+        }
+
+        const emptyAction = document.getElementById("empty_action");
+        if (emptyAction) {
+          if (jobsViewState === "disconnected") {
+            emptyAction.textContent = "Try Refresh. If it persists, open Help for troubleshooting steps.";
+          } else if (view !== "all" || (query && String(query).trim())) {
+            emptyAction.textContent = "Use Clear to reset search and filters quickly.";
+          } else {
+            emptyAction.textContent = "Need setup help? Open Help for quick start and endpoint examples.";
+          }
         }
       }
     }
@@ -1640,6 +1670,16 @@ Client IP: ${ip || ""}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  /**
+   * Refreshes global data and the current job's detail, updating UI connection state.
+   *
+   * Performs concurrent refresh of stats and job list; if a job is selected, also refreshes its meta, tail and overview.
+   * On success updates connection status, hides any jobs banner and records the last-updated time.
+   * On failure sets the disconnected state, shows a jobs banner with the error and (unless silenced) displays a toast.
+   *
+   * @param {Object} [opts] - Optional settings for the refresh.
+   * @param {boolean} [opts.silent=false] - When true, suppresses user-facing error toasts.
+   */
   async function refreshAll(opts) {
     if (refreshing) return;
     refreshing = true;
@@ -1650,11 +1690,13 @@ Client IP: ${ip || ""}`;
         await Promise.all([refreshMetaAndTail(), refreshOverview()]);
       }
       setStatus("ok", "Connected");
+      jobsViewState = "connected";
       setLastUpdated(new Date().toLocaleTimeString());
       if (els.jobs_banner) els.jobs_banner.hidden = true;
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
+      jobsViewState = "disconnected";
       if (els.jobs_banner) {
         els.jobs_banner.hidden = false;
         els.jobs_banner.textContent = `Connection problem: ${msg}`;
@@ -1960,6 +2002,13 @@ Client IP: ${ip || ""}`;
     els.findbar = document.getElementById("findbar");
   }
 
+  /**
+   * Initialises the web UI: restores persisted settings, binds handlers and starts live refresh.
+   *
+   * Restores UI state from localStorage, caches DOM elements, attaches event listeners,
+   * applies log and pane settings, triggers the initial data refresh, selects a job from
+   * the query string if present, and starts the periodic tick loop and unload cleanup.
+   */
   async function init() {
     cacheEls();
     bindEvents();
@@ -2024,7 +2073,7 @@ Client IP: ${ip || ""}`;
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 8;
+        const show = r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });
