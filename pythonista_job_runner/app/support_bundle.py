@@ -1,3 +1,4 @@
+# Version: 0.6.12-supportbundle.1
 """Support-bundle builders with redaction-safe diagnostics content."""
 
 from __future__ import annotations
@@ -66,11 +67,6 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
                 "duration_seconds": status.get("duration_seconds"),
                 "exit_code": status.get("exit_code"),
                 "error": status.get("error"),
-                "duration_seconds": status.get("duration_seconds"),
-                "exit_code": status.get("exit_code"),
-                "error": status.get("error"),
-             }
-         )
             }
         )
 
