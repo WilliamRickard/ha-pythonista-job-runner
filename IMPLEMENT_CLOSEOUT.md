@@ -2,14 +2,20 @@
 
 ## Remaining gaps found
 
-1. Leftover artefact still present: `pythonista_job_runner/app/runner_core.py.bak`.
-2. `pythonista_job_runner/app/http_api_server.py` is still monolithic (~437 lines) and mixes routing, auth, body parsing, and response writing.
-3. Architecture messaging overstates confidence: docs imply full support for `amd64`, `aarch64`, and `armv7`, but repo-level proof is mainly config/build declarations and not execution on all targets.
-4. API contract/client sync can be tightened around negative cases and explicit response semantics.
-5. Security/negative-path coverage is good but can be strengthened for additional request validation edge cases.
-6. CI guardrails can better catch architecture-claim drift and API-contract drift against docs messaging.
-7. Changelog/docs need a truthfulness sweep for close-out status and caveats.
+The following gaps were originally identified during review; the first group have been addressed in this PR and are retained here as historical notes.
 
+### Previously identified gaps (addressed in this PR)
+
+1. Leftover artefact: `pythonista_job_runner/app/runner_core.py.bak` (now deleted).
+2. `pythonista_job_runner/app/http_api_server.py` was monolithic (~437 lines) and mixed routing, auth, body parsing, and response writing (now decomposed into helpers with stable behaviour).
+3. Architecture messaging overstated confidence: docs implied full support for `amd64`, `aarch64`, and `armv7`, but repo-level proof was mainly config/build declarations and not execution on all targets (now clarified and guarded in docs/CI).
+
+### Remaining gaps
+
+1. API contract/client sync can be tightened around negative cases and explicit response semantics.
+2. Security/negative-path coverage is good but can be strengthened for additional request validation edge cases.
+3. CI guardrails can better catch architecture-claim drift and API-contract drift against docs messaging.
+4. Changelog/docs need a truthfulness sweep for close-out status and caveats.
 ## Ordered milestones
 
 1. **Close obvious artefacts and create low-risk HTTP API decomposition**
