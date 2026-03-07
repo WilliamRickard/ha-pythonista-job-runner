@@ -67,6 +67,8 @@ class RunnerClient:
         """Return redacted support bundle from add-on API."""
         return self._json_get("/support_bundle.json")
 
+from urllib.parse import quote
+
     def cancel(self, job_id: str) -> dict:
         """Cancel a job by id."""
-        return self._json_post(f"/cancel/{job_id}", {})
+        return self._json_post(f"/cancel/{quote(job_id, safe='')}", {})
