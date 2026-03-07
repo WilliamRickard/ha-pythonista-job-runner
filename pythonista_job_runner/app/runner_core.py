@@ -283,8 +283,31 @@ class Runner:
 
         self.audit_log_path = self.data_dir / "audit_events.jsonl"
         self._audit_lock = threading.Lock()
-        self.telemetry_mqtt_enabled = bool(opts.get("telemetry_mqtt_enabled", False))
-        self.telemetry_topic_prefix = str(opts.get("telemetry_topic_prefix") or "pythonista_job_runner").strip() or "pythonista_job_runner"
+        telemetry_opts = opts.get("telemetry") or {}
+        # Prefer flattened options for backward compatibility, but fall back to nested telemetry config.
+        self.telemetry_mqtt_enabled = bool(
+            opts.get(
+                "telemetry_mqtt_enabled",
+                telemetry_opts.get(
+                    "mqtt_enabled",
+                    telemetry_opts.get("telemetry_mqtt_enabled", False),
+                ),
+            )
+        )
+        self.telemetry_topic_prefix = (
+            str(
+                opts.get(
+                    "telemetry_topic_prefix",
+                    telemetry_opts.get(
+                        "topic_prefix",
+                        telemetry_opts.get("telemetry_topic_prefix", "pythonista_job_runner"),
+                    ),
+                )
+                or "pythonista_job_runner"
+            )
+            .strip()
+            or "pythonista_job_runner"
+        )
 
         self.job_user = str(opts.get("job_user") or "jobrunner").strip() or "jobrunner"
         self._job_uid, self._job_gid = _resolve_user_ids(self.job_user)
