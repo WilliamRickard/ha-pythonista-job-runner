@@ -41,3 +41,17 @@ def test_jump_error_prefers_rendered_text() -> None:
 
     assert "const visibleTxt" in s
     assert "els.logview.textContent" in s
+
+
+def test_render_log_uses_escaped_newline_literals() -> None:
+    """Rendered log splitting and joining must keep escaped newline literals."""
+
+    part = Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js"
+    s = _read(part)
+
+    assert 'slice.split("\\n")' in s
+    assert 'out.join("\\n")' in s
+
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+    assert 'slice.split("\\n")' in built
+    assert 'out.join("\\n")' in built

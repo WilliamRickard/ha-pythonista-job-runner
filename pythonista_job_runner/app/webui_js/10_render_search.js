@@ -23,8 +23,7 @@
     const sliceStart = truncated ? (txt.length - MAX_RENDER) : 0;
     const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
 
-    const lines = slice.split("
-");
+    const lines = slice.split("\n");
     const out = [];
 
     // New line window: mark recently appended lines for a short period.
@@ -66,8 +65,7 @@
       out.push(`<span class="${cls}">${esc}</span>`);
     }
 
-    els.logview.innerHTML = out.join("
-");
+    els.logview.innerHTML = out.join("\n");
     applyLogStyle();
   }
 

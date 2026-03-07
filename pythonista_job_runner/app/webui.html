@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.12-webui.13 -->
+<!doctype html><!-- VERSION: 0.6.12-webui.14 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -6,7 +6,7 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui_html/*.html, webui_js/*.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.12-webui.13 */
+/* VERSION: 0.6.12-webui.14 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -1349,7 +1349,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   </div>
 
   <script>
-/* VERSION: 0.6.12-webui.13 */
+/* VERSION: 0.6.12-webui.14 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -1966,8 +1966,7 @@ function parseUtcSeconds(v) {
     const sliceStart = truncated ? (txt.length - MAX_RENDER) : 0;
     const slice = truncated ? txt.slice(-MAX_RENDER) : txt;
 
-    const lines = slice.split("
-");
+    const lines = slice.split("\n");
     const out = [];
 
     // New line window: mark recently appended lines for a short period.
@@ -2009,8 +2008,7 @@ function parseUtcSeconds(v) {
       out.push(`<span class="${cls}">${esc}</span>`);
     }
 
-    els.logview.innerHTML = out.join("
-");
+    els.logview.innerHTML = out.join("\n");
     applyLogStyle();
   }
 
