@@ -242,9 +242,13 @@ function applyFilters() {
       ev.preventDefault();
       const id = tr.dataset.jobId || "";
       if (!id) return;
-      await copyTextToClipboard(id);
-      toast("ok", "Copied", "Job id copied");
-      overflow.open = false;
+      try {
+        await copyTextToClipboard(id);
+        toast("ok", "Copied", "Job id copied");
+        overflow.open = false;
+      } catch (err) {
+        toast("err", "Copy failed", (err && err.message) ? err.message : "Could not copy job id to clipboard");
+      }
     });
 
     menu.append(zip, copyId);
