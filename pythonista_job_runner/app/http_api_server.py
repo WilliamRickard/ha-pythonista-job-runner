@@ -326,7 +326,12 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         try:
-            j = runner.new_job(body, self.headers, self.client_address[0])
+            client_addr = ""
+            try:
+                client_addr = self.client_address[0] or ""
+            except (IndexError, AttributeError, TypeError):
+                pass
+            j = runner.new_job(body, self.headers, client_addr)
         except BadZipFile:
             self._json(400, {"error": "invalid_zip"})
             return
