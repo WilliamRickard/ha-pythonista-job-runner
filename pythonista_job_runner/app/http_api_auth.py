@@ -26,11 +26,16 @@ def is_ingress(handler: Any) -> bool:
 def auth_ok(handler: Any) -> bool:
     """Return whether a request is authorised according to runner settings."""
     runner = handler.server.runner
-    if runner.ingress_strict and not is_ingress(handler):
-        return False
-
+def auth_ok(handler: Any) -> bool:
+    """Return whether a request is authorised according to runner settings."""
+    runner = handler.server.runner
     path = urlparse(handler.path).path
     if path == "/health":
+        return True
+
+    if runner.ingress_strict and not is_ingress(handler):
+        return False
+    if is_ingress(handler):
         return True
     if is_ingress(handler):
         return True
