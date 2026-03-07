@@ -323,7 +323,9 @@ class Handler(BaseHTTPRequestHandler):
         body = self.rfile.read(ln)
         if len(body) != ln:
             self._json(400, {"error": "incomplete_upload"})
-            return
+from http_api_auth import auth_ok, client_ip
+# ... later in _handle_run_post ...
+j = runner.new_job(body, self.headers, client_ip(self))
 
         try:
             client_addr = ""
