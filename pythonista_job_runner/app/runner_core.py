@@ -523,25 +523,39 @@ class Runner:
         return build_support_bundle(self)
 
     def publish_telemetry(self, event_type: str, payload: Dict[str, Any]) -> None:
-        """Publish optional telemetry over Home Assistant MQTT service."""
+        """Publish optional telemetry over Home Assistant MQTT service.
+
+        This method is intentionally non-blocking with respect to network I/O:
+        the actual HTTP call to the Supervisor API is dispatched to a
+        background thread so that audit/event paths remain responsive even
+        when the Supervisor or MQTT service is slow or unavailable.
+        """
         if not self.telemetry_mqtt_enabled:
             return
         if not SUPERVISOR_TOKEN:
             return
+
         topic = f"{self.telemetry_topic_prefix.rstrip('/')}/{event_type.strip('/') or 'event'}"
         body = json.dumps(payload, separators=(",", ":"))
-        req = Request(
-            url=f"{SUPERVISOR_CORE_API}/services/mqtt/publish",
-            data=json.dumps({"topic": topic, "payload": body, "retain": False}).encode("utf-8"),
-            headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}", "Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with urlopen(req, timeout=10) as resp:  # noqa: S310
-                _ = resp.read()
-        except Exception:
-            return
 
+        def _worker() -> None:
+            req = Request(
+                url=f"{SUPERVISOR_CORE_API}/services/mqtt/publish",
+                data=json.dumps({"topic": topic, "payload": body, "retain": False}).encode("utf-8"),
+                headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}", "Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                # Use a reduced timeout here so that even the background
+                # worker does not block for an extended period on network I/O.
+                with urlopen(req, timeout=2) as resp:  # noqa: S310
+                    _ = resp.read()
+            except Exception:
+                # Telemetry failures are intentionally ignored; they should not
+                # affect core runner behavior.
+                return
+
+        threading.Thread(target=_worker, name="publish-telemetry", daemon=True).start()
     def _write_status(self, j: Job) -> None:
         return self._job_store.write_status(j)
 
