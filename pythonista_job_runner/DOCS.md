@@ -540,3 +540,11 @@ After rebuilding, run the test suite:
 - `pytest -q` (from the `pythonista_job_runner/` folder)
 
 For the contributor-focused version of this workflow, see [../CONTRIBUTING.md](../CONTRIBUTING.md#web-ui-build).
+
+
+## Platform hardening notes
+
+- Add-on ingress now enables streamed uploads (`ingress_stream: true`) for safer large payload handling through Home Assistant ingress.
+- A custom `apparmor.txt` profile is included and the add-on config explicitly declares non-privileged runtime flags.
+- Job and control actions are written to `/data/audit_events.jsonl` with ingress identity metadata when Home Assistant provides `X-Remote-User-*` headers.
+- Companion Home Assistant integration is available under `custom_components/pythonista_job_runner` with sensors, system health, and repair issue hooks.

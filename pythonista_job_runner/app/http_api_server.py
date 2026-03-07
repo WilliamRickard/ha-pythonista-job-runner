@@ -2,7 +2,10 @@ from __future__ import annotations
 
 """HTTP API server and request handlers for job runner endpoints."""
 
+import hashlib
 import json
+import tempfile
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -52,6 +55,45 @@ class Handler(BaseHTTPRequestHandler):
                 break
             remaining -= len(chunk)
 
+
+    def _request_actor(self) -> dict[str, Any]:
+        """Return request actor metadata for audit trail capture."""
+        client_addr = ""
+        try:
+            client_addr = self.client_address[0] or ""
+        except (IndexError, AttributeError, TypeError):
+            pass
+        return self.server.runner.actor_from_request(self.headers, client_addr)
+
+    def _read_body_to_tempfile(self, length: int, max_bytes: int) -> tuple[str | None, Path | None, str | None]:
+        """Stream request body to temporary file with length and size guardrails."""
+        if length <= 0:
+            return "bad_content_length", None, None
+        if length > max_bytes:
+            self._drain_request_body(length)
+            return "upload_too_large", None, None
+
+        fd, temp_name = tempfile.mkstemp(prefix="upload_", suffix=".zip", dir="/tmp")
+        os_path = Path(temp_name)
+        hasher = hashlib.sha256()
+        received = 0
+        try:
+            with os_path.open("wb") as out:
+                while received < length:
+                    chunk = self.rfile.read(min(65536, length - received))
+                    if not chunk:
+                        return "incomplete_upload", None, None
+                    out.write(chunk)
+                    hasher.update(chunk)
+                    received += len(chunk)
+            return None, os_path, hasher.hexdigest()
+        finally:
+            try:
+                import os
+
+                os.close(fd)
+            except Exception:
+                pass
     def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -230,6 +272,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
+        actor = self._request_actor()
+        try:
+            self.server.runner.record_audit_event("job_result_download", actor, job_id=j.job_id, details={"bytes": size}, persist_status=True)
+        except Exception:
+            pass
         try:
             stream_file(j.result_zip, self.wfile.write)
         except (BrokenPipeError, ConnectionResetError):
@@ -262,7 +309,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self._require_auth():
             return
         job_id = self._job_id_from_suffix("/cancel/", "")
-        self._json(200, {"ok": self.server.runner.cancel(job_id)})
+        self._json(200, {"ok": self.server.runner.cancel(job_id, actor=self._request_actor())})
 
     def _handle_purge_post(self) -> None:
         if not self._require_auth():
@@ -297,7 +344,7 @@ class Handler(BaseHTTPRequestHandler):
         older_hours = payload.get("older_than_hours")
         older_hours_i = parse_int(str(older_hours) if older_hours is not None else None, 0)
         dry_run = bool(payload.get("dry_run", False))
-        self._json(200, self.server.runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run))
+        self._json(200, self.server.runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run, actor=self._request_actor()))
 
     def _handle_run_post(self) -> None:
         if not self._require_auth():
@@ -310,18 +357,15 @@ class Handler(BaseHTTPRequestHandler):
             self._json(411, {"error": "length_required"})
             return
         ln = parse_int(cl, -1)
-        if ln <= 0:
-            self._json(400, {"error": "bad_content_length"})
-            return
         runner = self.server.runner
         max_bytes = int(runner.max_upload_mb) * 1024 * 1024
-        if ln > max_bytes:
-            self._drain_request_body(ln)
-            self._json(413, {"error": "upload_too_large"})
-            return
 
-        body = self.rfile.read(ln)
-        if len(body) != ln:
+        err, upload_path, _sha256 = self._read_body_to_tempfile(ln, max_bytes)
+        if err:
+            code = 413 if err == "upload_too_large" else 400
+            self._json(code, {"error": err})
+            return
+        if upload_path is None:
             self._json(400, {"error": "incomplete_upload"})
             return
 
@@ -331,7 +375,7 @@ class Handler(BaseHTTPRequestHandler):
                 client_addr = self.client_address[0] or ""
             except (IndexError, AttributeError, TypeError):
                 pass
-            j = runner.new_job(body, self.headers, client_addr)
+            j = runner.new_job(upload_path, self.headers, client_addr)
         except BadZipFile:
             self._json(400, {"error": "invalid_zip"})
             return
@@ -343,8 +387,14 @@ class Handler(BaseHTTPRequestHandler):
             self.log_error("Error creating job: %r", exc)
             self._json(400, {"error": "job_creation_failed"})
             return
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
         self._json(202, {"job_id": j.job_id, "tail_url": f"/tail/{j.job_id}.json", "result_url": f"/result/{j.job_id}.zip", "jobs_url": "/jobs.json"})
+
 
     def do_DELETE(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
@@ -352,7 +402,7 @@ class Handler(BaseHTTPRequestHandler):
             if not self._require_auth():
                 return
             job_id = self._job_id_from_suffix("/job/", "")
-            self._json(200, {"ok": self.server.runner.delete(job_id)})
+            self._json(200, {"ok": self.server.runner.delete(job_id, actor=self._request_actor())})
             return
         self._json(404, {"error": "not_found"})
 

@@ -32,6 +32,7 @@ from runner import state as _state
 from runner import stats as _stats
 from runner import store as _store
 
+from audit import actor_from_headers, append_audit_event
 from utils import (
     SafeZipLimits,
     TailBuffer,
@@ -147,6 +148,7 @@ class Job:
     submitted_by_id: Optional[str] = None
     ingress_path: Optional[str] = None
     client_ip: Optional[str] = None
+    audit_events: list[dict[str, Any]] = dataclasses.field(default_factory=list)
 
     input_sha256: Optional[str] = None
 
@@ -188,6 +190,7 @@ class Job:
             "error": self.error,
             "runner_version": ADDON_VERSION,
             "client_ip": self.client_ip,
+            "audit_events": self.audit_events,
             "submitted_by": {
                 "id": self.submitted_by_id,
                 "name": self.submitted_by_name,
@@ -276,6 +279,9 @@ class Runner:
             self._is_root = bool(hasattr(os, "geteuid") and int(os.geteuid()) == 0)
         except Exception:
             self._is_root = False
+
+        self.audit_log_path = self.data_dir / "audit_events.jsonl"
+        self._audit_lock = threading.Lock()
 
         self.job_user = str(opts.get("job_user") or "jobrunner").strip() or "jobrunner"
         self._job_uid, self._job_gid = _resolve_user_ids(self.job_user)
@@ -457,14 +463,53 @@ class Runner:
     def _finalize_delete(self, job_id: str) -> None:
         return self._job_store.finalize_delete(job_id)
 
-    def delete(self, job_id: str) -> bool:
-        return self._job_store.delete_job(job_id)
+    def delete(self, job_id: str, actor: Dict[str, Any] | None = None) -> bool:
+        return self._job_store.delete_job(job_id, actor=actor)
 
-    def cancel(self, job_id: str) -> bool:
-        return self._job_store.cancel_job(job_id)
+    def cancel(self, job_id: str, actor: Dict[str, Any] | None = None) -> bool:
+        return self._job_store.cancel_job(job_id, actor=actor)
 
-    def purge(self, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
-        return self._job_store.purge_jobs(states, older_than_hours, dry_run)
+    def purge(self, states: List[str], older_than_hours: int, dry_run: bool, actor: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        return self._job_store.purge_jobs(states, older_than_hours, dry_run, actor=actor)
+
+    def actor_from_request(self, headers: Any, client_ip: str) -> Dict[str, Any]:
+        """Extract audit actor metadata from request context."""
+        try:
+            return actor_from_headers(headers, client_ip, self.ingress_proxy_ip)
+        except Exception:
+            return {"client_ip": str(client_ip or ""), "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+
+    def record_audit_event(self, action: str, actor: Dict[str, Any], job_id: str | None = None, details: Dict[str, Any] | None = None, *, persist_status: bool = False) -> None:
+        """Persist audit event and optionally attach it to a job status record."""
+        safe_details = details or {}
+        event: Dict[str, Any] = {
+            "action": str(action),
+            "job_id": str(job_id) if job_id else None,
+            "actor": actor,
+            "details": safe_details,
+        }
+        append_audit_event(self.audit_log_path, self._audit_lock, event)
+
+        if not persist_status or not job_id:
+            return
+        j = self.get(job_id)
+        if j is None:
+            return
+        j.audit_events.append({
+            "action": str(action),
+            "actor": actor,
+            "details": safe_details,
+        })
+        if len(j.audit_events) > 20:
+            j.audit_events = j.audit_events[-20:]
+        try:
+            if bool(getattr(j, "delete_requested", False)):
+                return
+            if not j.job_dir.exists():
+                return
+        except Exception:
+            return
+        self._write_status(j)
 
     def _write_status(self, j: Job) -> None:
         return self._job_store.write_status(j)

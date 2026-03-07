@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List
 
-from utils import TailBuffer, clamp_int, parse_utc, safe_extract_zip_bytes
+from utils import TailBuffer, clamp_int, parse_utc, safe_extract_zip_bytes, sha256_file
 
 from runner.hashes import hashlib_sha256_bytes
 from runner.process import kill_process_group
@@ -34,7 +34,7 @@ class JobLifecycle:
         self._write_status = write_status
         self._kill_process_group = kill_process_group_fn
 
-    def new_job(self, zip_bytes: bytes, headers: Any, client_ip: str) -> object:
+    def new_job(self, zip_bytes: bytes | Path, headers: Any, client_ip: str) -> object:
         runner = self._runner
         if bool(getattr(runner, "_is_root", False)) and (
             getattr(runner, "_job_uid", None) is None or getattr(runner, "_job_gid", None) is None
@@ -55,12 +55,21 @@ class JobLifecycle:
             limits = self._parse_limits(headers)
             job_id = uuid.uuid4().hex
             job_dir, work_dir = self._create_work_dirs(job_id)
-            safe_extract_zip_bytes(zip_bytes, work_dir, getattr(runner, "safe_zip_limits"))
+            upload_bytes: bytes
+            upload_sha256: str
+            if isinstance(zip_bytes, Path):
+                upload_bytes = zip_bytes.read_bytes()
+                upload_sha256 = sha256_file(zip_bytes)
+            else:
+                upload_bytes = zip_bytes
+                upload_sha256 = hashlib_sha256_bytes(zip_bytes)
+            safe_extract_zip_bytes(upload_bytes, work_dir, getattr(runner, "safe_zip_limits"))
             getattr(runner, "_prepare_work_dir")(work_dir)
             if not (work_dir / "run.py").exists():
                 raise RuntimeError("zip_missing_run_py")
 
-            j = self._build_job(job_id, job_dir, work_dir, limits, zip_bytes, headers, client_ip)
+            actor = getattr(runner, "actor_from_request")(headers, client_ip)
+            j = self._build_job(job_id, job_dir, work_dir, limits, upload_sha256, headers, client_ip)
             self._index.insert_job_front(job_id, j)
             job_registered = True
             if slot_reserved:
@@ -68,6 +77,7 @@ class JobLifecycle:
                 slot_reserved = False
 
             self._write_status(j)
+            getattr(runner, "record_audit_event")("job_submit", actor, job_id=job_id, details={"upload_bytes": len(upload_bytes)}, persist_status=True)
             threading.Thread(target=getattr(runner, "_run_job"), args=(job_id,), daemon=True).start()
             return j
         except Exception:
@@ -85,19 +95,22 @@ class JobLifecycle:
         shutil.rmtree(j.job_dir, ignore_errors=True)
         self._index.discard_job_id(job_id)
 
-    def delete_job(self, job_id: str) -> bool:
+    def delete_job(self, job_id: str, actor: Dict[str, Any] | None = None) -> bool:
         j = self._index.get_job(job_id)
         if not j:
             return False
         if j.state in ("queued", "running"):
             j.delete_requested = True
-            self.cancel_job(job_id)
-            self._write_status(j)
+            self.cancel_job(job_id, actor=actor)
             return True
         self.finalize_delete(job_id)
+        try:
+            getattr(self._runner, "record_audit_event")("job_delete", actor or {}, job_id=job_id, details={"state": j.state}, persist_status=False)
+        except Exception:
+            pass
         return True
 
-    def cancel_job(self, job_id: str) -> bool:
+    def cancel_job(self, job_id: str, actor: Dict[str, Any] | None = None) -> bool:
         j = self._index.get_job(job_id)
         if not j:
             return False
@@ -105,9 +118,13 @@ class JobLifecycle:
         proc = self._index.get_proc(job_id)
         if proc is not None and proc.poll() is None:
             self._kill_process_group(proc, soft_seconds=2)
+        try:
+            getattr(self._runner, "record_audit_event")("job_cancel", actor or {}, job_id=job_id, details={"state": j.state}, persist_status=True)
+        except Exception:
+            pass
         return True
 
-    def purge_jobs(self, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
+    def purge_jobs(self, states: List[str], older_than_hours: int, dry_run: bool, actor: Dict[str, Any] | None = None) -> Dict[str, Any]:
         now = time.time()
         older_than_s = max(0, older_than_hours) * 3600
         to_delete: List[str] = []
@@ -131,11 +148,16 @@ class JobLifecycle:
                 deleted.append(job_id)
                 continue
             try:
-                self.delete_job(job_id)
+                self.delete_job(job_id, actor=actor)
                 deleted.append(job_id)
             except Exception:
                 continue
-        return {"ok": True, "deleted": deleted, "count": len(deleted), "dry_run": dry_run}
+        result = {"ok": True, "deleted": deleted, "count": len(deleted), "dry_run": dry_run}
+        try:
+            getattr(self._runner, "record_audit_event")("jobs_purge", actor or {}, details={"states": states, "older_than_hours": older_than_hours, "dry_run": dry_run, "count": len(deleted)})
+        except Exception:
+            pass
+        return result
 
     def _parse_limits(self, headers: Any) -> Dict[str, int | str]:
         runner = self._runner
@@ -159,7 +181,7 @@ class JobLifecycle:
         work_dir.mkdir(parents=True, exist_ok=True)
         return job_dir, work_dir
 
-    def _build_job(self, job_id: str, job_dir: Path, work_dir: Path, limits: Dict[str, int | str], zip_bytes: bytes, headers: Any, client_ip: str) -> object:
+    def _build_job(self, job_id: str, job_dir: Path, work_dir: Path, limits: Dict[str, int | str], input_sha256: str, headers: Any, client_ip: str) -> object:
         runner = self._runner
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         JobCls = getattr(runner, "Job")
@@ -181,11 +203,11 @@ class JobLifecycle:
             tail_stdout=TailBuffer(int(getattr(runner, "tail_chars", 8000))),
             tail_stderr=TailBuffer(int(getattr(runner, "tail_chars", 8000))),
             client_ip=client_ip,
-            input_sha256=hashlib_sha256_bytes(zip_bytes),
+            input_sha256=input_sha256,
         )
-        if client_ip == str(getattr(runner, "ingress_proxy_ip", "")):
-            j.submitted_by_id = headers.get("X-Remote-User-Id")
-            j.submitted_by_name = headers.get("X-Remote-User-Name")
-            j.submitted_by_display_name = headers.get("X-Remote-User-Display-Name")
-            j.ingress_path = headers.get("X-Ingress-Path")
+        actor = getattr(runner, "actor_from_request")(headers, client_ip)
+        j.submitted_by_id = actor.get("user_id")
+        j.submitted_by_name = actor.get("user_name")
+        j.submitted_by_display_name = actor.get("display_name")
+        j.ingress_path = actor.get("ingress_path")
         return j

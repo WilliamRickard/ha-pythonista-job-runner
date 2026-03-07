@@ -1,0 +1,41 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Pythonista Job Runner",
+        "description": "Configure access to the add-on API endpoint.",
+        "data": {
+          "base_url": "Base URL",
+          "token": "Access token",
+          "verify_ssl": "Verify TLS certificate",
+          "scan_interval": "Polling interval (seconds)",
+          "create_repairs": "Create Repairs issues for connectivity failures"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the add-on endpoint"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Pythonista Job Runner options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)",
+          "create_repairs": "Create Repairs issues for connectivity failures"
+        }
+      }
+    }
+  },
+  "issues": {
+    "endpoint_unreachable": {
+      "title": "Pythonista Job Runner endpoint is unreachable",
+      "description": "The integration cannot reach the configured endpoint. Details: {detail}. Open integration settings and verify host, port, and token."
+    },
+    "auth_failed": {
+      "title": "Pythonista Job Runner authentication failed",
+      "description": "The integration could not authenticate against the endpoint. Details: {detail}. Update the configured access token."
+    }
+  }
+}

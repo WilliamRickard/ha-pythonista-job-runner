@@ -63,14 +63,14 @@ class JobStore:
     def finalize_delete(self, job_id: str) -> None:
         self._lifecycle.finalize_delete(job_id)
 
-    def delete_job(self, job_id: str) -> bool:
-        return self._lifecycle.delete_job(job_id)
+    def delete_job(self, job_id: str, actor: Optional[Dict[str, Any]] = None) -> bool:
+        return self._lifecycle.delete_job(job_id, actor=actor)
 
-    def cancel_job(self, job_id: str) -> bool:
-        return self._lifecycle.cancel_job(job_id)
+    def cancel_job(self, job_id: str, actor: Optional[Dict[str, Any]] = None) -> bool:
+        return self._lifecycle.cancel_job(job_id, actor=actor)
 
-    def purge_jobs(self, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
-        return self._lifecycle.purge_jobs(states, older_than_hours, dry_run)
+    def purge_jobs(self, states: List[str], older_than_hours: int, dry_run: bool, actor: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        return self._lifecycle.purge_jobs(states, older_than_hours, dry_run, actor=actor)
 
     def write_status(self, j: object) -> None:
         self._persistence.write_status(j)
@@ -95,16 +95,16 @@ def finalize_delete(runner: object, job_id: str) -> None:
     JobStore.for_runner(runner).finalize_delete(job_id)
 
 
-def delete_job(runner: object, job_id: str) -> bool:
-    return JobStore.for_runner(runner).delete_job(job_id)
+def delete_job(runner: object, job_id: str, actor: Optional[Dict[str, Any]] = None) -> bool:
+    return JobStore.for_runner(runner).delete_job(job_id, actor=actor)
 
 
-def cancel_job(runner: object, job_id: str) -> bool:
-    return JobStore.for_runner(runner).cancel_job(job_id)
+def cancel_job(runner: object, job_id: str, actor: Optional[Dict[str, Any]] = None) -> bool:
+    return JobStore.for_runner(runner).cancel_job(job_id, actor=actor)
 
 
-def purge_jobs(runner: object, states: List[str], older_than_hours: int, dry_run: bool) -> Dict[str, Any]:
-    return JobStore.for_runner(runner).purge_jobs(states, older_than_hours, dry_run)
+def purge_jobs(runner: object, states: List[str], older_than_hours: int, dry_run: bool, actor: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    return JobStore.for_runner(runner).purge_jobs(states, older_than_hours, dry_run, actor=actor)
 
 
 def write_status(runner: object, j: object) -> None:
