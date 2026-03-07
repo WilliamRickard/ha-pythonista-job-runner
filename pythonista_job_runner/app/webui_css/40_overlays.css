@@ -46,7 +46,7 @@
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(10px);
   z-index: 60;
-  padding: 16px;
+  padding: 12px;
   display:flex;
   align-items: flex-start;
   justify-content: center;
@@ -60,7 +60,7 @@
 .modal{
   width: 100%;
   max-width: 920px;
-  margin-top: 22px;
+  margin-top: 10px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 4px);
@@ -92,7 +92,7 @@
 }
 
 .modal-body{
-  padding: 14px;
+  padding: 12px;
   font-size: var(--fs-sm);
   line-height: 1.5;
 }
@@ -178,4 +178,22 @@ details[open] summary::after{ transform: rotate(0deg); }
   font-size: 12px;
   color: var(--muted);
   word-break: break-word;
+}
+
+.api-row button[hidden]{display:none;}
+#about_curl{overflow:auto;white-space:pre;word-break:normal;}
+#about_api .api-path{overflow-wrap:anywhere;}
+
+@media (max-width: 720px){
+  .overlay{padding:0;align-items:stretch;}
+  .mobile-panel{
+    max-width:none;
+    min-height:100dvh;
+    margin-top:0;
+    border-radius:0;
+    border-left:none;
+    border-right:none;
+  }
+  .mobile-panel .modal-header{padding:12px 12px 10px;}
+  .mobile-panel .modal-body{padding:10px 12px 16px;}
 }

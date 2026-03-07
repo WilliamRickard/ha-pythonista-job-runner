@@ -1,7 +1,7 @@
 <!-- Version: 0.6.12-webui.1 -->
-<!-- Section: Advanced settings modal -->
+<!-- Section: Advanced settings panel -->
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
+    <div class="modal mobile-panel" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
@@ -10,7 +10,7 @@
         <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
       <div class="modal-body">
-        <div class="adv-grid">
+        <div class="adv-grid compact">
           <div class="adv-block">
             <div class="adv-title">Refresh</div>
             <label class="tog big"><input type="checkbox" id="auto"/> auto refresh</label>
@@ -23,12 +23,12 @@
 
           <div class="adv-block">
             <div class="adv-title">Maintenance</div>
-            <div class="actionsbar" style="margin-top:8px;">
+            <div class="actionsbar destructive-group" style="margin-top:8px;">
               <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
               <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
             </div>
             <div class="hint" style="margin-top:10px;">Purge removes job files from disk. You can Undo for a few seconds after tapping.</div>
-            <div class="actionsbar" style="margin-top:10px;">
+            <div class="actionsbar utility-group" style="margin-top:10px;">
               <button type="button" class="small" data-action="reset-ui">Reset UI settings</button>
             </div>
           </div>

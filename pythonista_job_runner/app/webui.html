@@ -136,8 +136,43 @@ a:hover{ text-decoration: underline; }
 
 .toplinks{
   display:flex;
-  gap: 10px;
+  gap: 8px;
   align-items:center;
+  flex-wrap: wrap;
+}
+
+.monitor-header{
+  align-items:center;
+  margin-bottom: 10px;
+}
+
+.monitor-subline{
+  margin-top: 4px;
+  gap: 6px;
+}
+
+.meta-text{
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.passive-pill{
+  background: var(--panel2);
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.passive-pill .dot{
+  background: var(--muted);
+  opacity: 0.75;
+}
+
+.status-pill{
+  font-weight: 600;
+}
+
+.header-actions .secondary{
+  background: transparent;
 }
 
 .card{
@@ -153,8 +188,8 @@ a:hover{ text-decoration: underline; }
   display:flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 14px 10px 14px;
+  gap: 10px;
+  padding: 11px 12px 8px 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -166,9 +201,11 @@ a:hover{ text-decoration: underline; }
   color: var(--text);
 }
 
-.card-body{ padding: 14px; }
+.card-body{ padding: 12px; }
+.card-body.compact{ padding: 10px 12px; }
 
 button, .linkbtn{
+  cursor: pointer;
   appearance: none;
   touch-action: manipulation;
   background: var(--chip);
@@ -188,7 +225,12 @@ button:disabled{ opacity: 0.55; }
 
 button.primary{
   background: var(--chip2);
-  border-color: rgba(138,180,255,0.35);
+  border-color: rgba(138,180,255,0.45);
+}
+
+button.secondary, .linkbtn.secondary{
+  background: transparent;
+  color: var(--muted);
 }
 
 button.danger{
@@ -261,14 +303,14 @@ label{
 .kpis{
   display:grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .kpi{
   background: var(--panel2);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 8px 10px;
   text-align:left;
 }
 
@@ -278,8 +320,8 @@ label{
 }
 
 .kpi .value{
-  margin-top: 6px;
-  font-size: 20px;
+  margin-top: 3px;
+  font-size: 18px;
   letter-spacing: 0.2px;
 }
 
@@ -297,7 +339,7 @@ label{
 }
 
 .meta-strip{
-  margin-top: 10px;
+  margin-top: 8px;
   display:flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -428,6 +470,17 @@ label{
   margin-top: 8px;
   display:block;
 }
+
+.jobs-toolbar{display:flex;flex-direction:column;gap:10px;}
+.searchbar-row{display:flex;align-items:center;gap:8px;}
+.searchbar-row input{flex:1 1 auto;min-width:0;}
+.clear-inline{flex:0 0 auto;min-width:78px;}
+.state-filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.state-filters .chip{flex:0 0 auto;}
+.table-region{min-height:320px;display:flex;flex-direction:column;}
+.passive-meta .pill{background:transparent;color:var(--muted);border-style:dashed;padding:2px 9px;}
+.destructive-group button{border-color:rgba(255,92,92,0.6);}
+.utility-group button{background:transparent;color:var(--muted);}
 .banner{
   margin-bottom: 10px;
   padding: 10px 12px;
@@ -526,11 +579,12 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   display:inline-flex;
   gap: 6px;
   align-items: center;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 12px;
-  border: 1px solid var(--line);
-  background: var(--chip);
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--muted);
 }
 
 .badge::before{
@@ -551,6 +605,7 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 .badge.queued::before{ background: var(--warn); }
 
 .actionsbar{
+  min-height: 44px;
   display:flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -692,6 +747,9 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   from{ opacity: 1; }
   to{ opacity: 0; }
 }
+
+#jobs_loading{min-height:22px;}
+#empty{min-height:112px;}
 #logview .logline{
   display:block;
   padding: 0 2px;
@@ -800,7 +858,7 @@ pre.nowrap{ white-space: pre; }
   background: rgba(0,0,0,0.55);
   backdrop-filter: blur(10px);
   z-index: 60;
-  padding: 16px;
+  padding: 12px;
   display:flex;
   align-items: flex-start;
   justify-content: center;
@@ -814,7 +872,7 @@ pre.nowrap{ white-space: pre; }
 .modal{
   width: 100%;
   max-width: 920px;
-  margin-top: 22px;
+  margin-top: 10px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: calc(var(--radius) + 4px);
@@ -846,7 +904,7 @@ pre.nowrap{ white-space: pre; }
 }
 
 .modal-body{
-  padding: 14px;
+  padding: 12px;
   font-size: var(--fs-sm);
   line-height: 1.5;
 }
@@ -933,6 +991,24 @@ details[open] summary::after{ transform: rotate(0deg); }
   color: var(--muted);
   word-break: break-word;
 }
+
+.api-row button[hidden]{display:none;}
+#about_curl{overflow:auto;white-space:pre;word-break:normal;}
+#about_api .api-path{overflow-wrap:anywhere;}
+
+@media (max-width: 720px){
+  .overlay{padding:0;align-items:stretch;}
+  .mobile-panel{
+    max-width:none;
+    min-height:100dvh;
+    margin-top:0;
+    border-radius:0;
+    border-left:none;
+    border-right:none;
+  }
+  .mobile-panel .modal-header{padding:12px 12px 10px;}
+  .mobile-panel .modal-body{padding:10px 12px 16px;}
+}
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -947,6 +1023,12 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 720px){
   .page-header{ align-items: flex-start; }
+  .monitor-header{gap:8px;margin-bottom:8px;}
+  .monitor-subline{gap:5px;}
+  .header-actions{width:100%;justify-content:flex-start;}
+  .searchbar-row{gap:6px;}
+  .clear-inline{padding:10px 11px;min-width:70px;}
+  .state-filters{margin-top:2px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
@@ -990,6 +1072,15 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
 
+@media (max-width: 430px){
+  .subline .passive-pill{font-size:11px;padding:2px 8px;}
+  .toplinks .linkbtn{padding:10px 12px;}
+}
+
+@media (max-width: 360px){
+  .searchbar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}
+}
+
   </style>
 </head>
 <body>
@@ -997,29 +1088,29 @@ details[open] summary::after{ transform: rotate(0deg); }
 <!-- Section: Shell header and main container open -->
   <a class="skip-link" href="#main_content">Skip to main content</a>
   <div class="container">
-    <header class="page-header">
+    <header class="page-header monitor-header">
       <div class="brand">
         <h1>Pythonista Job Runner</h1>
-        <div class="subline">
-          <span>v__ADDON_VERSION__</span>
-          <span class="pill" id="statuspill">
+        <div class="subline monitor-subline">
+          <span class="meta-text">v__ADDON_VERSION__</span>
+          <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
             <span id="statusline" role="status" aria-live="polite">Connecting…</span>
           </span>
-          <span class="pill" id="autopill" title="Auto refresh">
-            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
+          <span class="pill passive-pill" id="autopill" title="Auto refresh">
+            <span class="dot" aria-hidden="true"></span>
             <span>Auto: <span id="autostate">on</span></span>
           </span>
-          <span class="pill" title="Last refresh">
-            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
-            <span id="lastupdated">never</span>
+          <span class="pill passive-pill" title="Last refresh">
+            <span class="dot" aria-hidden="true"></span>
+            <span>Updated: <span id="lastupdated">never</span></span>
           </span>
         </div>
       </div>
-      <div class="toplinks">
+      <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
-        <button type="button" class="linkbtn" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <button type="button" class="linkbtn secondary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn secondary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
       </div>
     </header>
 
@@ -1030,7 +1121,7 @@ details[open] summary::after{ transform: rotate(0deg); }
         <div class="card-header">
           <h2>Overview</h2>
         </div>
-        <div class="card-body">
+        <div class="card-body compact">
           <div class="kpis" id="kpis">
             <div class="kpi running">
               <button type="button" data-action="set-view" data-view="running" aria-label="Show running jobs">
@@ -1064,7 +1155,7 @@ details[open] summary::after{ transform: rotate(0deg); }
             </div>
           </div>
 
-          <div class="meta-strip" id="stats_kv"></div>
+          <div class="meta-strip passive-meta" id="stats_kv" aria-label="Runner metadata"></div>
         </div>
       </section>
 <!-- Version: 0.6.12-webui.1 -->
@@ -1080,25 +1171,24 @@ details[open] summary::after{ transform: rotate(0deg); }
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
           <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>Loading jobs…</div>
 
-          <div class="fieldrow">
-            <div class="field">
-              <label for="search">Search</label>
-              <div class="inputrow">
-                <input id="search" type="search" placeholder="Job id, user, state…" autocomplete="off"/>
-                <button type="button" class="iconbtn" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
-              </div>
+          <div class="jobs-toolbar" aria-label="Jobs controls">
+            <div class="searchbar-row">
+              <label for="search" class="sr-only">Search jobs</label>
+              <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
+              <button type="button" class="small secondary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
             </div>
-          </div>
 
-          <div class="actionsbar" style="margin-top:12px;" role="group" aria-label="Job state filters">
+            <div class="state-filters" role="group" aria-label="Job state filters">
             <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
             <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
             <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
             <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
             <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
           </div>
+          </div>
 
-          <div class="tablewrap" style="margin-top:12px;">
+          <div class="table-region" aria-live="polite">
+          <div class="tablewrap" style="margin-top:10px;">
             <table id="jobtable" aria-describedby="jobs_hint">
               <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
               <thead>
@@ -1119,6 +1209,7 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div id="empty_title" style="font-weight:700;color:var(--text);">No jobs yet</div>
             <div id="empty_body" style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
             <div style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
+          </div>
           </div>
         </div>
       </section>
@@ -1250,9 +1341,9 @@ details[open] summary::after{ transform: rotate(0deg); }
     </main>
   </div>
 <!-- Version: 0.6.12-webui.1 -->
-<!-- Section: Advanced settings modal -->
+<!-- Section: Advanced settings panel -->
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
+    <div class="modal mobile-panel" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
@@ -1261,7 +1352,7 @@ details[open] summary::after{ transform: rotate(0deg); }
         <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
       <div class="modal-body">
-        <div class="adv-grid">
+        <div class="adv-grid compact">
           <div class="adv-block">
             <div class="adv-title">Refresh</div>
             <label class="tog big"><input type="checkbox" id="auto"/> auto refresh</label>
@@ -1274,12 +1365,12 @@ details[open] summary::after{ transform: rotate(0deg); }
 
           <div class="adv-block">
             <div class="adv-title">Maintenance</div>
-            <div class="actionsbar" style="margin-top:8px;">
+            <div class="actionsbar destructive-group" style="margin-top:8px;">
               <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
               <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
             </div>
             <div class="hint" style="margin-top:10px;">Purge removes job files from disk. You can Undo for a few seconds after tapping.</div>
-            <div class="actionsbar" style="margin-top:10px;">
+            <div class="actionsbar utility-group" style="margin-top:10px;">
               <button type="button" class="small" data-action="reset-ui">Reset UI settings</button>
             </div>
           </div>
@@ -1288,9 +1379,9 @@ details[open] summary::after{ transform: rotate(0deg); }
     </div>
   </div>
 <!-- Version: 0.6.12-webui.1 -->
-<!-- Section: Help modal -->
+<!-- Section: Help panel -->
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
+    <div class="modal mobile-panel" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="about_title">Help</div>
@@ -1313,7 +1404,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 
         <details>
           <summary>API and endpoints</summary>
-          <div class="hint" style="margin-top:8px;">These are the endpoints exposed by the runner. Tap Copy to copy a full URL.</div>
+          <div class="hint" style="margin-top:8px;">Core endpoints include compact copy actions. Extra endpoints are still listed for reference.</div>
           <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
 
           <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -1321,7 +1412,7 @@ details[open] summary::after{ transform: rotate(0deg); }
             <button type="button" class="small" data-action="open-info">Open raw info.json</button>
           </div>
 
-          <textarea id="about_curl" rows="9" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
+          <textarea id="about_curl" rows="7" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
           <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
         </details>
 
@@ -2083,9 +2174,135 @@ function applyFilters() {
     renderJobs(jobs, q);
   }
 
+  function _ensureRow(jobId) {
+    if (!jobId) return null;
+    let tr = els.jobtable_tbody.querySelector(`tr[data-job-id="${CSS.escape(jobId)}"]`);
+    if (tr) return tr;
+
+    tr = document.createElement("tr");
+    tr.dataset.jobId = jobId;
+
+    const tdJob = document.createElement("td");
+    tdJob.setAttribute("data-label", "Job");
+    const wrap = document.createElement("div");
+    wrap.className = "jobcell";
+    const line = document.createElement("div");
+    line.className = "jobline";
+
+    const btnJob = document.createElement("button");
+    btnJob.type = "button";
+    btnJob.className = "small jobbtn";
+    btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
+
+    const btnCopy = document.createElement("button");
+    btnCopy.type = "button";
+    btnCopy.className = "small secondary copybtn";
+    btnCopy.textContent = "Copy";
+    btnCopy.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const id = tr.dataset.jobId || "";
+      if (!id) return;
+      try {
+        await copyTextToClipboard(id);
+        toast("ok", "Copied", "Job id copied");
+      } catch (err) {
+        toast("err", "Copy failed", String(err && err.message ? err.message : err));
+      }
+    });
+
+    line.append(btnJob, btnCopy);
+
+    const meta = document.createElement("div");
+    meta.className = "jobmeta";
+
+    wrap.append(line, meta);
+    tdJob.appendChild(wrap);
+
+    const tdState = document.createElement("td");
+    tdState.setAttribute("data-label", "State");
+
+    const tdAge = document.createElement("td");
+    tdAge.setAttribute("data-label", "Age");
+
+    const tdDur = document.createElement("td");
+    tdDur.setAttribute("data-label", "Duration");
+
+    const tdUser = document.createElement("td");
+    tdUser.setAttribute("data-label", "User");
+
+    const tdActions = document.createElement("td");
+    tdActions.className = "actions";
+    tdActions.setAttribute("data-label", "Actions");
+
+    const btnView = document.createElement("button");
+    btnView.type = "button";
+    btnView.className = "small secondary";
+    btnView.textContent = "View";
+    btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
+
+    const zip = document.createElement("a");
+    zip.className = "linkbtn secondary";
+    zip.textContent = "Zip";
+    zip.target = "_blank";
+    zip.rel = "noopener noreferrer";
+
+    tdActions.append(btnView, document.createTextNode(" "), zip);
+    tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
+    return tr;
+  }
+
+  function _patchRow(tr, j) {
+    const jobId = j.job_id || "";
+    const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
+    const state = j.state || "queued";
+    const age = fmtAge(j.created_utc);
+    const dur = fmtDuration(j.duration_seconds);
+
+    tr.dataset.jobId = jobId;
+    const isSelected = !!(currentJob && jobId === currentJob);
+    tr.classList.toggle("selected", isSelected);
+    tr.setAttribute("aria-selected", isSelected ? "true" : "false");
+
+    const tdJob = tr.children[0];
+    const btnJob = tdJob.querySelector(".jobbtn");
+    if (btnJob) {
+      btnJob.textContent = jobId;
+      btnJob.title = jobId;
+    }
+
+    const meta = tdJob.querySelector(".jobmeta");
+    if (meta) {
+      meta.textContent = "";
+      const addMeta = (label, value) => {
+        const v = String(value || "");
+        if (!v) return;
+        const span = document.createElement("span");
+        span.className = "meta";
+        span.textContent = `${label}: ${v}`;
+        meta.appendChild(span);
+      };
+
+      addMeta("age", age);
+      addMeta("dur", dur);
+      addMeta("user", user);
+      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") addMeta("exit", String(j.exit_code));
+    }
+
+    const tdState = tr.children[1];
+    tdState.textContent = "";
+    tdState.appendChild(badgeEl(state));
+
+    tr.children[2].textContent = age;
+    tr.children[3].textContent = dur;
+    tr.children[4].textContent = user;
+
+    const zip = tr.children[5].querySelector("a");
+    if (zip) zip.href = `result/${encodeURIComponent(jobId)}.zip`;
+  }
+
   function renderJobs(jobs, query) {
     const tbody = els.jobtable_tbody;
-    tbody.textContent = "";
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
 
@@ -2103,116 +2320,26 @@ function applyFilters() {
       }
     }
 
+    const seen = new Set();
     const frag = document.createDocumentFragment();
 
     for (const j of jobs) {
       const jobId = j.job_id || "";
-      const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "";
-      const state = j.state || "queued";
-      const age = fmtAge(j.created_utc);
-      const dur = fmtDuration(j.duration_seconds);
-
-      const tr = document.createElement("tr");
-      const isSelected = !!(currentJob && jobId === currentJob);
-      if (isSelected) tr.classList.add("selected");
-      tr.setAttribute("aria-selected", isSelected ? "true" : "false");
-
-      const tdJob = document.createElement("td");
-      tdJob.setAttribute("data-label", "Job");
-
-      const wrap = document.createElement("div");
-      wrap.className = "jobcell";
-
-      const line = document.createElement("div");
-      line.className = "jobline";
-
-      const btnJob = document.createElement("button");
-      btnJob.type = "button";
-      btnJob.className = "small jobbtn";
-      btnJob.textContent = jobId;
-      btnJob.title = jobId;
-      btnJob.addEventListener("click", () => selectJob(jobId));
-
-      const btnCopy = document.createElement("button");
-      btnCopy.type = "button";
-      btnCopy.className = "small copybtn";
-      btnCopy.textContent = "Copy";
-      btnCopy.addEventListener("click", async (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        try {
-          await copyTextToClipboard(jobId);
-          toast("ok", "Copied", "Job id copied");
-        } catch (err) {
-          toast("err", "Copy failed", String(err && err.message ? err.message : err));
-        }
-      });
-
-      line.append(btnJob, btnCopy);
-
-      const meta = document.createElement("div");
-      meta.className = "jobmeta";
-
-      const addMeta = (label, value) => {
-        const v = String(value || "");
-        if (!v) return;
-        const span = document.createElement("span");
-        span.className = "meta";
-        span.textContent = `${label}: ${v}`;
-        meta.appendChild(span);
-      };
-
-      addMeta("age", age);
-      addMeta("dur", dur);
-      addMeta("user", user);
-      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") {
-        addMeta("exit", String(j.exit_code));
-      }
-
-      wrap.append(line, meta);
-      tdJob.appendChild(wrap);
-
-      const tdState = document.createElement("td");
-      tdState.setAttribute("data-label", "State");
-      tdState.appendChild(badgeEl(state));
-
-      const tdAge = document.createElement("td");
-      tdAge.setAttribute("data-label", "Age");
-      tdAge.textContent = age;
-
-      const tdDur = document.createElement("td");
-      tdDur.setAttribute("data-label", "Duration");
-      tdDur.textContent = dur;
-
-      const tdUser = document.createElement("td");
-      tdUser.setAttribute("data-label", "User");
-      tdUser.textContent = user;
-
-      const tdActions = document.createElement("td");
-      tdActions.className = "actions";
-      tdActions.setAttribute("data-label", "Actions");
-
-      const btnView = document.createElement("button");
-      btnView.type = "button";
-      btnView.className = "small";
-      btnView.textContent = "View";
-      btnView.addEventListener("click", () => selectJob(jobId));
-
-      const zip = document.createElement("a");
-      zip.className = "linkbtn";
-      zip.textContent = "Zip";
-      zip.href = `result/${encodeURIComponent(jobId)}.zip`;
-      zip.target = "_blank";
-      zip.rel = "noopener noreferrer";
-
-      tdActions.append(btnView, document.createTextNode(" "), zip);
-
-      tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
+      if (!jobId) continue;
+      let tr = _ensureRow(jobId);
+      if (!tr) continue;
+      _patchRow(tr, j);
+      seen.add(jobId);
       frag.appendChild(tr);
+    }
+
+    for (const row of Array.from(tbody.querySelectorAll("tr[data-job-id]"))) {
+      if (!seen.has(row.dataset.jobId || "")) row.remove();
     }
 
     tbody.appendChild(frag);
   }
+
 
   function renderStats(stats) {
     const s = stats || {};
@@ -2255,14 +2382,15 @@ function applyFilters() {
     renderStats(s);
   }
 
-  async function refreshJobs() {
-    if (els.jobs_loading) els.jobs_loading.hidden = false;
+  async function refreshJobs(opts) {
+    const silent = !!(opts && opts.silent);
+    if (els.jobs_loading && !silent) els.jobs_loading.hidden = false;
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
-      if (els.jobs_loading) els.jobs_loading.hidden = true;
+      if (els.jobs_loading && !silent) els.jobs_loading.hidden = true;
     }
   }
 
@@ -2319,17 +2447,18 @@ function applyFilters() {
 
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "small";
+      btn.className = "small secondary";
       btn.textContent = "Copy";
       btn.setAttribute("data-action", "copy-endpoint");
       btn.setAttribute("data-endpoint", k);
 
       const p = parseEndpointPath(raw);
-      if (p) {
+      const core = ["health", "run", "jobs", "stats", "info", "tail", "job", "result", "cancel", "purge"];
+      const canCopy = core.some((n) => k.toLowerCase().includes(n));
+      if (p && canCopy) {
         btn.setAttribute("data-copy", apiUrl(p));
       } else {
-        btn.disabled = true;
-        btn.title = "No URL available";
+        btn.hidden = true;
       }
 
       row.append(left, btn);
@@ -2888,16 +3017,18 @@ Client IP: ${ip || ""}`;
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  async function refreshAll() {
+  async function refreshAll(opts) {
     if (refreshing) return;
     refreshing = true;
+    const silent = !!(opts && opts.silent);
     try {
-      await Promise.all([refreshStats(), refreshJobs()]);
+      await Promise.all([refreshStats(), refreshJobs({ silent })]);
       if (currentJob) {
         await Promise.all([refreshMetaAndTail(), refreshOverview()]);
       }
       setStatus("ok", "Connected");
       setLastUpdated(new Date().toLocaleTimeString());
+      if (els.jobs_banner) els.jobs_banner.hidden = true;
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
@@ -2905,7 +3036,7 @@ Client IP: ${ip || ""}`;
         els.jobs_banner.hidden = false;
         els.jobs_banner.textContent = `Connection problem: ${msg}`;
       }
-      toast("err", "Request failed", msg);
+      if (!silent) toast("err", "Request failed", msg);
     }
     finally {
       refreshing = false;
@@ -2914,7 +3045,7 @@ Client IP: ${ip || ""}`;
 
   async function tick() {
     if (auto) {
-      await refreshAll();
+      await refreshAll({ silent: true });
     }
     tickTimer = window.setTimeout(tick, pollMs);
   }

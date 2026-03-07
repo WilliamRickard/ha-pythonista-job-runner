@@ -2,29 +2,29 @@
 <!-- Section: Shell header and main container open -->
   <a class="skip-link" href="#main_content">Skip to main content</a>
   <div class="container">
-    <header class="page-header">
+    <header class="page-header monitor-header">
       <div class="brand">
         <h1>Pythonista Job Runner</h1>
-        <div class="subline">
-          <span>v__ADDON_VERSION__</span>
-          <span class="pill" id="statuspill">
+        <div class="subline monitor-subline">
+          <span class="meta-text">v__ADDON_VERSION__</span>
+          <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
             <span id="statusline" role="status" aria-live="polite">Connecting…</span>
           </span>
-          <span class="pill" id="autopill" title="Auto refresh">
-            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
+          <span class="pill passive-pill" id="autopill" title="Auto refresh">
+            <span class="dot" aria-hidden="true"></span>
             <span>Auto: <span id="autostate">on</span></span>
           </span>
-          <span class="pill" title="Last refresh">
-            <span class="dot" style="background:var(--muted);" aria-hidden="true"></span>
-            <span id="lastupdated">never</span>
+          <span class="pill passive-pill" title="Last refresh">
+            <span class="dot" aria-hidden="true"></span>
+            <span>Updated: <span id="lastupdated">never</span></span>
           </span>
         </div>
       </div>
-      <div class="toplinks">
+      <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
-        <button type="button" class="linkbtn" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <button type="button" class="linkbtn secondary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn secondary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
       </div>
     </header>
 
