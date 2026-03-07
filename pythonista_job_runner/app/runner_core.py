@@ -517,8 +517,8 @@ class Runner:
         append_audit_event(self.audit_log_path, self._audit_lock, event)
         try:
             self.publish_telemetry("audit", {"action": action, "job_id": job_id, "actor": actor, "details": safe_details})
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"WARNING: failed to publish telemetry for audit event {action}: {e}", flush=True)
 
         if not persist_status or not job_id:
             return
