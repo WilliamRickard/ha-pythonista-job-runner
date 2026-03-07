@@ -11,7 +11,9 @@ This file is the short add-on introduction. For the full guide, API reference, t
 
 ## Architecture support
 
-The add-on declares support for `amd64`, `aarch64`, and `armv7`, using Home Assistant base Python images configured in [`build.yaml`](build.yaml).
+The add-on **declares** support for `amd64`, `aarch64`, and `armv7`, using Home Assistant base Python images configured in [`build.yaml`](build.yaml). CI verifies config/build alignment for these architecture declarations.
+
+Truthfulness note: this repository's automated runtime tests currently run on `amd64` CI runners; `aarch64` and `armv7` are validated at packaging/declaration level here and still require native-host smoke testing before release sign-off.
 
 
 1. Install the add-on and start it.

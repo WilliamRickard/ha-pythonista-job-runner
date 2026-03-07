@@ -96,3 +96,11 @@ def test_docs_note_supported_architectures() -> None:
     for arch in ("amd64", "aarch64", "armv7"):
         assert f"`{arch}`" in root_readme
         assert f"`{arch}`" in addon_readme
+
+
+def test_docs_include_architecture_validation_scope_note() -> None:
+    root_readme = _read("README.md")
+    docs = _read("pythonista_job_runner/DOCS.md")
+
+    assert "automated test suite in this repository executes on `amd64` CI runners" in root_readme
+    assert "automated runtime tests in this repository execute on `amd64` CI runners" in docs

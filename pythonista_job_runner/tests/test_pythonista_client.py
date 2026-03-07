@@ -118,3 +118,25 @@ def test_runner_client_handles_cancelled_job_failure_path(temp_data_dir, tmp_pat
     finally:
         httpd.shutdown()
         httpd.server_close()
+
+
+def test_runner_client_wait_for_completion_times_out() -> None:
+    class _NeverDoneClient(RunnerClient):
+        def get_job(self, job_id: str) -> dict[str, str]:
+            _ = job_id
+            return {"state": "running"}
+
+    client = _NeverDoneClient("http://example", "t", poll_interval_seconds=0.0)
+    with pytest.raises(RunnerClientError, match="timed_out_waiting_for_job"):
+        client.wait_for_completion("job-1", timeout_seconds=0.0)
+
+
+def test_runner_client_invalid_json_response_raises() -> None:
+    class _BadJsonClient(RunnerClient):
+        def _request_bytes(self, *args, **kwargs) -> bytes:  # type: ignore[override]
+            _ = (args, kwargs)
+            return b"not-json"
+
+    client = _BadJsonClient("http://example", "t")
+    with pytest.raises(RunnerClientError, match="invalid_json_response"):
+        client.get_job("job-1")
