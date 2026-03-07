@@ -1,5 +1,9 @@
 # IMPLEMENT_CLOSEOUT.md
 
+## Targeted repair note (current pass)
+
+- Root cause confirmed: `pythonista_job_runner/app/http_api_server.py` had three stray pasted lines (`from http_api_auth import auth_ok, client_ip`, a comment, and `j = runner.new_job(...)`) injected inside `_handle_run_post()` after the `incomplete_upload` branch. This both removed the required `return` after that error response and introduced an indentation break at the following `try:` block, causing `IndentationError` during compilation.
+
 ## Remaining gaps found
 
 The following gaps were originally identified during review; the first group have been addressed in this PR and are retained here as historical notes.
