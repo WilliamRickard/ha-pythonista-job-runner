@@ -19,6 +19,7 @@
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
+        if (action === "focus-filters" && els.job_sort) els.job_sort.focus();
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
@@ -103,6 +104,22 @@
       localStorage.setItem("pjr_search", String(els.search.value || ""));
       applyFilters();
     });
+    if (els.job_sort) {
+      els.job_sort.addEventListener("change", () => {
+        sortMode = els.job_sort.value || "newest";
+        localStorage.setItem("pjr_sort", sortMode);
+        applyFilters();
+        updateStickySummary();
+      });
+    }
+    if (els.filter_has_result) {
+      els.filter_has_result.addEventListener("change", () => {
+        filterHasResult = !!els.filter_has_result.checked;
+        localStorage.setItem("pjr_has_result", filterHasResult ? "1" : "0");
+        applyFilters();
+        updateStickySummary();
+      });
+    }
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
@@ -201,6 +218,12 @@
     els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
+    els.job_sort = document.getElementById("job_sort");
+    els.filter_has_result = document.getElementById("filter_has_result");
+    els.sticky_command = document.getElementById("sticky_command");
+    els.sticky_status = document.getElementById("sticky_status");
+    els.sticky_summary = document.getElementById("sticky_summary");
+    els.main_header = document.getElementById("main_header");
 
     els.detail = document.getElementById("detail");
     els.detail_empty = document.getElementById("detail_empty");
@@ -285,6 +308,14 @@
     const savedSearch = localStorage.getItem("pjr_search");
     if (savedSearch !== null) els.search.value = savedSearch;
 
+    const savedSort = localStorage.getItem("pjr_sort");
+    if (savedSort) sortMode = savedSort;
+    if (els.job_sort) els.job_sort.value = sortMode;
+
+    const savedHasResult = localStorage.getItem("pjr_has_result");
+    if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
+    if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
+
     const savedFollow = localStorage.getItem("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
     els.follow.checked = follow;
@@ -316,6 +347,18 @@
 
     applyLogStyle();
 
+    if (els.main_header && els.sticky_command) {
+      const syncSticky = () => {
+        const r = els.main_header.getBoundingClientRect();
+        const show = r.bottom < 8;
+        els.sticky_command.hidden = !show;
+      };
+      window.addEventListener("scroll", syncSticky, { passive: true });
+      window.addEventListener("resize", syncSticky);
+      syncSticky();
+    }
+
+    updateStickySummary();
     setStatus("warn", "Connecting…");
     await refreshAll();
 

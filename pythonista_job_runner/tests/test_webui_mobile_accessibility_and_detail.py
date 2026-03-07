@@ -75,3 +75,19 @@ def test_css_has_mobile_panel_and_filter_scroll_rules() -> None:
     assert "min-height:100dvh" in css
     assert "state-filters" in layout
     assert "overflow-x:auto" in layout
+
+
+def test_bundle_has_sort_secondary_filters_and_sticky_command_bar() -> None:
+    html = build_webui()
+
+    assert 'id="job_sort"' in html
+    assert 'id="filter_has_result"' in html
+    assert 'id="sticky_command"' in html
+    assert 'data-action="focus-filters"' in html
+
+
+def test_bundle_has_initial_jobs_skeleton_state() -> None:
+    html = build_webui()
+
+    assert 'class="jobs-skeleton"' in html
+    assert 'class="sk sk-lg"' in html

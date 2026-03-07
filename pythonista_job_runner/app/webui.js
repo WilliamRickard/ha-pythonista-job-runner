@@ -18,6 +18,9 @@
   let initialTailForJob = null;
   let currentTab = "stdout";
   let view = "all";
+  let sortMode = "newest";
+  let filterHasResult = false;
+  let firstJobsLoad = true;
 
   let jobsCache = [];
   let follow = true;
@@ -182,10 +185,22 @@ function parseUtcSeconds(v) {
     els.statusline.textContent = text;
     els.statuspill.classList.remove("ok", "err", "warn");
     if (kind) els.statuspill.classList.add(kind);
+    if (els.sticky_status) els.sticky_status.textContent = text;
   }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
+  }
+
+  function updateStickySummary() {
+    if (!els.sticky_summary) return;
+    const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
+    const bits = [];
+    bits.push(view === "all" ? "All jobs" : `State: ${view}`);
+    bits.push(`Sort: ${sortMode}`);
+    if (q) bits.push(`Search: ${q}`);
+    if (filterHasResult) bits.push("has result");
+    els.sticky_summary.textContent = bits.join(" • ");
   }
 
   function updateLiveUi() {
@@ -389,6 +404,7 @@ function parseUtcSeconds(v) {
     localStorage.setItem("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
+    updateStickySummary();
   }
 
   function setTab(next) {
@@ -459,14 +475,21 @@ function parseUtcSeconds(v) {
   function clearFilters() {
     els.search.value = "";
     setView("all");
+    sortMode = "newest";
+    filterHasResult = false;
+    if (els.job_sort) els.job_sort.value = sortMode;
+    if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
     localStorage.setItem("pjr_search", "");
+    localStorage.setItem("pjr_sort", sortMode);
+    localStorage.setItem("pjr_has_result", "0");
     applyFilters();
+    updateStickySummary();
   }
 
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
     ];
     for (const k of keys) localStorage.removeItem(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -705,19 +728,12 @@ function applyFilters() {
     const q = (els.search.value || "").trim().toLowerCase();
     let jobs = jobsCache.slice(0);
 
-    // Sort: running, queued, error, done, other; within each: newest first.
-    const order = { running: 0, queued: 1, error: 2, done: 3 };
-    jobs.sort((a, b) => {
-      const sa = order[a.state] ?? 9;
-      const sb = order[b.state] ?? 9;
-      if (sa !== sb) return sa - sb;
-      const ta = parseUtcSeconds(a.created_utc);
-      const tb = parseUtcSeconds(b.created_utc);
-      return tb - ta;
-    });
-
     if (view !== "all") {
       jobs = jobs.filter((j) => (j.state || "queued") === view);
+    }
+
+    if (filterHasResult) {
+      jobs = jobs.filter((j) => !!j.result_ready);
     }
 
     if (q) {
@@ -729,6 +745,25 @@ function applyFilters() {
       });
     }
 
+    const statePriority = {
+      active: { running: 0, queued: 1, error: 2, done: 3 },
+      errors: { error: 0, running: 1, queued: 2, done: 3 },
+    };
+
+    jobs.sort((a, b) => {
+      const ta = parseUtcSeconds(a.created_utc);
+      const tb = parseUtcSeconds(b.created_utc);
+      if (sortMode === "oldest") return ta - tb;
+      if (sortMode === "active" || sortMode === "errors") {
+        const order = statePriority[sortMode];
+        const sa = order[a.state] ?? 9;
+        const sb = order[b.state] ?? 9;
+        if (sa !== sb) return sa - sb;
+      }
+      return tb - ta;
+    });
+
+    updateStickySummary();
     renderJobs(jobs, q);
   }
 
@@ -799,13 +834,37 @@ function applyFilters() {
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
+    const overflow = document.createElement("details");
+    overflow.className = "row-overflow";
+    const summary = document.createElement("summary");
+    summary.setAttribute("aria-label", "More actions");
+    summary.textContent = "More";
+
+    const menu = document.createElement("div");
+    menu.className = "row-overflow-menu";
+
     const zip = document.createElement("a");
     zip.className = "linkbtn secondary";
     zip.textContent = "Zip";
     zip.target = "_blank";
     zip.rel = "noopener noreferrer";
 
-    tdActions.append(btnView, document.createTextNode(" "), zip);
+    const copyId = document.createElement("button");
+    copyId.type = "button";
+    copyId.className = "small secondary";
+    copyId.textContent = "Copy id";
+    copyId.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      const id = tr.dataset.jobId || "";
+      if (!id) return;
+      await copyTextToClipboard(id);
+      toast("ok", "Copied", "Job id copied");
+      overflow.open = false;
+    });
+
+    menu.append(zip, copyId);
+    overflow.append(summary, menu);
+    tdActions.append(btnView, overflow);
     tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
     return tr;
   }
@@ -871,10 +930,10 @@ function applyFilters() {
       if (emptyTitle && emptyBody) {
         if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
-          emptyBody.textContent = "Try clearing search text or switching back to All to inspect previous jobs.";
+          emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.";
+          emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
         }
       }
     }
@@ -943,13 +1002,18 @@ function applyFilters() {
 
   async function refreshJobs(opts) {
     const silent = !!(opts && opts.silent);
-    if (els.jobs_loading && !silent) els.jobs_loading.hidden = false;
+    if (els.jobs_loading && !silent) {
+      if (firstJobsLoad) els.jobs_loading.hidden = false;
+    }
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
-      if (els.jobs_loading && !silent) els.jobs_loading.hidden = true;
+      if (els.jobs_loading && !silent) {
+        if (firstJobsLoad) els.jobs_loading.hidden = true;
+      }
+      firstJobsLoad = false;
     }
   }
 
@@ -1629,6 +1693,7 @@ Client IP: ${ip || ""}`;
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
+        if (action === "focus-filters" && els.job_sort) els.job_sort.focus();
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
@@ -1713,6 +1778,22 @@ Client IP: ${ip || ""}`;
       localStorage.setItem("pjr_search", String(els.search.value || ""));
       applyFilters();
     });
+    if (els.job_sort) {
+      els.job_sort.addEventListener("change", () => {
+        sortMode = els.job_sort.value || "newest";
+        localStorage.setItem("pjr_sort", sortMode);
+        applyFilters();
+        updateStickySummary();
+      });
+    }
+    if (els.filter_has_result) {
+      els.filter_has_result.addEventListener("change", () => {
+        filterHasResult = !!els.filter_has_result.checked;
+        localStorage.setItem("pjr_has_result", filterHasResult ? "1" : "0");
+        applyFilters();
+        updateStickySummary();
+      });
+    }
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
@@ -1811,6 +1892,12 @@ Client IP: ${ip || ""}`;
     els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
+    els.job_sort = document.getElementById("job_sort");
+    els.filter_has_result = document.getElementById("filter_has_result");
+    els.sticky_command = document.getElementById("sticky_command");
+    els.sticky_status = document.getElementById("sticky_status");
+    els.sticky_summary = document.getElementById("sticky_summary");
+    els.main_header = document.getElementById("main_header");
 
     els.detail = document.getElementById("detail");
     els.detail_empty = document.getElementById("detail_empty");
@@ -1895,6 +1982,14 @@ Client IP: ${ip || ""}`;
     const savedSearch = localStorage.getItem("pjr_search");
     if (savedSearch !== null) els.search.value = savedSearch;
 
+    const savedSort = localStorage.getItem("pjr_sort");
+    if (savedSort) sortMode = savedSort;
+    if (els.job_sort) els.job_sort.value = sortMode;
+
+    const savedHasResult = localStorage.getItem("pjr_has_result");
+    if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
+    if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
+
     const savedFollow = localStorage.getItem("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
     els.follow.checked = follow;
@@ -1926,6 +2021,18 @@ Client IP: ${ip || ""}`;
 
     applyLogStyle();
 
+    if (els.main_header && els.sticky_command) {
+      const syncSticky = () => {
+        const r = els.main_header.getBoundingClientRect();
+        const show = r.bottom < 8;
+        els.sticky_command.hidden = !show;
+      };
+      window.addEventListener("scroll", syncSticky, { passive: true });
+      window.addEventListener("resize", syncSticky);
+      syncSticky();
+    }
+
+    updateStickySummary();
     setStatus("warn", "Connecting…");
     await refreshAll();
 

@@ -67,3 +67,27 @@ def test_jobs_refresh_uses_silent_mode_and_in_place_rows() -> None:
     assert "if (els.jobs_loading && !silent)" in render
     assert "function _patchRow(tr, j)" in render
     assert 'tbody.textContent = ""' not in render
+
+
+def test_jobs_filters_include_sort_and_secondary_flags() -> None:
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'sortMode === "oldest"' in render
+    assert 'sortMode === "active"' in render
+    assert 'filterHasResult' in render
+
+
+def test_sticky_command_bar_state_sync_present() -> None:
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+    events = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+
+    assert "function updateStickySummary()" in core
+    assert "sticky_summary" in core
+    assert "syncSticky" in events
+
+
+def test_row_overflow_actions_used_instead_of_many_inline_buttons() -> None:
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'row-overflow' in render
+    assert 'Copy id' in render

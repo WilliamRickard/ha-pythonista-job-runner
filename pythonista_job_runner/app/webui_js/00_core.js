@@ -17,6 +17,9 @@
   let initialTailForJob = null;
   let currentTab = "stdout";
   let view = "all";
+  let sortMode = "newest";
+  let filterHasResult = false;
+  let firstJobsLoad = true;
 
   let jobsCache = [];
   let follow = true;
@@ -181,10 +184,22 @@ function parseUtcSeconds(v) {
     els.statusline.textContent = text;
     els.statuspill.classList.remove("ok", "err", "warn");
     if (kind) els.statuspill.classList.add(kind);
+    if (els.sticky_status) els.sticky_status.textContent = text;
   }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
+  }
+
+  function updateStickySummary() {
+    if (!els.sticky_summary) return;
+    const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
+    const bits = [];
+    bits.push(view === "all" ? "All jobs" : `State: ${view}`);
+    bits.push(`Sort: ${sortMode}`);
+    if (q) bits.push(`Search: ${q}`);
+    if (filterHasResult) bits.push("has result");
+    els.sticky_summary.textContent = bits.join(" • ");
   }
 
   function updateLiveUi() {
@@ -388,6 +403,7 @@ function parseUtcSeconds(v) {
     localStorage.setItem("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
+    updateStickySummary();
   }
 
   function setTab(next) {
@@ -458,14 +474,21 @@ function parseUtcSeconds(v) {
   function clearFilters() {
     els.search.value = "";
     setView("all");
+    sortMode = "newest";
+    filterHasResult = false;
+    if (els.job_sort) els.job_sort.value = sortMode;
+    if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
     localStorage.setItem("pjr_search", "");
+    localStorage.setItem("pjr_sort", sortMode);
+    localStorage.setItem("pjr_has_result", "0");
     applyFilters();
+    updateStickySummary();
   }
 
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
     ];
     for (const k of keys) localStorage.removeItem(k);
     toast("ok", "Reset", "UI settings cleared");

@@ -481,6 +481,18 @@ label{
 .passive-meta .pill{background:transparent;color:var(--muted);border-style:dashed;padding:2px 9px;}
 .destructive-group button{border-color:rgba(255,92,92,0.6);}
 .utility-group button{background:transparent;color:var(--muted);}
+.jobs-control-row{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;}
+.secondary-filters{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.secondary-filters select{min-height:38px;}
+.secondary-panel{position:relative;}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);}
+.secondary-panel[open] .secondary-panel-body{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:150px;}
+.sticky-command{position:sticky;top:0;z-index:15;display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(17,21,32,0.96);margin-bottom:8px;flex-wrap:wrap;}
+.jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
+.jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:skPulse 1.3s infinite;}
+.jobs-skeleton .sk-lg{width:85%;height:12px;}
+.jobs-skeleton .sk:not(.sk-lg){width:62%;}
+@keyframes skPulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
 .banner{
   margin-bottom: 10px;
   padding: 10px 12px;
@@ -750,6 +762,11 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 
 #jobs_loading{min-height:22px;}
 #empty{min-height:112px;}
+
+.row-overflow{display:inline-block;position:relative;margin-left:6px;}
+.row-overflow summary{list-style:none;cursor:pointer;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:12px;}
+.row-overflow-menu{position:absolute;right:0;top:calc(100% + 5px);display:flex;flex-direction:column;gap:6px;min-width:120px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;z-index:6;}
+.row-overflow:not([open]) .row-overflow-menu{display:none;}
 #logview .logline{
   display:block;
   padding: 0 2px;
@@ -1028,46 +1045,23 @@ details[open] summary::after{ transform: rotate(0deg); }
   .header-actions{width:100%;justify-content:flex-start;}
   .searchbar-row{gap:6px;}
   .clear-inline{padding:10px 11px;min-width:70px;}
-  .state-filters{margin-top:2px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
-  .detail-primary-actions{
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-  }
-  .detail-primary-actions button{
-    flex: 0 0 auto;
-  }
+  .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
+  .detail-primary-actions button{flex:0 0 auto;}
 
-  /* Compact mobile list: keep table rows and hide secondary columns */
   table{ min-width: 0 !important; }
-  /* Visually hide the table header on mobile while keeping it available to assistive technology */
-  #jobtable thead{
-    position:absolute;
-    width:1px;
-    height:1px;
-    padding:0;
-    margin:-1px;
-    overflow:hidden;
-    clip:rect(0,0,0,0);
-    white-space:nowrap;
-    border:0;
-  }
-
-  #jobtable th:nth-child(3), #jobtable td:nth-child(3),
-  #jobtable th:nth-child(4), #jobtable td:nth-child(4),
-  #jobtable th:nth-child(5), #jobtable td:nth-child(5){
-    display:none;
-  }
-
-  #jobtable td{ padding: 10px 10px; }
-  #jobtable td.actions{ white-space: nowrap; }
-
-  .jobmeta{ display:flex; }
+  #jobtable thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  #jobtable,#jobtable tbody,#jobtable tr,#jobtable td{display:block;width:100%;}
+  #jobtable tr{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);}
+  #jobtable td{border-bottom:0;padding:10px;}
+  #jobtable td::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;}
+  #jobtable td.actions{display:flex;gap:8px;align-items:center;}
+  .tablewrap{border:0;background:transparent;overflow:visible;}
+  .jobmeta{display:flex;}
+  .sticky-command{top:6px;}
+  .jobs-control-row{align-items:stretch;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
@@ -1075,6 +1069,8 @@ details[open] summary::after{ transform: rotate(0deg); }
 @media (max-width: 430px){
   .subline .passive-pill{font-size:11px;padding:2px 8px;}
   .toplinks .linkbtn{padding:10px 12px;}
+  .secondary-filters{width:100%;justify-content:space-between;}
+  .secondary-filters select{flex:1 1 auto;min-width:0;}
 }
 
 @media (max-width: 360px){
@@ -1084,11 +1080,11 @@ details[open] summary::after{ transform: rotate(0deg); }
   </style>
 </head>
 <body>
-<!-- Version: 0.6.12-webui.1 -->
+<!-- Version: 0.6.13-webui.1 -->
 <!-- Section: Shell header and main container open -->
   <a class="skip-link" href="#main_content">Skip to main content</a>
   <div class="container">
-    <header class="page-header monitor-header">
+    <header class="page-header monitor-header" id="main_header">
       <div class="brand">
         <h1>Pythonista Job Runner</h1>
         <div class="subline monitor-subline">
@@ -1158,18 +1154,26 @@ details[open] summary::after{ transform: rotate(0deg); }
           <div class="meta-strip passive-meta" id="stats_kv" aria-label="Runner metadata"></div>
         </div>
       </section>
-<!-- Version: 0.6.12-webui.1 -->
+<!-- Version: 0.6.13-webui.1 -->
 <!-- Section: Jobs list and filters -->
       <section id="pane_jobs" class="card" aria-label="Jobs list and filters">
         <div class="card-header">
           <h2>Jobs</h2>
           <div class="actionsbar right">
-            <span class="muted" id="jobs_hint">Search and filter jobs. Tap a job to view details.</span>
+            <span class="muted" id="jobs_hint">Search, sort, and filter jobs. Tap View for details.</span>
           </div>
         </div>
         <div class="card-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
-          <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>Loading jobs…</div>
+
+          <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>
+            <div class="jobs-skeleton" aria-hidden="true">
+              <span class="sk sk-lg"></span>
+              <span class="sk"></span>
+              <span class="sk"></span>
+            </div>
+            <span>Loading jobs…</span>
+          </div>
 
           <div class="jobs-toolbar" aria-label="Jobs controls">
             <div class="searchbar-row">
@@ -1178,13 +1182,37 @@ details[open] summary::after{ transform: rotate(0deg); }
               <button type="button" class="small secondary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
             </div>
 
-            <div class="state-filters" role="group" aria-label="Job state filters">
-              <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
-              <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
-              <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
-              <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
-              <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
+            <div class="jobs-control-row" aria-label="Sort and filter controls">
+              <div class="state-filters" role="group" aria-label="Primary job state filters">
+                <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
+                <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
+                <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
+                <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
+                <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
+              </div>
+              <div class="secondary-filters">
+                <label for="job_sort" class="sr-only">Sort jobs</label>
+                <select id="job_sort" aria-label="Sort jobs">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="active">Active first</option>
+                  <option value="errors">Errors first</option>
+                </select>
+                <details class="secondary-panel">
+                  <summary>More</summary>
+                  <div class="secondary-panel-body">
+                    <label class="tog"><input id="filter_has_result" type="checkbox"/> has result</label>
+                  </div>
+                </details>
+              </div>
             </div>
+          </div>
+
+          <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick command bar" hidden>
+            <span id="sticky_status" class="pill passive-pill">Connecting…</span>
+            <button type="button" class="small" data-action="refresh">Refresh</button>
+            <span id="sticky_summary" class="muted">All jobs</span>
+            <button type="button" class="small secondary" data-action="focus-filters">Filters</button>
           </div>
 
           <div class="table-region" aria-live="polite">
@@ -1208,7 +1236,7 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
               <div id="empty_title" style="font-weight:700;color:var(--text);">No jobs yet</div>
               <div id="empty_body" style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
-              <div style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
+              <div id="empty_action" style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
             </div>
           </div>
         </div>
@@ -1460,6 +1488,9 @@ details[open] summary::after{ transform: rotate(0deg); }
   let initialTailForJob = null;
   let currentTab = "stdout";
   let view = "all";
+  let sortMode = "newest";
+  let filterHasResult = false;
+  let firstJobsLoad = true;
 
   let jobsCache = [];
   let follow = true;
@@ -1624,10 +1655,22 @@ function parseUtcSeconds(v) {
     els.statusline.textContent = text;
     els.statuspill.classList.remove("ok", "err", "warn");
     if (kind) els.statuspill.classList.add(kind);
+    if (els.sticky_status) els.sticky_status.textContent = text;
   }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
+  }
+
+  function updateStickySummary() {
+    if (!els.sticky_summary) return;
+    const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
+    const bits = [];
+    bits.push(view === "all" ? "All jobs" : `State: ${view}`);
+    bits.push(`Sort: ${sortMode}`);
+    if (q) bits.push(`Search: ${q}`);
+    if (filterHasResult) bits.push("has result");
+    els.sticky_summary.textContent = bits.join(" • ");
   }
 
   function updateLiveUi() {
@@ -1831,6 +1874,7 @@ function parseUtcSeconds(v) {
     localStorage.setItem("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
+    updateStickySummary();
   }
 
   function setTab(next) {
@@ -1901,14 +1945,21 @@ function parseUtcSeconds(v) {
   function clearFilters() {
     els.search.value = "";
     setView("all");
+    sortMode = "newest";
+    filterHasResult = false;
+    if (els.job_sort) els.job_sort.value = sortMode;
+    if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
     localStorage.setItem("pjr_search", "");
+    localStorage.setItem("pjr_sort", sortMode);
+    localStorage.setItem("pjr_has_result", "0");
     applyFilters();
+    updateStickySummary();
   }
 
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
     ];
     for (const k of keys) localStorage.removeItem(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -2147,19 +2198,12 @@ function applyFilters() {
     const q = (els.search.value || "").trim().toLowerCase();
     let jobs = jobsCache.slice(0);
 
-    // Sort: running, queued, error, done, other; within each: newest first.
-    const order = { running: 0, queued: 1, error: 2, done: 3 };
-    jobs.sort((a, b) => {
-      const sa = order[a.state] ?? 9;
-      const sb = order[b.state] ?? 9;
-      if (sa !== sb) return sa - sb;
-      const ta = parseUtcSeconds(a.created_utc);
-      const tb = parseUtcSeconds(b.created_utc);
-      return tb - ta;
-    });
-
     if (view !== "all") {
       jobs = jobs.filter((j) => (j.state || "queued") === view);
+    }
+
+    if (filterHasResult) {
+      jobs = jobs.filter((j) => !!j.result_ready);
     }
 
     if (q) {
@@ -2171,6 +2215,25 @@ function applyFilters() {
       });
     }
 
+    const statePriority = {
+      active: { running: 0, queued: 1, error: 2, done: 3 },
+      errors: { error: 0, running: 1, queued: 2, done: 3 },
+    };
+
+    jobs.sort((a, b) => {
+      const ta = parseUtcSeconds(a.created_utc);
+      const tb = parseUtcSeconds(b.created_utc);
+      if (sortMode === "oldest") return ta - tb;
+      if (sortMode === "active" || sortMode === "errors") {
+        const order = statePriority[sortMode];
+        const sa = order[a.state] ?? 9;
+        const sb = order[b.state] ?? 9;
+        if (sa !== sb) return sa - sb;
+      }
+      return tb - ta;
+    });
+
+    updateStickySummary();
     renderJobs(jobs, q);
   }
 
@@ -2241,13 +2304,37 @@ function applyFilters() {
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
+    const overflow = document.createElement("details");
+    overflow.className = "row-overflow";
+    const summary = document.createElement("summary");
+    summary.setAttribute("aria-label", "More actions");
+    summary.textContent = "More";
+
+    const menu = document.createElement("div");
+    menu.className = "row-overflow-menu";
+
     const zip = document.createElement("a");
     zip.className = "linkbtn secondary";
     zip.textContent = "Zip";
     zip.target = "_blank";
     zip.rel = "noopener noreferrer";
 
-    tdActions.append(btnView, document.createTextNode(" "), zip);
+    const copyId = document.createElement("button");
+    copyId.type = "button";
+    copyId.className = "small secondary";
+    copyId.textContent = "Copy id";
+    copyId.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      const id = tr.dataset.jobId || "";
+      if (!id) return;
+      await copyTextToClipboard(id);
+      toast("ok", "Copied", "Job id copied");
+      overflow.open = false;
+    });
+
+    menu.append(zip, copyId);
+    overflow.append(summary, menu);
+    tdActions.append(btnView, overflow);
     tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
     return tr;
   }
@@ -2313,10 +2400,10 @@ function applyFilters() {
       if (emptyTitle && emptyBody) {
         if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
-          emptyBody.textContent = "Try clearing search text or switching back to All to inspect previous jobs.";
+          emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.";
+          emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
         }
       }
     }
@@ -2385,13 +2472,18 @@ function applyFilters() {
 
   async function refreshJobs(opts) {
     const silent = !!(opts && opts.silent);
-    if (els.jobs_loading && !silent) els.jobs_loading.hidden = false;
+    if (els.jobs_loading && !silent) {
+      if (firstJobsLoad) els.jobs_loading.hidden = false;
+    }
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
-      if (els.jobs_loading && !silent) els.jobs_loading.hidden = true;
+      if (els.jobs_loading && !silent) {
+        if (firstJobsLoad) els.jobs_loading.hidden = true;
+      }
+      firstJobsLoad = false;
     }
   }
 
@@ -3071,6 +3163,7 @@ Client IP: ${ip || ""}`;
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
+        if (action === "focus-filters" && els.job_sort) els.job_sort.focus();
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
@@ -3155,6 +3248,22 @@ Client IP: ${ip || ""}`;
       localStorage.setItem("pjr_search", String(els.search.value || ""));
       applyFilters();
     });
+    if (els.job_sort) {
+      els.job_sort.addEventListener("change", () => {
+        sortMode = els.job_sort.value || "newest";
+        localStorage.setItem("pjr_sort", sortMode);
+        applyFilters();
+        updateStickySummary();
+      });
+    }
+    if (els.filter_has_result) {
+      els.filter_has_result.addEventListener("change", () => {
+        filterHasResult = !!els.filter_has_result.checked;
+        localStorage.setItem("pjr_has_result", filterHasResult ? "1" : "0");
+        applyFilters();
+        updateStickySummary();
+      });
+    }
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
@@ -3253,6 +3362,12 @@ Client IP: ${ip || ""}`;
     els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
+    els.job_sort = document.getElementById("job_sort");
+    els.filter_has_result = document.getElementById("filter_has_result");
+    els.sticky_command = document.getElementById("sticky_command");
+    els.sticky_status = document.getElementById("sticky_status");
+    els.sticky_summary = document.getElementById("sticky_summary");
+    els.main_header = document.getElementById("main_header");
 
     els.detail = document.getElementById("detail");
     els.detail_empty = document.getElementById("detail_empty");
@@ -3337,6 +3452,14 @@ Client IP: ${ip || ""}`;
     const savedSearch = localStorage.getItem("pjr_search");
     if (savedSearch !== null) els.search.value = savedSearch;
 
+    const savedSort = localStorage.getItem("pjr_sort");
+    if (savedSort) sortMode = savedSort;
+    if (els.job_sort) els.job_sort.value = sortMode;
+
+    const savedHasResult = localStorage.getItem("pjr_has_result");
+    if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
+    if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
+
     const savedFollow = localStorage.getItem("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
     els.follow.checked = follow;
@@ -3368,6 +3491,18 @@ Client IP: ${ip || ""}`;
 
     applyLogStyle();
 
+    if (els.main_header && els.sticky_command) {
+      const syncSticky = () => {
+        const r = els.main_header.getBoundingClientRect();
+        const show = r.bottom < 8;
+        els.sticky_command.hidden = !show;
+      };
+      window.addEventListener("scroll", syncSticky, { passive: true });
+      window.addEventListener("resize", syncSticky);
+      syncSticky();
+    }
+
+    updateStickySummary();
     setStatus("warn", "Connecting…");
     await refreshAll();
 

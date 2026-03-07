@@ -113,19 +113,12 @@ function applyFilters() {
     const q = (els.search.value || "").trim().toLowerCase();
     let jobs = jobsCache.slice(0);
 
-    // Sort: running, queued, error, done, other; within each: newest first.
-    const order = { running: 0, queued: 1, error: 2, done: 3 };
-    jobs.sort((a, b) => {
-      const sa = order[a.state] ?? 9;
-      const sb = order[b.state] ?? 9;
-      if (sa !== sb) return sa - sb;
-      const ta = parseUtcSeconds(a.created_utc);
-      const tb = parseUtcSeconds(b.created_utc);
-      return tb - ta;
-    });
-
     if (view !== "all") {
       jobs = jobs.filter((j) => (j.state || "queued") === view);
+    }
+
+    if (filterHasResult) {
+      jobs = jobs.filter((j) => !!j.result_ready);
     }
 
     if (q) {
@@ -137,6 +130,25 @@ function applyFilters() {
       });
     }
 
+    const statePriority = {
+      active: { running: 0, queued: 1, error: 2, done: 3 },
+      errors: { error: 0, running: 1, queued: 2, done: 3 },
+    };
+
+    jobs.sort((a, b) => {
+      const ta = parseUtcSeconds(a.created_utc);
+      const tb = parseUtcSeconds(b.created_utc);
+      if (sortMode === "oldest") return ta - tb;
+      if (sortMode === "active" || sortMode === "errors") {
+        const order = statePriority[sortMode];
+        const sa = order[a.state] ?? 9;
+        const sb = order[b.state] ?? 9;
+        if (sa !== sb) return sa - sb;
+      }
+      return tb - ta;
+    });
+
+    updateStickySummary();
     renderJobs(jobs, q);
   }
 
@@ -207,13 +219,37 @@ function applyFilters() {
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
+    const overflow = document.createElement("details");
+    overflow.className = "row-overflow";
+    const summary = document.createElement("summary");
+    summary.setAttribute("aria-label", "More actions");
+    summary.textContent = "More";
+
+    const menu = document.createElement("div");
+    menu.className = "row-overflow-menu";
+
     const zip = document.createElement("a");
     zip.className = "linkbtn secondary";
     zip.textContent = "Zip";
     zip.target = "_blank";
     zip.rel = "noopener noreferrer";
 
-    tdActions.append(btnView, document.createTextNode(" "), zip);
+    const copyId = document.createElement("button");
+    copyId.type = "button";
+    copyId.className = "small secondary";
+    copyId.textContent = "Copy id";
+    copyId.addEventListener("click", async (ev) => {
+      ev.preventDefault();
+      const id = tr.dataset.jobId || "";
+      if (!id) return;
+      await copyTextToClipboard(id);
+      toast("ok", "Copied", "Job id copied");
+      overflow.open = false;
+    });
+
+    menu.append(zip, copyId);
+    overflow.append(summary, menu);
+    tdActions.append(btnView, overflow);
     tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
     return tr;
   }
@@ -279,10 +315,10 @@ function applyFilters() {
       if (emptyTitle && emptyBody) {
         if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
-          emptyBody.textContent = "Try clearing search text or switching back to All to inspect previous jobs.";
+          emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.";
+          emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
         }
       }
     }
@@ -351,13 +387,18 @@ function applyFilters() {
 
   async function refreshJobs(opts) {
     const silent = !!(opts && opts.silent);
-    if (els.jobs_loading && !silent) els.jobs_loading.hidden = false;
+    if (els.jobs_loading && !silent) {
+      if (firstJobsLoad) els.jobs_loading.hidden = false;
+    }
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
       applyFilters();
     } finally {
-      if (els.jobs_loading && !silent) els.jobs_loading.hidden = true;
+      if (els.jobs_loading && !silent) {
+        if (firstJobsLoad) els.jobs_loading.hidden = true;
+      }
+      firstJobsLoad = false;
     }
   }
 
