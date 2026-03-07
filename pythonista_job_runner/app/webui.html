@@ -91,16 +91,23 @@ a:hover{ text-decoration: underline; }
 
 .page-header{
   display:flex;
-  align-items:flex-end;
+  align-items:flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .brand h1{
   margin: 0;
   font-size: 22px;
   letter-spacing: 0.2px;
+}
+
+.header-title-row{
+  display:flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .subline{
@@ -143,12 +150,46 @@ a:hover{ text-decoration: underline; }
 
 .monitor-header{
   align-items:center;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .monitor-subline{
   margin-top: 4px;
   gap: 6px;
+}
+
+.quiet-meta{
+  opacity: 0.75;
+}
+
+.header-meta{
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(20,24,36,0.5);
+  padding: 7px 10px;
+}
+
+.header-meta summary{
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.header-meta-content{
+  margin-top: 8px;
+  display:grid;
+  gap: 6px;
+}
+
+.meta-item{
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.meta-item strong{
+  color: var(--text);
+  font-weight: 650;
 }
 
 .meta-text{
@@ -182,7 +223,17 @@ a:hover{ text-decoration: underline; }
   box-shadow: var(--shadow);
 }
 
-.card + .card{ margin-top: 14px; }
+ .card + .card{ margin-top: 12px; }
+
+.card-quiet{
+  box-shadow: none;
+  background: rgba(20,24,36,0.72);
+}
+
+.compact-header{
+  padding-top: 9px;
+  padding-bottom: 7px;
+}
 
 .card-header{
   display:flex;
@@ -471,32 +522,44 @@ label{
   display:block;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:10px;}
+.jobs-surface{
+  border-color: rgba(138,180,255,0.25);
+}
+
+.jobs-header h2{
+  font-size: 18px;
+}
+
+.jobs-body{
+  padding-top: 10px;
+}
+
+.jobs-toolbar{display:flex;flex-direction:column;gap:9px;margin-bottom:8px;}
 .searchbar-row{display:flex;align-items:center;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;}
-.clear-inline{flex:0 0 auto;min-width:78px;}
-.state-filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
-.state-filters .chip{flex:0 0 auto;}
-.table-region{min-height:320px;display:flex;flex-direction:column;}
-.passive-meta .pill{background:transparent;color:var(--muted);border-style:dashed;padding:2px 9px;}
+.clear-inline{flex:0 0 auto;min-width:74px;}
+.state-filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+.state-filters .chip{flex:0 0 auto;padding:9px 12px;min-height:42px;border-radius:10px;}
+.table-region{min-height:300px;display:flex;flex-direction:column;}
 .destructive-group button{border-color:rgba(255,92,92,0.6);}
 .utility-group button{background:transparent;color:var(--muted);}
 .jobs-control-row{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;}
 .secondary-filters{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.secondary-filters select{min-height:38px;}
+.secondary-filters select{min-height:42px;border-radius:10px;}
 .secondary-panel{position:relative;}
-.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);}
-.secondary-panel[open] .secondary-panel-body{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:150px;}
-.sticky-command{position:sticky;top:0;z-index:15;display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(17,21,32,0.96);margin-bottom:8px;flex-wrap:wrap;}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:13px;}
+.secondary-panel[open] .secondary-panel-body{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:170px;}
+.sticky-command{position:sticky;top:8px;z-index:15;display:flex;gap:8px;align-items:center;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--toastBg);margin-bottom:8px;flex-wrap:wrap;}
+.status-inline{display:inline-flex;align-items:center;font-size:12px;color:var(--muted);}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
-.jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:skPulse 1.3s infinite;}
+.jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
 .jobs-skeleton .sk:not(.sk-lg){width:62%;}
-@keyframes skPulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
+@keyframes sk-pulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
 .banner{
   margin-bottom: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255,92,92,0.45);
+  padding: 9px 11px;
+  border: 1px solid rgba(255,92,92,0.52);
   border-radius: 12px;
   background: rgba(255,92,92,0.08);
   color: var(--text);
@@ -514,7 +577,7 @@ table{
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 700px;
+  min-width: 680px;
 }
 
 th, td{
@@ -568,9 +631,6 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   white-space: nowrap;
 }
 
-.copybtn{
-  flex: 0 0 auto;
-}
 
 .jobmeta{
   display:none;
@@ -581,10 +641,10 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 }
 
 .jobmeta .meta{
-  background: rgba(255,255,255,0.03);
+  background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 8px;
+  border-radius: 8px;
+  padding: 2px 6px;
 }
 
 .badge{
@@ -636,6 +696,10 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   background: var(--panel2);
   color: var(--muted);
 }
+
+.empty-title{font-weight:700;color:var(--text);font-size:15px;}
+.empty-body{margin-top:6px;}
+.empty-action{margin-top:6px;font-size:12px;}
 
 .kvgrid{
   display:grid;
@@ -764,7 +828,7 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 #empty{min-height:112px;}
 
 .row-overflow{display:inline-block;position:relative;margin-left:6px;}
-.row-overflow summary{list-style:none;cursor:pointer;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:12px;}
+.row-overflow summary{list-style:none;cursor:pointer;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-size:12px;min-height:42px;display:flex;align-items:center;}
 .row-overflow-menu{position:absolute;right:0;top:calc(100% + 5px);display:flex;flex-direction:column;gap:6px;min-width:120px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;z-index:6;}
 .row-overflow:not([open]) .row-overflow-menu{display:none;}
 #logview .logline{
@@ -924,6 +988,8 @@ pre.nowrap{ white-space: pre; }
   padding: 12px;
   font-size: var(--fs-sm);
   line-height: 1.5;
+  display:grid;
+  gap:10px;
 }
 
 details{
@@ -933,7 +999,7 @@ details{
   padding: 10px 12px;
 }
 
-details + details{ margin-top: 10px; }
+details + details{ margin-top: 8px; }
 
 summary{
   cursor: pointer;
@@ -963,7 +1029,8 @@ details[open] summary::after{ transform: rotate(0deg); }
   color: var(--text);
 }
 
-.steps li{ margin: 8px 0; }
+.steps li{ margin: 7px 0; }
+.help-bullets{list-style:disc;padding-left:18px;}
 
 .hint{
   margin-top: 10px;
@@ -1026,6 +1093,11 @@ details[open] summary::after{ transform: rotate(0deg); }
   .mobile-panel .modal-header{padding:12px 12px 10px;}
   .mobile-panel .modal-body{padding:10px 12px 16px;}
 }
+
+.compact-hint{margin-top:8px;}
+.help-actions-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+#about_curl{margin-top:10px;}
+.adv-field{margin-top:10px;}
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -1039,12 +1111,11 @@ details[open] summary::after{ transform: rotate(0deg); }
 }
 
 @media (max-width: 720px){
-  .page-header{ align-items: flex-start; }
-  .monitor-header{gap:8px;margin-bottom:8px;}
-  .monitor-subline{gap:5px;}
+  .monitor-header{gap:8px;margin-bottom:6px;}
   .header-actions{width:100%;justify-content:flex-start;}
+  .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
-  .clear-inline{padding:10px 11px;min-width:70px;}
+  .clear-inline{padding:10px 11px;min-width:68px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
@@ -1054,20 +1125,23 @@ details[open] summary::after{ transform: rotate(0deg); }
   table{ min-width: 0 !important; }
   #jobtable thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
   #jobtable,#jobtable tbody,#jobtable tr,#jobtable td{display:block;width:100%;}
-  #jobtable tr{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);}
-  #jobtable td{border-bottom:0;padding:10px;}
-  #jobtable td::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;}
-  #jobtable td.actions{display:flex;gap:8px;align-items:center;}
+  #jobtable tr{border:1px solid var(--line);border-radius:12px;margin:0 0 10px;background:var(--panel2);padding:2px;}
+  #jobtable td{border-bottom:0;padding:8px 10px;}
+  #jobtable td::before{content:attr(data-label);display:block;font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+  #jobtable td.actions{display:flex;gap:8px;align-items:center;justify-content:flex-start;}
+  #jobtable td:nth-child(3),
+  #jobtable td:nth-child(4),
+  #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
   .sticky-command{top:6px;}
+  .sticky-command button{min-height:40px;padding:8px 10px;}
   .jobs-control-row{align-items:stretch;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
 
 @media (max-width: 430px){
-  .subline .passive-pill{font-size:11px;padding:2px 8px;}
   .toplinks .linkbtn{padding:10px 12px;}
   .secondary-filters{width:100%;justify-content:space-between;}
   .secondary-filters select{flex:1 1 auto;min-width:0;}
@@ -1075,47 +1149,50 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 360px){
   .searchbar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}
+  .header-title-row{align-items:flex-start;}
 }
 
   </style>
 </head>
 <body>
-<!-- Version: 0.6.13-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Shell header and main container open -->
   <a class="skip-link" href="#main_content">Skip to main content</a>
   <div class="container">
     <header class="page-header monitor-header" id="main_header">
       <div class="brand">
-        <h1>Pythonista Job Runner</h1>
+        <div class="header-title-row">
+          <h1>Pythonista Job Runner</h1>
+          <span class="meta-text quiet-meta">v__ADDON_VERSION__</span>
+        </div>
         <div class="subline monitor-subline">
-          <span class="meta-text">v__ADDON_VERSION__</span>
           <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
             <span id="statusline" role="status" aria-live="polite">Connecting…</span>
-          </span>
-          <span class="pill passive-pill" id="autopill" title="Auto refresh">
-            <span class="dot" aria-hidden="true"></span>
-            <span>Auto: <span id="autostate">on</span></span>
-          </span>
-          <span class="pill passive-pill" title="Last refresh">
-            <span class="dot" aria-hidden="true"></span>
-            <span>Updated: <span id="lastupdated">never</span></span>
           </span>
         </div>
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn secondary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
         <button type="button" class="linkbtn secondary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <button type="button" class="linkbtn secondary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
       </div>
     </header>
 
+    <details class="header-meta" id="header_meta">
+      <summary>System details</summary>
+      <div class="header-meta-content" aria-label="System metadata">
+        <span class="meta-item">Auto refresh <strong id="autostate">on</strong></span>
+        <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
+      </div>
+    </details>
+
     <main id="main_content" tabindex="-1">
-<!-- Version: 0.6.12-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Overview stats panel -->
-      <section id="stats" class="card" hidden>
-        <div class="card-header">
-          <h2>Overview</h2>
+      <section id="stats" class="card card-quiet" hidden>
+        <div class="card-header compact-header">
+          <h2>Queue snapshot</h2>
         </div>
         <div class="card-body compact">
           <div class="kpis" id="kpis">
@@ -1150,20 +1227,19 @@ details[open] summary::after{ transform: rotate(0deg); }
               </button>
             </div>
           </div>
-
           <div class="meta-strip passive-meta" id="stats_kv" aria-label="Runner metadata"></div>
         </div>
       </section>
-<!-- Version: 0.6.13-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Jobs list and filters -->
-      <section id="pane_jobs" class="card" aria-label="Jobs list and filters">
-        <div class="card-header">
+      <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
+        <div class="card-header jobs-header">
           <h2>Jobs</h2>
           <div class="actionsbar right">
-            <span class="muted" id="jobs_hint">Search, sort, and filter jobs. Tap View for details.</span>
+            <span class="muted" id="jobs_hint">Main workflow: search, filter, sort, and open details.</span>
           </div>
         </div>
-        <div class="card-body">
+        <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
 
           <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>
@@ -1190,7 +1266,7 @@ details[open] summary::after{ transform: rotate(0deg); }
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-              <div class="secondary-filters">
+              <div class="secondary-filters" aria-label="Secondary jobs controls">
                 <label for="job_sort" class="sr-only">Sort jobs</label>
                 <select id="job_sort" aria-label="Sort jobs">
                   <option value="newest">Newest first</option>
@@ -1199,7 +1275,7 @@ details[open] summary::after{ transform: rotate(0deg); }
                   <option value="errors">Errors first</option>
                 </select>
                 <details class="secondary-panel">
-                  <summary>More</summary>
+                  <summary>More filters</summary>
                   <div class="secondary-panel-body">
                     <label class="tog"><input id="filter_has_result" type="checkbox"/> has result</label>
                   </div>
@@ -1209,14 +1285,14 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
 
           <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick command bar" hidden>
-            <span id="sticky_status" class="pill passive-pill">Connecting…</span>
-            <button type="button" class="small" data-action="refresh">Refresh</button>
+            <span id="sticky_status" class="status-inline">Connecting…</span>
             <span id="sticky_summary" class="muted">All jobs</span>
+            <button type="button" class="small" data-action="refresh">Refresh</button>
             <button type="button" class="small secondary" data-action="focus-filters">Filters</button>
           </div>
 
           <div class="table-region" aria-live="polite">
-            <div class="tablewrap" style="margin-top:10px;">
+            <div class="tablewrap">
               <table id="jobtable" aria-describedby="jobs_hint">
                 <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
                 <thead>
@@ -1234,9 +1310,9 @@ details[open] summary::after{ transform: rotate(0deg); }
             </div>
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
-              <div id="empty_title" style="font-weight:700;color:var(--text);">No jobs yet</div>
-              <div id="empty_body" style="margin-top:6px;">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
-              <div id="empty_action" style="margin-top:6px;">New here? Tap Help in the top right for quick start steps and endpoint copy buttons.</div>
+              <div id="empty_title" class="empty-title">No jobs yet</div>
+              <div id="empty_body" class="empty-body">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
+              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and endpoint examples.</div>
             </div>
           </div>
         </div>
@@ -1368,37 +1444,37 @@ details[open] summary::after{ transform: rotate(0deg); }
       </section>
     </main>
   </div>
-<!-- Version: 0.6.12-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Advanced settings panel -->
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal mobile-panel" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
-          <div class="modal-sub" id="adv_sub">Refresh, polling, and maintenance</div>
+          <div class="modal-sub" id="adv_sub">Refresh controls and maintenance</div>
         </div>
         <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
       <div class="modal-body">
         <div class="adv-grid compact">
           <div class="adv-block">
-            <div class="adv-title">Refresh</div>
+            <div class="adv-title">Polling</div>
             <label class="tog big"><input type="checkbox" id="auto"/> auto refresh</label>
-            <div class="field" style="margin-top:10px;">
+            <div class="field adv-field">
               <label for="pollms">Poll interval (milliseconds)</label>
               <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-              <div class="hint" style="margin-top:8px;">Lower values update more often but can use more battery.</div>
+              <div class="hint compact-hint">Lower intervals update faster but consume more power.</div>
             </div>
           </div>
 
           <div class="adv-block">
             <div class="adv-title">Maintenance</div>
-            <div class="actionsbar destructive-group" style="margin-top:8px;">
+            <div class="actionsbar destructive-group">
               <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
               <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
             </div>
-            <div class="hint" style="margin-top:10px;">Purge removes job files from disk. You can Undo for a few seconds after tapping.</div>
-            <div class="actionsbar utility-group" style="margin-top:10px;">
+            <div class="hint compact-hint">Purging removes stored job files. Use only when cleanup is needed.</div>
+            <div class="actionsbar utility-group">
               <button type="button" class="small" data-action="reset-ui">Reset UI settings</button>
             </div>
           </div>
@@ -1406,7 +1482,7 @@ details[open] summary::after{ transform: rotate(0deg); }
       </div>
     </div>
   </div>
-<!-- Version: 0.6.12-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Help panel -->
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal mobile-panel" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
@@ -1419,38 +1495,37 @@ details[open] summary::after{ transform: rotate(0deg); }
       </div>
       <div class="modal-body">
         <details open>
-          <summary>Quick start</summary>
+          <summary>Quick actions</summary>
           <ol class="steps">
-            <li>Set an access token in the add-on Configuration.</li>
-            <li>From Pythonista, submit a job by sending a zip file to <code>POST /run</code>.</li>
-            <li>Watch progress here, then download the result zip from the job details view.</li>
+            <li>Submit a zip from Pythonista using <code>POST /run</code>.</li>
+            <li>Use search and state filters to find the job quickly.</li>
+            <li>Open <strong>View</strong> for details and download result zip when ready.</li>
           </ol>
           <div class="hint">
-            If you call the runner directly (not via Home Assistant Ingress), your client must send the <code>X-Runner-Token</code> header.
+            If calling directly (outside Home Assistant Ingress), send <code>X-Runner-Token</code> on protected endpoints.
           </div>
-        </details>
-
-        <details>
-          <summary>API and endpoints</summary>
-          <div class="hint" style="margin-top:8px;">Core endpoints include compact copy actions. Extra endpoints are still listed for reference.</div>
-          <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
-
-          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
-            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
-          </div>
-
-          <textarea id="about_curl" rows="7" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
-          <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
         </details>
 
         <details>
           <summary>Troubleshooting</summary>
-          <ul class="steps" style="list-style:disc;padding-left:18px;">
-            <li>If the status shows Disconnected, open the add-on Log tab and check for errors.</li>
-            <li>If you see unauthorised, you are likely using direct access without <code>X-Runner-Token</code>, or the token does not match the add-on Configuration.</li>
-            <li>If jobs never appear, confirm your Pythonista script uploads a zip to <code>/run</code> and stays under <code>max_upload_mb</code>.</li>
+          <ul class="steps help-bullets">
+            <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
+            <li><strong>Unauthorized:</strong> verify <code>X-Runner-Token</code> and token value.</li>
+            <li><strong>No jobs:</strong> confirm the Pythonista script uploads to <code>/run</code>.</li>
           </ul>
+        </details>
+
+        <details>
+          <summary>API reference</summary>
+          <div class="hint compact-hint">Core endpoints include copy buttons for faster client setup.</div>
+          <div id="about_api" class="api-grid"></div>
+
+          <div class="help-actions-row">
+            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+          </div>
+
+          <textarea id="about_curl" rows="7" readonly aria-label="curl examples"></textarea>
         </details>
       </div>
     </div>
@@ -1491,6 +1566,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   let sortMode = "newest";
   let filterHasResult = false;
   let firstJobsLoad = true;
+  let jobsViewState = "initial";
 
   let jobsCache = [];
   let follow = true;
@@ -1667,10 +1743,10 @@ function parseUtcSeconds(v) {
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(`Sort: ${sortMode}`);
+    bits.push(sortMode === "newest" ? "Newest" : (sortMode === "oldest" ? "Oldest" : (sortMode === "active" ? "Active first" : "Errors first")));
     if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("has result");
-    els.sticky_summary.textContent = bits.join(" • ");
+    if (filterHasResult) bits.push("Result ready");
+    els.sticky_summary.textContent = bits.join(" · ");
   }
 
   function updateLiveUi() {
@@ -2257,24 +2333,7 @@ function applyFilters() {
     btnJob.className = "small jobbtn";
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    const btnCopy = document.createElement("button");
-    btnCopy.type = "button";
-    btnCopy.className = "small secondary copybtn";
-    btnCopy.textContent = "Copy";
-    btnCopy.addEventListener("click", async (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const id = tr.dataset.jobId || "";
-      if (!id) return;
-      try {
-        await copyTextToClipboard(id);
-        toast("ok", "Copied", "Job id copied");
-      } catch (err) {
-        toast("err", "Copy failed", String(err && err.message ? err.message : err));
-      }
-    });
-
-    line.append(btnJob, btnCopy);
+    line.append(btnJob);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
@@ -2327,9 +2386,13 @@ function applyFilters() {
       ev.preventDefault();
       const id = tr.dataset.jobId || "";
       if (!id) return;
-      await copyTextToClipboard(id);
-      toast("ok", "Copied", "Job id copied");
-      overflow.open = false;
+      try {
+        await copyTextToClipboard(id);
+        toast("ok", "Copied", "Job id copied");
+        overflow.open = false;
+      } catch (err) {
+        toast("err", "Copy failed", (err && err.message) ? err.message : "Could not copy job id to clipboard");
+      }
     });
 
     menu.append(zip, copyId);
@@ -2398,12 +2461,29 @@ function applyFilters() {
       const emptyTitle = document.getElementById("empty_title");
       const emptyBody = document.getElementById("empty_body");
       if (emptyTitle && emptyBody) {
-        if (view !== "all" || (query && String(query).trim())) {
+        if (jobsViewState === "initial") {
+          emptyTitle.textContent = "Loading jobs";
+          emptyBody.textContent = "Connecting and fetching jobs now. The jobs list will appear automatically.";
+        } else if (jobsViewState === "disconnected") {
+          emptyTitle.textContent = "Cannot connect";
+          emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
+        } else if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
           emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
+        }
+
+        const emptyAction = document.getElementById("empty_action");
+        if (emptyAction) {
+          if (jobsViewState === "disconnected") {
+            emptyAction.textContent = "Try Refresh. If it persists, open Help for troubleshooting steps.";
+          } else if (view !== "all" || (query && String(query).trim())) {
+            emptyAction.textContent = "Use Clear to reset search and filters quickly.";
+          } else {
+            emptyAction.textContent = "Need setup help? Open Help for quick start and endpoint examples.";
+          }
         }
       }
     }
@@ -3120,11 +3200,13 @@ Client IP: ${ip || ""}`;
         await Promise.all([refreshMetaAndTail(), refreshOverview()]);
       }
       setStatus("ok", "Connected");
+      jobsViewState = "connected";
       setLastUpdated(new Date().toLocaleTimeString());
       if (els.jobs_banner) els.jobs_banner.hidden = true;
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
+      jobsViewState = "disconnected";
       if (els.jobs_banner) {
         els.jobs_banner.hidden = false;
         els.jobs_banner.textContent = `Connection problem: ${msg}`;
@@ -3494,7 +3576,7 @@ Client IP: ${ip || ""}`;
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 8;
+        const show = r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });

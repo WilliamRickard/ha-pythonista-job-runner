@@ -350,7 +350,7 @@
     if (els.main_header && els.sticky_command) {
       const syncSticky = () => {
         const r = els.main_header.getBoundingClientRect();
-        const show = r.bottom < 8;
+        const show = r.bottom < 0;
         els.sticky_command.hidden = !show;
       };
       window.addEventListener("scroll", syncSticky, { passive: true });

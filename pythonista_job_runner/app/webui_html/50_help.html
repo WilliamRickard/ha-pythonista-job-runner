@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-webui.1 -->
+<!-- Version: 0.6.14-webui.1 -->
 <!-- Section: Help panel -->
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal mobile-panel" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
@@ -11,38 +11,37 @@
       </div>
       <div class="modal-body">
         <details open>
-          <summary>Quick start</summary>
+          <summary>Quick actions</summary>
           <ol class="steps">
-            <li>Set an access token in the add-on Configuration.</li>
-            <li>From Pythonista, submit a job by sending a zip file to <code>POST /run</code>.</li>
-            <li>Watch progress here, then download the result zip from the job details view.</li>
+            <li>Submit a zip from Pythonista using <code>POST /run</code>.</li>
+            <li>Use search and state filters to find the job quickly.</li>
+            <li>Open <strong>View</strong> for details and download result zip when ready.</li>
           </ol>
           <div class="hint">
-            If you call the runner directly (not via Home Assistant Ingress), your client must send the <code>X-Runner-Token</code> header.
+            If calling directly (outside Home Assistant Ingress), send <code>X-Runner-Token</code> on protected endpoints.
           </div>
-        </details>
-
-        <details>
-          <summary>API and endpoints</summary>
-          <div class="hint" style="margin-top:8px;">Core endpoints include compact copy actions. Extra endpoints are still listed for reference.</div>
-          <div id="about_api" class="api-grid" style="margin-top:10px;"></div>
-
-          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
-            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
-          </div>
-
-          <textarea id="about_curl" rows="7" readonly style="margin-top:10px;" aria-label="curl examples"></textarea>
-          <div class="hint" style="margin-top:8px;">Direct access requires X-Runner-Token unless you are using Ingress.</div>
         </details>
 
         <details>
           <summary>Troubleshooting</summary>
-          <ul class="steps" style="list-style:disc;padding-left:18px;">
-            <li>If the status shows Disconnected, open the add-on Log tab and check for errors.</li>
-            <li>If you see unauthorised, you are likely using direct access without <code>X-Runner-Token</code>, or the token does not match the add-on Configuration.</li>
-            <li>If jobs never appear, confirm your Pythonista script uploads a zip to <code>/run</code> and stays under <code>max_upload_mb</code>.</li>
+          <ul class="steps help-bullets">
+            <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
+            <li><strong>Unauthorized:</strong> verify <code>X-Runner-Token</code> and token value.</li>
+            <li><strong>No jobs:</strong> confirm the Pythonista script uploads to <code>/run</code>.</li>
           </ul>
+        </details>
+
+        <details>
+          <summary>API reference</summary>
+          <div class="hint compact-hint">Core endpoints include copy buttons for faster client setup.</div>
+          <div id="about_api" class="api-grid"></div>
+
+          <div class="help-actions-row">
+            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+          </div>
+
+          <textarea id="about_curl" rows="7" readonly aria-label="curl examples"></textarea>
         </details>
       </div>
     </div>

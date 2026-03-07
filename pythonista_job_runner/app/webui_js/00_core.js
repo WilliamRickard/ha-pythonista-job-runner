@@ -20,6 +20,7 @@
   let sortMode = "newest";
   let filterHasResult = false;
   let firstJobsLoad = true;
+  let jobsViewState = "initial";
 
   let jobsCache = [];
   let follow = true;
@@ -196,10 +197,10 @@ function parseUtcSeconds(v) {
     const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
     const bits = [];
     bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    bits.push(`Sort: ${sortMode}`);
+    bits.push(sortMode === "newest" ? "Newest" : (sortMode === "oldest" ? "Oldest" : (sortMode === "active" ? "Active first" : "Errors first")));
     if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("has result");
-    els.sticky_summary.textContent = bits.join(" • ");
+    if (filterHasResult) bits.push("Result ready");
+    els.sticky_summary.textContent = bits.join(" · ");
   }
 
   function updateLiveUi() {

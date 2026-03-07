@@ -172,24 +172,7 @@ function applyFilters() {
     btnJob.className = "small jobbtn";
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    const btnCopy = document.createElement("button");
-    btnCopy.type = "button";
-    btnCopy.className = "small secondary copybtn";
-    btnCopy.textContent = "Copy";
-    btnCopy.addEventListener("click", async (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const id = tr.dataset.jobId || "";
-      if (!id) return;
-      try {
-        await copyTextToClipboard(id);
-        toast("ok", "Copied", "Job id copied");
-      } catch (err) {
-        toast("err", "Copy failed", String(err && err.message ? err.message : err));
-      }
-    });
-
-    line.append(btnJob, btnCopy);
+    line.append(btnJob);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
@@ -317,12 +300,29 @@ function applyFilters() {
       const emptyTitle = document.getElementById("empty_title");
       const emptyBody = document.getElementById("empty_body");
       if (emptyTitle && emptyBody) {
-        if (view !== "all" || (query && String(query).trim())) {
+        if (jobsViewState === "initial") {
+          emptyTitle.textContent = "Loading jobs";
+          emptyBody.textContent = "Connecting and fetching jobs now. The jobs list will appear automatically.";
+        } else if (jobsViewState === "disconnected") {
+          emptyTitle.textContent = "Cannot connect";
+          emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
+        } else if (view !== "all" || (query && String(query).trim())) {
           emptyTitle.textContent = "No matching jobs";
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
           emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
+        }
+
+        const emptyAction = document.getElementById("empty_action");
+        if (emptyAction) {
+          if (jobsViewState === "disconnected") {
+            emptyAction.textContent = "Try Refresh. If it persists, open Help for troubleshooting steps.";
+          } else if (view !== "all" || (query && String(query).trim())) {
+            emptyAction.textContent = "Use Clear to reset search and filters quickly.";
+          } else {
+            emptyAction.textContent = "Need setup help? Open Help for quick start and endpoint examples.";
+          }
         }
       }
     }

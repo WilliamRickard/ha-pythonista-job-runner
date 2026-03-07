@@ -38,6 +38,8 @@ def test_js_tracks_empty_state_messages_and_row_selection() -> None:
 
     assert 'emptyTitle.textContent = "No matching jobs"' in js
     assert 'emptyTitle.textContent = "No jobs yet"' in js
+    assert 'emptyTitle.textContent = "Cannot connect"' in js
+    assert 'jobsViewState === "disconnected"' in js
     assert 'tr.setAttribute("aria-selected", isSelected ? "true" : "false")' in js
 
 
@@ -91,3 +93,20 @@ def test_bundle_has_initial_jobs_skeleton_state() -> None:
 
     assert 'class="jobs-skeleton"' in html
     assert 'class="sk sk-lg"' in html
+
+
+def test_phone_layout_guardrails_for_search_clear_and_mobile_cards() -> None:
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "50_responsive.css").read_text(encoding="utf-8")
+
+    assert ".searchbar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}" in css
+    assert "#jobtable tr{border:1px solid var(--line);border-radius:12px;" in css
+    assert "#jobtable td:nth-child(3)," in css
+
+
+def test_help_advanced_mobile_surface_and_wrap_safety() -> None:
+    html = build_webui()
+    overlays = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "40_overlays.css").read_text(encoding="utf-8")
+
+    assert 'summary>API reference<' in html
+    assert 'summary>Quick actions<' in html
+    assert '#about_api .api-path{overflow-wrap:anywhere;}' in overlays

@@ -167,11 +167,13 @@ Client IP: ${ip || ""}`;
         await Promise.all([refreshMetaAndTail(), refreshOverview()]);
       }
       setStatus("ok", "Connected");
+      jobsViewState = "connected";
       setLastUpdated(new Date().toLocaleTimeString());
       if (els.jobs_banner) els.jobs_banner.hidden = true;
     } catch (e) {
       const msg = String(e && e.message ? e.message : e);
       setStatus("err", "Disconnected");
+      jobsViewState = "disconnected";
       if (els.jobs_banner) {
         els.jobs_banner.hidden = false;
         els.jobs_banner.textContent = `Connection problem: ${msg}`;

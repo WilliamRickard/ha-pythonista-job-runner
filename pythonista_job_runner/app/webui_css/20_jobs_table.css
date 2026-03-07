@@ -1,7 +1,7 @@
 .banner{
   margin-bottom: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255,92,92,0.45);
+  padding: 9px 11px;
+  border: 1px solid rgba(255,92,92,0.52);
   border-radius: 12px;
   background: rgba(255,92,92,0.08);
   color: var(--text);
@@ -19,7 +19,7 @@ table{
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  min-width: 700px;
+  min-width: 680px;
 }
 
 th, td{
@@ -73,9 +73,6 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   white-space: nowrap;
 }
 
-.copybtn{
-  flex: 0 0 auto;
-}
 
 .jobmeta{
   display:none;
@@ -86,10 +83,10 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 }
 
 .jobmeta .meta{
-  background: rgba(255,255,255,0.03);
+  background: transparent;
   border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 8px;
+  border-radius: 8px;
+  padding: 2px 6px;
 }
 
 .badge{
@@ -141,6 +138,10 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   background: var(--panel2);
   color: var(--muted);
 }
+
+.empty-title{font-weight:700;color:var(--text);font-size:15px;}
+.empty-body{margin-top:6px;}
+.empty-action{margin-top:6px;font-size:12px;}
 
 .kvgrid{
   display:grid;
@@ -269,6 +270,6 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 #empty{min-height:112px;}
 
 .row-overflow{display:inline-block;position:relative;margin-left:6px;}
-.row-overflow summary{list-style:none;cursor:pointer;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:12px;}
+.row-overflow summary{list-style:none;cursor:pointer;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--muted);font-size:12px;min-height:42px;display:flex;align-items:center;}
 .row-overflow-menu{position:absolute;right:0;top:calc(100% + 5px);display:flex;flex-direction:column;gap:6px;min-width:120px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;z-index:6;}
 .row-overflow:not([open]) .row-overflow-menu{display:none;}
