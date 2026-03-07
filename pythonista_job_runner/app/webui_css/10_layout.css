@@ -403,7 +403,7 @@ label{
 .secondary-panel[open] .secondary-panel-body{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:150px;}
 .sticky-command{position:sticky;top:0;z-index:15;display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(17,21,32,0.96);margin-bottom:8px;flex-wrap:wrap;}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
-.jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:skPulse 1.3s infinite;}
+.jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
 .jobs-skeleton .sk:not(.sk-lg){width:62%;}
-@keyframes skPulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
+`@keyframes` sk-pulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
