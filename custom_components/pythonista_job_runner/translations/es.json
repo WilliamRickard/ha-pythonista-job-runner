@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectar a Pythonista Job Runner",
+        "description": "Configura el acceso al endpoint de la API del complemento.",
+        "data": {
+          "base_url": "URL base",
+          "token": "Token de acceso",
+          "verify_ssl": "Verificar certificado TLS",
+          "scan_interval": "Intervalo de sondeo (segundos)",
+          "create_repairs": "Crear incidencias de Reparaciones para fallos de conectividad"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se pudo conectar al endpoint del complemento"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de Pythonista Job Runner",
+        "data": {
+          "scan_interval": "Intervalo de sondeo (segundos)",
+          "create_repairs": "Crear incidencias de Reparaciones para fallos de conectividad"
+        }
+      }
+    }
+  },
+  "issues": {
+    "endpoint_unreachable": {
+      "title": "No se puede acceder al endpoint de Pythonista Job Runner",
+      "description": "La integración no puede alcanzar el endpoint configurado. Detalles: {detail}. Abre la configuración de la integración y verifica host, puerto y token."
+    },
+    "auth_failed": {
+      "title": "Falló la autenticación de Pythonista Job Runner",
+      "description": "La integración no pudo autenticarse contra el endpoint. Detalles: {detail}. Actualiza el token de acceso configurado."
+    }
+  },
+  "services": {
+    "purge_jobs": {
+      "name": "Purgar trabajos del runner",
+      "description": "Elimina trabajos de la cola/historial del complemento."
+    },
+    "purge_done_jobs": {
+      "name": "Purgar trabajos completados",
+      "description": "Elimina trabajos en estado done."
+    },
+    "purge_failed_jobs": {
+      "name": "Purgar trabajos fallidos",
+      "description": "Elimina trabajos en estado error."
+    },
+    "refresh": {
+      "name": "Actualizar datos del runner",
+      "description": "Lanza una actualización inmediata del coordinador para una entrada de integración."
+    },
+    "cancel_job": {
+      "name": "Cancelar trabajo",
+      "description": "Solicita la cancelación de un trabajo en cola o en ejecución."
+    }
+  }
+}

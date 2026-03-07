@@ -146,3 +146,15 @@ configuration:
 
 network:
   8787/TCP: Runner HTTP API (not used for Ingress)
+
+
+  telemetry:
+    name: Telemetry
+    description: Optional Home Assistant MQTT telemetry publishing.
+    fields:
+      telemetry_mqtt_enabled:
+        name: Enable MQTT telemetry
+        description: Publish job and audit telemetry through Home Assistant mqtt.publish service.
+      telemetry_topic_prefix:
+        name: MQTT topic prefix
+        description: Prefix used for telemetry topics, for example pythonista_job_runner/audit.

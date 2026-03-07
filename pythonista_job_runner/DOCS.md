@@ -548,3 +548,18 @@ For the contributor-focused version of this workflow, see [../CONTRIBUTING.md](.
 - A custom `apparmor.txt` profile is included and the add-on config explicitly declares non-privileged runtime flags.
 - Job and control actions are written to `/data/audit_events.jsonl` with ingress identity metadata when Home Assistant provides `X-Remote-User-*` headers.
 - Companion Home Assistant integration is available under `custom_components/pythonista_job_runner` with sensors, system health, and repair issue hooks.
+
+
+## Diagnostics and support bundle
+
+- Add-on endpoint: `GET /support_bundle.json` (auth required).
+- Included: redacted options summary, stats snapshot, queue counters, recent job metadata, recent audit events.
+- Excluded: access tokens, password-like fields, raw uploaded payloads, stdout/stderr full file contents, Supervisor token.
+
+## Optional MQTT telemetry
+
+Telemetry is optional and disabled by default.
+
+- `telemetry.telemetry_mqtt_enabled`: enable publish via Home Assistant `mqtt.publish` service.
+- `telemetry.telemetry_topic_prefix`: topic prefix (default `pythonista_job_runner`).
+- Events are intentionally low-noise: audit actions and job completion state changes.

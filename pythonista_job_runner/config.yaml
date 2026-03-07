@@ -83,6 +83,9 @@ options:
     zip_max_single_uncompressed: 52428800
   housekeeping:
     cleanup_min_free_mb: 4096
+  telemetry:
+    telemetry_mqtt_enabled: false
+    telemetry_topic_prefix: "pythonista_job_runner"
 
 schema:
   security:
@@ -133,3 +136,6 @@ schema:
     zip_max_single_uncompressed: "int(1,2147483647)"
   housekeeping:
     cleanup_min_free_mb: "int(0,262144)"
+  telemetry:
+    telemetry_mqtt_enabled: bool
+    telemetry_topic_prefix: str

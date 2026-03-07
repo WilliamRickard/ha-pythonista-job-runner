@@ -18,3 +18,61 @@ purge_jobs:
     dry_run:
       selector:
         boolean:
+
+purge_done_jobs:
+  name: Purge completed jobs
+  description: Purge jobs currently in done state.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    older_than_hours:
+      selector:
+        number:
+          min: 0
+          max: 720
+          mode: box
+    dry_run:
+      selector:
+        boolean:
+
+purge_failed_jobs:
+  name: Purge failed jobs
+  description: Purge jobs currently in error state.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    older_than_hours:
+      selector:
+        number:
+          min: 0
+          max: 720
+          mode: box
+    dry_run:
+      selector:
+        boolean:
+
+refresh:
+  name: Refresh runner data
+  description: Trigger an immediate coordinator refresh for one integration entry.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+
+cancel_job:
+  name: Cancel job
+  description: Request cancellation of a queued or running job.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    job_id:
+      required: true
+      selector:
+        text:

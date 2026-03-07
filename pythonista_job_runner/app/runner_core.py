@@ -33,6 +33,7 @@ from runner import stats as _stats
 from runner import store as _store
 
 from audit import actor_from_headers, append_audit_event
+from support_bundle import build_support_bundle
 from utils import (
     SafeZipLimits,
     TailBuffer,
@@ -282,6 +283,31 @@ class Runner:
 
         self.audit_log_path = self.data_dir / "audit_events.jsonl"
         self._audit_lock = threading.Lock()
+        telemetry_opts = opts.get("telemetry") or {}
+        # Prefer flattened options for backward compatibility, but fall back to nested telemetry config.
+        self.telemetry_mqtt_enabled = bool(
+            opts.get(
+                "telemetry_mqtt_enabled",
+                telemetry_opts.get(
+                    "mqtt_enabled",
+                    telemetry_opts.get("telemetry_mqtt_enabled", False),
+                ),
+            )
+        )
+        self.telemetry_topic_prefix = (
+            str(
+                opts.get(
+                    "telemetry_topic_prefix",
+                    telemetry_opts.get(
+                        "topic_prefix",
+                        telemetry_opts.get("telemetry_topic_prefix", "pythonista_job_runner"),
+                    ),
+                )
+                or "pythonista_job_runner"
+            )
+            .strip()
+            or "pythonista_job_runner"
+        )
 
         self.job_user = str(opts.get("job_user") or "jobrunner").strip() or "jobrunner"
         self._job_uid, self._job_gid = _resolve_user_ids(self.job_user)
@@ -489,6 +515,10 @@ class Runner:
             "details": safe_details,
         }
         append_audit_event(self.audit_log_path, self._audit_lock, event)
+        try:
+            self.publish_telemetry("audit", {"action": action, "job_id": job_id, "actor": actor, "details": safe_details})
+        except Exception as e:
+            print(f"WARNING: failed to publish telemetry for audit event {action}: {e}", flush=True)
 
         if not persist_status or not job_id:
             return
@@ -511,6 +541,44 @@ class Runner:
             return
         self._write_status(j)
 
+    def support_bundle_dict(self) -> Dict[str, Any]:
+        """Return redacted support-bundle payload for troubleshooting."""
+        return build_support_bundle(self)
+
+    def publish_telemetry(self, event_type: str, payload: Dict[str, Any]) -> None:
+        """Publish optional telemetry over Home Assistant MQTT service.
+
+        This method is intentionally non-blocking with respect to network I/O:
+        the actual HTTP call to the Supervisor API is dispatched to a
+        background thread so that audit/event paths remain responsive even
+        when the Supervisor or MQTT service is slow or unavailable.
+        """
+        if not self.telemetry_mqtt_enabled:
+            return
+        if not SUPERVISOR_TOKEN:
+            return
+
+        topic = f"{self.telemetry_topic_prefix.rstrip('/')}/{event_type.strip('/') or 'event'}"
+        body = json.dumps(payload, separators=(",", ":"))
+
+        def _worker() -> None:
+            req = Request(
+                url=f"{SUPERVISOR_CORE_API}/services/mqtt/publish",
+                data=json.dumps({"topic": topic, "payload": body, "retain": False}).encode("utf-8"),
+                headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}", "Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                # Use a reduced timeout here so that even the background
+                # worker does not block for an extended period on network I/O.
+                with urlopen(req, timeout=2) as resp:  # noqa: S310
+                    _ = resp.read()
+            except Exception:
+                # Telemetry failures are intentionally ignored; they should not
+                # affect core runner behavior.
+                return
+
+        threading.Thread(target=_worker, name="publish-telemetry", daemon=True).start()
     def _write_status(self, j: Job) -> None:
         return self._job_store.write_status(j)
 

@@ -15,3 +15,17 @@ def test_repairs_create_issue_calls_present() -> None:
     assert "async_create_issue" in text
     assert "ISSUE_UNREACHABLE" in text
     assert "ISSUE_AUTH" in text
+
+
+def test_coordinator_emits_event_constants() -> None:
+    text = Path("custom_components/pythonista_job_runner/coordinator.py").read_text(encoding="utf-8")
+    assert "EVENT_JOB_UPDATED" in text
+    assert "EVENT_JOB_FINISHED" in text
+
+
+def test_services_include_operational_hooks() -> None:
+    text = Path("custom_components/pythonista_job_runner/services.py").read_text(encoding="utf-8")
+    assert "SERVICE_REFRESH" in text
+    assert "SERVICE_CANCEL_JOB" in text
+    assert "SERVICE_PURGE_DONE_JOBS" in text
+    assert "SERVICE_PURGE_FAILED_JOBS" in text
