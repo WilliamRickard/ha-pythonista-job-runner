@@ -1,17 +1,20 @@
+Version: 0.6.12-review-readme.1
 # Code Review Artefacts
 
 This directory stores per-slice review artefacts for the Pythonista Job Runner review programme.
 
 ## Process
 
-Each slice has two documents:
+Each slice has two phases:
 
-1. **Review-only file** (`Sxx_*_review.md`)
-   - No production-code edits in this pass.
-   - Records findings and no-finding justifications.
-2. **Apply-only file** (`Sxx_*_apply.md`)
-   - Tracks fixes applied from the review file.
-   - Must map each change back to finding IDs.
+1. **Review-only phase**
+   - Produces a review artefact such as `Sxx_*_review.md`
+   - No production-code edits in this phase
+   - Records findings and no-finding justifications
+2. **Apply-only phase**
+   - Implements fixes from the review artefact
+   - Must map each change back to finding IDs
+   - In this repo, apply status is recorded in `FULL_CODE_REVIEW_PLAN.md` unless a separate apply artefact is created explicitly
 
 Review-only and apply-only work must remain separated.
 
