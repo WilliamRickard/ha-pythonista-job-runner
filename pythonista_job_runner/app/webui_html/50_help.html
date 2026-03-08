@@ -4,24 +4,21 @@
       <div class="modal-header">
         <div>
           <div class="modal-title" id="about_title">Help</div>
-          <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
+          <div class="modal-sub" id="about_sub">Quick start and troubleshooting</div>
         </div>
-        <button type="button" id="about_close" class="small" data-action="close-about" aria-label="Close help">Close</button>
+        <button type="button" id="about_close" class="small tertiary" data-action="close-about" aria-label="Close help">Close</button>
       </div>
       <div class="modal-body">
         <details open>
-          <summary>Quick actions</summary>
+          <summary>Quick start</summary>
           <ol class="steps">
             <li>Submit a zip from Pythonista using <code>POST /run</code>.</li>
-            <li>Use search and state filters to find the job quickly.</li>
-            <li>Open <strong>View</strong> for details and download result zip when ready.</li>
+            <li>Use Search and state filters to find the job quickly.</li>
+            <li>Open <strong>View</strong> to inspect logs and download the result zip.</li>
           </ol>
-          <div class="hint">
-            If calling directly (outside Home Assistant Ingress), send <code>X-Runner-Token</code> on protected endpoints.
-          </div>
         </details>
 
-        <details>
+        <details open>
           <summary>Troubleshooting</summary>
           <ul class="steps help-bullets">
             <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
@@ -32,15 +29,15 @@
 
         <details>
           <summary>API reference</summary>
-          <div class="hint compact-hint">Core endpoints include copy buttons for faster client setup.</div>
+          <div class="hint compact-hint">Expanded only when needed to keep this panel focused for phone workflows.</div>
           <div id="about_api" class="api-grid"></div>
 
           <div class="help-actions-row">
-            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
-            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+            <button type="button" class="small tertiary" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small tertiary" data-action="open-info">Open raw info.json</button>
           </div>
 
-          <textarea id="about_curl" rows="7" readonly aria-label="curl examples"></textarea>
+          <textarea id="about_curl" rows="6" readonly aria-label="curl examples"></textarea>
         </details>
       </div>
     </div>

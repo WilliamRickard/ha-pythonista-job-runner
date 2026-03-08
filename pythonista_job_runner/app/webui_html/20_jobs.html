@@ -19,14 +19,13 @@
           </div>
 
           <div class="jobs-toolbar" aria-label="Jobs controls">
-            <div class="searchbar-row command-row">
+            <div class="searchbar-row">
               <label for="search" class="sr-only">Search jobs</label>
               <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
-              <button type="button" class="small secondary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
-              <button type="button" class="small primary" data-action="refresh" aria-label="Refresh jobs now">Refresh</button>
+              <button type="button" class="small tertiary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
             </div>
 
-            <div class="jobs-control-row command-row" aria-label="Sort and filter controls">
+            <div class="jobs-primary-row" aria-label="Primary jobs controls">
               <div class="state-filters" role="group" aria-label="Primary job state filters">
                 <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
@@ -34,29 +33,27 @@
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-              <div class="secondary-filters" aria-label="Secondary jobs controls">
-                <label for="job_sort" class="sr-only">Sort jobs</label>
-                <select id="job_sort" aria-label="Sort jobs">
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="active">Active first</option>
-                  <option value="errors">Errors first</option>
-                </select>
-                <details class="secondary-panel">
-                  <summary>More filters</summary>
-                  <div class="secondary-panel-body">
-                    <label class="tog"><input id="filter_has_result" type="checkbox"/> has result</label>
-                  </div>
-                </details>
-              </div>
+              <label for="job_sort" class="sr-only">Sort jobs</label>
+              <select id="job_sort" aria-label="Sort jobs">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="active">Active first</option>
+                <option value="errors">Errors first</option>
+              </select>
             </div>
+
+            <details class="secondary-panel">
+              <summary>More filters</summary>
+              <div class="secondary-panel-body">
+                <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+              </div>
+            </details>
           </div>
 
-          <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick command bar" hidden>
+          <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick jobs shortcuts" hidden>
             <span id="sticky_status" class="status-inline">Connecting…</span>
             <span id="sticky_summary" class="muted">All jobs</span>
-            <button type="button" class="small" data-action="refresh">Refresh</button>
-            <button type="button" class="small secondary" data-action="focus-search">Search</button>
+            <button type="button" class="small tertiary" data-action="focus-search">Search</button>
           </div>
 
           <div class="table-region" aria-live="polite">
@@ -79,8 +76,8 @@
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
               <div id="empty_title" class="empty-title">No jobs yet</div>
-              <div id="empty_body" class="empty-body">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
-              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and endpoint examples.</div>
+              <div id="empty_body" class="empty-body">Run something from Pythonista, then use Refresh in the header. This page updates automatically when auto refresh is on.</div>
+              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and troubleshooting.</div>
             </div>
           </div>
         </div>

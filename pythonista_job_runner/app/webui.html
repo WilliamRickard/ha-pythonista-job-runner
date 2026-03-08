@@ -91,23 +91,16 @@ a:hover{ text-decoration: underline; }
 
 .page-header{
   display:flex;
-  align-items:flex-start;
+  align-items:center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .brand h1{
   margin: 0;
   font-size: 22px;
   letter-spacing: 0.2px;
-}
-
-.header-title-row{
-  display:flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .subline{
@@ -124,7 +117,7 @@ a:hover{ text-decoration: underline; }
   display:inline-flex;
   gap: 8px;
   align-items: center;
-  padding: 3px 10px;
+  padding: 2px 9px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel);
@@ -154,7 +147,7 @@ a:hover{ text-decoration: underline; }
 }
 
 .monitor-subline{
-  margin-top: 4px;
+  margin-top: 5px;
   gap: 6px;
 }
 
@@ -163,11 +156,11 @@ a:hover{ text-decoration: underline; }
 }
 
 .header-meta{
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--panel2) 82%, transparent);
-  padding: 5px 9px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel2) 62%, transparent);
+  padding: 4px 8px;
 }
 
 .header-meta summary{
@@ -177,14 +170,16 @@ a:hover{ text-decoration: underline; }
 }
 
 .header-meta-content{
-  margin-top: 8px;
-  display:grid;
-  gap: 6px;
+  margin-top: 6px;
+  display:flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
 }
 
 .meta-item{
   color: var(--muted);
   font-size: var(--fs-xs);
+  overflow-wrap:anywhere;
 }
 
 .meta-item strong{
@@ -216,6 +211,12 @@ a:hover{ text-decoration: underline; }
   background: transparent;
 }
 
+button.tertiary, .linkbtn.tertiary{
+  background: transparent;
+  color: var(--muted);
+  border-color: color-mix(in srgb, var(--line) 82%, transparent);
+}
+
 .card{
   background: var(--panel);
   border: 1px solid var(--line);
@@ -227,7 +228,7 @@ a:hover{ text-decoration: underline; }
 
 .card-quiet{
   box-shadow: none;
-  background: var(--card-quiet-background, color-mix(in srgb, var(--panel) 72%, transparent));
+  background: var(--card-quiet-background, color-mix(in srgb, var(--panel) 52%, transparent));
 }
 
 .compact-header{
@@ -240,7 +241,7 @@ a:hover{ text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 11px 12px 8px 12px;
+  padding: 10px 12px 8px 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -253,7 +254,7 @@ a:hover{ text-decoration: underline; }
 }
 
 .card-body{ padding: 12px; }
-.card-body.compact{ padding: 10px 12px; }
+.card-body.compact{ padding: 8px 10px; }
 
 button, .linkbtn{
   cursor: pointer;
@@ -354,14 +355,14 @@ label{
 .kpis{
   display:grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 
 .kpi{
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px 10px;
+  background: color-mix(in srgb, var(--panel2) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-radius: 10px;
+  padding: 6px 8px;
   text-align:left;
 }
 
@@ -371,8 +372,8 @@ label{
 }
 
 .kpi .value{
-  margin-top: 3px;
-  font-size: 18px;
+  margin-top: 2px;
+  font-size: 16px;
   letter-spacing: 0.2px;
 }
 
@@ -390,7 +391,7 @@ label{
 }
 
 .meta-strip{
-  margin-top: 8px;
+  margin-top: 6px;
   display:flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -398,7 +399,12 @@ label{
   font-size: 12px;
 }
 
-.meta-strip .pill{ background: var(--panel2); }
+.meta-strip .pill{
+  background: transparent;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--line) 72%, transparent);
+  font-size: 11px;
+}
 
 
 .skip-link{
@@ -526,6 +532,16 @@ label{
   border-color: color-mix(in srgb, var(--line) 80%, rgba(138,180,255,0.30));
 }
 
+
+.queue-compact{
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+.queue-compact .card-header{
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
 .jobs-header h2{
   font-size: 18px;
   letter-spacing: 0.1px;
@@ -534,11 +550,10 @@ label{
 #jobs_hint{font-size:12px;color:var(--muted);}
 
 .jobs-body{
-  padding-top: 10px;
+  padding-top: 8px;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
-.command-row{padding:8px;border:1px solid color-mix(in srgb, var(--line) 88%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel2) 75%, transparent);}
+.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;padding:8px;border:1px solid color-mix(in srgb, var(--line) 82%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel2) 48%, transparent);}
 .searchbar-row{display:flex;align-items:center;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;}
 .clear-inline{flex:0 0 auto;min-width:70px;}
@@ -547,13 +562,12 @@ label{
 .table-region{min-height:300px;display:flex;flex-direction:column;}
 .destructive-group button{border-color:rgba(255,92,92,0.6);}
 .utility-group button{background:transparent;color:var(--muted);}
-.jobs-control-row{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;}
-.secondary-filters{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.secondary-filters select{min-height:40px;border-radius:10px;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);}
-.secondary-panel{position:relative;}
-.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);font-size:13px;color:var(--muted);}
-.secondary-panel[open] .secondary-panel-body{position:absolute;right:0;top:calc(100% + 6px);z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;min-width:170px;}
-.sticky-command{position:sticky;top:8px;z-index:15;display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid color-mix(in srgb, var(--line) 85%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel) 86%, transparent);margin-bottom:8px;flex-wrap:nowrap;box-shadow:none;}
+.jobs-primary-row{display:flex;gap:8px;justify-content:space-between;align-items:center;}
+#job_sort{min-height:40px;border-radius:10px;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);max-width:120px;}
+.secondary-panel{position:relative;border:0;padding:0;background:transparent;}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:7px 10px;border:1px solid color-mix(in srgb, var(--line) 78%, transparent);border-radius:10px;background:transparent;font-size:12px;color:var(--muted);display:inline-flex;}
+.secondary-panel[open] .secondary-panel-body{margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
+.sticky-command{position:sticky;top:6px;z-index:15;display:flex;gap:8px;align-items:center;padding:4px 7px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:9px;background:color-mix(in srgb, var(--panel) 78%, transparent);margin-bottom:8px;flex-wrap:nowrap;box-shadow:none;}
 .status-inline{display:inline-flex;align-items:center;font-size:12px;color:var(--muted);white-space:nowrap;}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
@@ -562,7 +576,7 @@ label{
 @keyframes sk-pulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
 
 .sticky-command .muted{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;}
-.sticky-command button{min-height:38px;padding:8px 10px;}
+.sticky-command button{min-height:34px;padding:6px 9px;}
 .banner{
   margin-bottom: 10px;
   padding: 9px 11px;
@@ -575,9 +589,9 @@ label{
 
 .tablewrap{
   overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--panel2);
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
 }
 
 table{
@@ -661,8 +675,8 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 12px;
-  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
-  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  background: color-mix(in srgb, var(--panel2) 30%, transparent);
   color: var(--muted);
 }
 
@@ -696,11 +710,11 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 }
 
 .empty{
-  margin-top: 10px;
-  padding: 14px;
-  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--panel2) 88%, transparent);
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel2) 74%, transparent);
   color: var(--muted);
 }
 
@@ -1000,18 +1014,18 @@ pre.nowrap{ white-space: pre; }
 }
 
 details{
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel2);
-  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel2) 62%, transparent);
+  padding: 8px 10px;
 }
 
 details + details{ margin-top: 8px; }
 
 summary{
   cursor: pointer;
-  font-size: var(--fs-md);
-  font-weight: 800;
+  font-size: var(--fs-sm);
+  font-weight: 760;
   color: var(--text);
   list-style: none;
   display:flex;
@@ -1040,8 +1054,8 @@ details[open] summary::after{ transform: rotate(0deg); }
 .help-bullets{list-style:disc;padding-left:18px;}
 
 .hint{
-  margin-top: 10px;
-  padding: 10px 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
   border-radius: 12px;
   border: 1px solid var(--line);
   background: rgba(138,180,255,0.08);
@@ -1060,10 +1074,10 @@ details[open] summary::after{ transform: rotate(0deg); }
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
 }
 
 .api-left{
@@ -1122,8 +1136,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   .header-actions{width:100%;justify-content:flex-start;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
-  .searchbar-row .primary{min-width:84px;}
-  .clear-inline{padding:10px 11px;min-width:68px;}
+    .clear-inline{padding:10px 11px;min-width:68px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
@@ -1142,24 +1155,22 @@ details[open] summary::after{ transform: rotate(0deg); }
   #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
-  .sticky-command{top:6px;gap:6px;padding:6px 8px;}
-  .sticky-command button{min-height:40px;padding:8px 10px;}
-  .jobs-control-row{align-items:stretch;}
-  .command-row{padding:7px;}
+  .sticky-command{top:6px;gap:6px;padding:4px 7px;}
+  .sticky-command button{min-height:34px;padding:6px 9px;}
+  .jobs-primary-row{align-items:stretch;flex-wrap:wrap;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
 
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
-  .secondary-filters{width:100%;justify-content:space-between;}
-  .sticky-command .muted{max-width:44vw;}
-  .secondary-filters select{flex:1 1 auto;min-width:0;}
+  .jobs-primary-row{gap:6px;}
+  #job_sort{flex:0 0 auto;max-width:110px;}
+  .sticky-command .muted{max-width:46vw;}
 }
 
 @media (max-width: 360px){
-  .searchbar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}
-  .header-title-row{align-items:flex-start;}
+  .searchbar-row{gap:6px;}
 }
 
   </style>
@@ -1170,10 +1181,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   <div class="container">
     <header class="page-header monitor-header" id="main_header">
       <div class="brand">
-        <div class="header-title-row">
-          <h1>Pythonista Job Runner</h1>
-          <span class="meta-text quiet-meta">v__ADDON_VERSION__</span>
-        </div>
+        <h1>Pythonista Job Runner</h1>
         <div class="subline monitor-subline">
           <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
@@ -1183,14 +1191,15 @@ details[open] summary::after{ transform: rotate(0deg); }
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn secondary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
-        <button type="button" class="linkbtn secondary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn tertiary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <button type="button" class="linkbtn tertiary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
       </div>
     </header>
 
     <details class="header-meta" id="header_meta">
       <summary>System details</summary>
       <div class="header-meta-content" aria-label="System metadata">
+        <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
         <span class="meta-item">Auto refresh <strong id="autostate">on</strong></span>
         <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
       </div>
@@ -1198,7 +1207,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 
     <main id="main_content" tabindex="-1">
 <!-- Section: Overview stats panel -->
-      <section id="stats" class="card card-quiet" hidden>
+      <section id="stats" class="card card-quiet queue-compact" hidden>
         <div class="card-header compact-header">
           <h2>Queue snapshot</h2>
         </div>
@@ -1259,14 +1268,13 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
 
           <div class="jobs-toolbar" aria-label="Jobs controls">
-            <div class="searchbar-row command-row">
+            <div class="searchbar-row">
               <label for="search" class="sr-only">Search jobs</label>
               <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
-              <button type="button" class="small secondary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
-              <button type="button" class="small primary" data-action="refresh" aria-label="Refresh jobs now">Refresh</button>
+              <button type="button" class="small tertiary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
             </div>
 
-            <div class="jobs-control-row command-row" aria-label="Sort and filter controls">
+            <div class="jobs-primary-row" aria-label="Primary jobs controls">
               <div class="state-filters" role="group" aria-label="Primary job state filters">
                 <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
@@ -1274,29 +1282,27 @@ details[open] summary::after{ transform: rotate(0deg); }
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-              <div class="secondary-filters" aria-label="Secondary jobs controls">
-                <label for="job_sort" class="sr-only">Sort jobs</label>
-                <select id="job_sort" aria-label="Sort jobs">
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="active">Active first</option>
-                  <option value="errors">Errors first</option>
-                </select>
-                <details class="secondary-panel">
-                  <summary>More filters</summary>
-                  <div class="secondary-panel-body">
-                    <label class="tog"><input id="filter_has_result" type="checkbox"/> has result</label>
-                  </div>
-                </details>
-              </div>
+              <label for="job_sort" class="sr-only">Sort jobs</label>
+              <select id="job_sort" aria-label="Sort jobs">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="active">Active first</option>
+                <option value="errors">Errors first</option>
+              </select>
             </div>
+
+            <details class="secondary-panel">
+              <summary>More filters</summary>
+              <div class="secondary-panel-body">
+                <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+              </div>
+            </details>
           </div>
 
-          <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick command bar" hidden>
+          <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick jobs shortcuts" hidden>
             <span id="sticky_status" class="status-inline">Connecting…</span>
             <span id="sticky_summary" class="muted">All jobs</span>
-            <button type="button" class="small" data-action="refresh">Refresh</button>
-            <button type="button" class="small secondary" data-action="focus-search">Search</button>
+            <button type="button" class="small tertiary" data-action="focus-search">Search</button>
           </div>
 
           <div class="table-region" aria-live="polite">
@@ -1319,8 +1325,8 @@ details[open] summary::after{ transform: rotate(0deg); }
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
               <div id="empty_title" class="empty-title">No jobs yet</div>
-              <div id="empty_body" class="empty-body">Run something from Pythonista, then hit Refresh. This page updates automatically when auto refresh is on.</div>
-              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and endpoint examples.</div>
+              <div id="empty_body" class="empty-body">Run something from Pythonista, then use Refresh in the header. This page updates automatically when auto refresh is on.</div>
+              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and troubleshooting.</div>
             </div>
           </div>
         </div>
@@ -1457,34 +1463,31 @@ details[open] summary::after{ transform: rotate(0deg); }
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
-          <div class="modal-sub" id="adv_sub">Refresh controls and maintenance</div>
+          <div class="modal-sub" id="adv_sub">Polling and maintenance</div>
         </div>
-        <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
+        <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
       <div class="modal-body">
-        <div class="adv-grid compact">
-          <div class="adv-block">
-            <div class="adv-title">Polling</div>
-            <label class="tog big"><input type="checkbox" id="auto"/> auto refresh</label>
-            <div class="field adv-field">
-              <label for="pollms">Poll interval (milliseconds)</label>
-              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-              <div class="hint compact-hint">Lower intervals update faster but consume more power.</div>
-            </div>
+        <details open>
+          <summary>Polling</summary>
+          <label class="tog"><input type="checkbox" id="auto"/> Auto refresh</label>
+          <div class="field adv-field">
+            <label for="pollms">Poll interval (ms)</label>
+            <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
+            <div class="hint compact-hint">Lower intervals update faster but use more battery and network.</div>
           </div>
+        </details>
 
-          <div class="adv-block">
-            <div class="adv-title">Maintenance</div>
-            <div class="actionsbar destructive-group">
-              <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
-              <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
-            </div>
-            <div class="hint compact-hint">Purging removes stored job files. Use only when cleanup is needed.</div>
-            <div class="actionsbar utility-group">
-              <button type="button" class="small" data-action="reset-ui">Reset UI settings</button>
-            </div>
+        <details>
+          <summary>Maintenance</summary>
+          <div class="actionsbar destructive-group">
+            <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+            <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
           </div>
-        </div>
+          <div class="actionsbar utility-group">
+            <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -1494,24 +1497,21 @@ details[open] summary::after{ transform: rotate(0deg); }
       <div class="modal-header">
         <div>
           <div class="modal-title" id="about_title">Help</div>
-          <div class="modal-sub" id="about_sub">Pythonista Job Runner</div>
+          <div class="modal-sub" id="about_sub">Quick start and troubleshooting</div>
         </div>
-        <button type="button" id="about_close" class="small" data-action="close-about" aria-label="Close help">Close</button>
+        <button type="button" id="about_close" class="small tertiary" data-action="close-about" aria-label="Close help">Close</button>
       </div>
       <div class="modal-body">
         <details open>
-          <summary>Quick actions</summary>
+          <summary>Quick start</summary>
           <ol class="steps">
             <li>Submit a zip from Pythonista using <code>POST /run</code>.</li>
-            <li>Use search and state filters to find the job quickly.</li>
-            <li>Open <strong>View</strong> for details and download result zip when ready.</li>
+            <li>Use Search and state filters to find the job quickly.</li>
+            <li>Open <strong>View</strong> to inspect logs and download the result zip.</li>
           </ol>
-          <div class="hint">
-            If calling directly (outside Home Assistant Ingress), send <code>X-Runner-Token</code> on protected endpoints.
-          </div>
         </details>
 
-        <details>
+        <details open>
           <summary>Troubleshooting</summary>
           <ul class="steps help-bullets">
             <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
@@ -1522,15 +1522,15 @@ details[open] summary::after{ transform: rotate(0deg); }
 
         <details>
           <summary>API reference</summary>
-          <div class="hint compact-hint">Core endpoints include copy buttons for faster client setup.</div>
+          <div class="hint compact-hint">Expanded only when needed to keep this panel focused for phone workflows.</div>
           <div id="about_api" class="api-grid"></div>
 
           <div class="help-actions-row">
-            <button type="button" class="small" data-action="copy-base">Copy base URL</button>
-            <button type="button" class="small" data-action="open-info">Open raw info.json</button>
+            <button type="button" class="small tertiary" data-action="copy-base">Copy base URL</button>
+            <button type="button" class="small tertiary" data-action="open-info">Open raw info.json</button>
           </div>
 
-          <textarea id="about_curl" rows="7" readonly aria-label="curl examples"></textarea>
+          <textarea id="about_curl" rows="6" readonly aria-label="curl examples"></textarea>
         </details>
       </div>
     </div>
@@ -2547,7 +2547,7 @@ function applyFilters() {
         const emptyAction = document.getElementById("empty_action");
         if (emptyAction) {
           if (jobsViewState === "disconnected") {
-            emptyAction.textContent = "Try Refresh. If it persists, open Help for troubleshooting steps.";
+            emptyAction.textContent = "Use header Refresh. If it persists, open Help for troubleshooting steps.";
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
@@ -2606,7 +2606,7 @@ function applyFilters() {
 
     for (const t of pills) {
       const span = document.createElement("span");
-      span.className = "pill";
+      span.className = "pill passive-pill";
       span.textContent = t;
       els.stats_kv.appendChild(span);
     }

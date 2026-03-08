@@ -100,11 +100,13 @@ def test_sticky_command_focus_action_targets_search() -> None:
     assert 'els.search.focus();' in events
 
 
-def test_jobs_command_row_keeps_refresh_in_primary_surface() -> None:
+def test_jobs_command_row_removes_duplicate_refresh_controls() -> None:
     html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "20_jobs.html")
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
 
-    assert 'class="searchbar-row command-row"' in html
-    assert 'data-action="refresh" aria-label="Refresh jobs now"' in html
+    assert 'class="searchbar-row"' in html
+    assert 'data-action="refresh" aria-label="Refresh jobs now"' not in html
+    assert shell.count('data-action="refresh"') == 1
 
 
 def test_localstorage_access_uses_safe_wrappers() -> None:

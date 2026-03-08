@@ -4,34 +4,31 @@
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
-          <div class="modal-sub" id="adv_sub">Refresh controls and maintenance</div>
+          <div class="modal-sub" id="adv_sub">Polling and maintenance</div>
         </div>
-        <button type="button" id="adv_close" class="small" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
+        <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
       </div>
       <div class="modal-body">
-        <div class="adv-grid compact">
-          <div class="adv-block">
-            <div class="adv-title">Polling</div>
-            <label class="tog big"><input type="checkbox" id="auto"/> auto refresh</label>
-            <div class="field adv-field">
-              <label for="pollms">Poll interval (milliseconds)</label>
-              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-              <div class="hint compact-hint">Lower intervals update faster but consume more power.</div>
-            </div>
+        <details open>
+          <summary>Polling</summary>
+          <label class="tog"><input type="checkbox" id="auto"/> Auto refresh</label>
+          <div class="field adv-field">
+            <label for="pollms">Poll interval (ms)</label>
+            <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
+            <div class="hint compact-hint">Lower intervals update faster but use more battery and network.</div>
           </div>
+        </details>
 
-          <div class="adv-block">
-            <div class="adv-title">Maintenance</div>
-            <div class="actionsbar destructive-group">
-              <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
-              <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
-            </div>
-            <div class="hint compact-hint">Purging removes stored job files. Use only when cleanup is needed.</div>
-            <div class="actionsbar utility-group">
-              <button type="button" class="small" data-action="reset-ui">Reset UI settings</button>
-            </div>
+        <details>
+          <summary>Maintenance</summary>
+          <div class="actionsbar destructive-group">
+            <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+            <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
           </div>
-        </div>
+          <div class="actionsbar utility-group">
+            <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+          </div>
+        </details>
       </div>
     </div>
   </div>
