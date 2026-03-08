@@ -1,8 +1,12 @@
-# Version: 0.6.12-apparmor.1
+# Version: 0.6.12-apparmor.2
 #include <tunables/global>
 
 profile hassio-addon-pythonista-job-runner flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
+
+  # Base file and signal handling expected by Home Assistant add-ons
+  file,
+  signal (send) set=(kill,term,int,hup,cont),
 
   network inet stream,
   network inet6 stream,
@@ -14,21 +18,32 @@ profile hassio-addon-pythonista-job-runner flags=(attach_disconnected,mediate_de
   capability setuid,
   capability kill,
 
-  /bin/** rix,
-  /sbin/** rix,
-  /usr/bin/** rix,
-  /usr/sbin/** rix,
+  # S6-Overlay and container init paths. Home Assistant custom apparmor.txt
+  # replaces the default profile, so these standard allowances must remain.
+  /init ix,
+  /bin/** ix,
+  /sbin/** ix,
+  /usr/bin/** ix,
+  /usr/sbin/** ix,
   /usr/lib/** rm,
   /lib/** rm,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /run/{,**} rwk,
+  /dev/tty rw,
 
-  /init rix,
-  /command/** rix,
-  /run.sh rix,
+  # Bashio and add-on runtime
+  /usr/lib/bashio/** ix,
+  /run.sh ix,
   /app/** r,
 
+  # Persistent and temporary storage
   /data/ rw,
   /data/** rwk,
-
   /tmp/ rw,
   /tmp/** rwk,
 

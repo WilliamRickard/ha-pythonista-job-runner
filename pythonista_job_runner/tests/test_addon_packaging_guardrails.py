@@ -1,3 +1,4 @@
+# Version: 0.6.12-packaging-tests.1
 """Guardrail tests for add-on packaging, architecture, and security config alignment."""
 
 from __future__ import annotations
@@ -106,8 +107,22 @@ def test_docs_include_architecture_validation_scope_note() -> None:
     assert "automated runtime tests in this repository execute on `amd64` CI runners" in docs
 
 
-def test_custom_apparmor_allows_supervisor_init_entrypoint() -> None:
+def test_custom_apparmor_includes_required_s6_overlay_rules() -> None:
+    """Ensure the custom AppArmor profile keeps the standard S6 overlay allowances."""
     profile = _read("pythonista_job_runner/apparmor.txt")
 
-    assert "/init rix," in profile
-    assert "/run.sh rix," in profile
+    required_rules = (
+        "/init ix,",
+        "/run/{s6,s6-rc*,service}/** ix,",
+        "/package/** ix,",
+        "/command/** ix,",
+        "/etc/services.d/** rwix,",
+        "/etc/cont-init.d/** rwix,",
+        "/etc/cont-finish.d/** rwix,",
+        "/run/{,**} rwk,",
+        "/usr/lib/bashio/** ix,",
+        "/run.sh ix,",
+    )
+
+    for rule in required_rules:
+        assert rule in profile
