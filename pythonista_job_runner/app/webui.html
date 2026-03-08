@@ -309,7 +309,7 @@ button.chip.active{
   border-color: rgba(138,180,255,0.45);
 }
 
-input[type="text"], input[type="search"], input[type="number"], textarea{
+input[type="text"], input[type="search"], input[type="number"], textarea, select{
   width: 100%;
   padding: 11px 12px;
   min-height: 44px;
@@ -532,14 +532,18 @@ label{
   border-color: color-mix(in srgb, var(--line) 80%, rgba(138,180,255,0.30));
 }
 
-
 .queue-compact{
-  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+  border-color: color-mix(in srgb, var(--line) 48%, transparent);
+  box-shadow: none;
 }
 
 .queue-compact .card-header{
   border-bottom: 0;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
+}
+
+.queue-compact .card-body.compact{
+  padding-top: 4px;
 }
 
 .jobs-header h2{
@@ -547,36 +551,43 @@ label{
   letter-spacing: 0.1px;
 }
 
-#jobs_hint{font-size:12px;color:var(--muted);}
+.jobs-count{
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 6px;
+}
 
 .jobs-body{
   padding-top: 8px;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;padding:8px;border:1px solid color-mix(in srgb, var(--line) 82%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel2) 48%, transparent);}
-.searchbar-row{display:flex;align-items:center;gap:8px;}
+.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;padding:6px 0 4px;}
+.searchbar-row{display:flex;align-items:flex-end;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;}
-.clear-inline{flex:0 0 auto;min-width:70px;}
+.clear-inline{flex:0 0 auto;min-width:64px;}
+.sort-wrap{display:flex;flex-direction:column;gap:4px;flex:0 0 124px;}
+.sort-wrap label{margin:0;color:var(--muted);font-size:12px;}
 .state-filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
 .state-filters .chip{flex:0 0 auto;padding:8px 11px;min-height:40px;border-radius:10px;}
 .table-region{min-height:300px;display:flex;flex-direction:column;}
 .destructive-group button{border-color:rgba(255,92,92,0.6);}
 .utility-group button{background:transparent;color:var(--muted);}
 .jobs-primary-row{display:flex;gap:8px;justify-content:space-between;align-items:center;}
-#job_sort{min-height:40px;border-radius:10px;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);max-width:120px;}
+#job_sort{min-height:44px;border-radius:10px;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);max-width:140px;}
 .secondary-panel{position:relative;border:0;padding:0;background:transparent;}
 .secondary-panel summary{list-style:none;cursor:pointer;padding:7px 10px;border:1px solid color-mix(in srgb, var(--line) 78%, transparent);border-radius:10px;background:transparent;font-size:12px;color:var(--muted);display:inline-flex;}
 .secondary-panel[open] .secondary-panel-body{margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
-.sticky-command{position:sticky;top:6px;z-index:15;display:flex;gap:8px;align-items:center;padding:4px 7px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:9px;background:color-mix(in srgb, var(--panel) 78%, transparent);margin-bottom:8px;flex-wrap:nowrap;box-shadow:none;}
-.status-inline{display:inline-flex;align-items:center;font-size:12px;color:var(--muted);white-space:nowrap;}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
 .jobs-skeleton .sk:not(.sk-lg){width:62%;}
 @keyframes sk-pulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
 
-.sticky-command .muted{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;}
-.sticky-command button{min-height:34px;padding:6px 9px;}
+body[data-density="compact"] .card-body{padding:8px;}
+body[data-density="compact"] button, body[data-density="compact"] .linkbtn{min-height:40px;padding:8px 11px;}
+body[data-density="compact"] input[type="text"], body[data-density="compact"] input[type="search"], body[data-density="compact"] input[type="number"], body[data-density="compact"] textarea, body[data-density="compact"] select{min-height:40px;padding:9px 10px;}
+
 .banner{
   margin-bottom: 10px;
   padding: 9px 11px;
@@ -1119,6 +1130,10 @@ details[open] summary::after{ transform: rotate(0deg); }
 .help-actions-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 #about_curl{margin-top:10px;}
 .adv-field{margin-top:10px;}
+
+#about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;}
+#about_api .api-path{overflow-wrap:anywhere;}
+.help-actions-row button{min-height:40px;}
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -1136,8 +1151,8 @@ details[open] summary::after{ transform: rotate(0deg); }
   .header-actions{width:100%;justify-content:flex-start;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
-    .clear-inline{padding:10px 11px;min-width:68px;}
-  .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .clear-inline{padding:10px 11px;min-width:68px;}
+  .kpis{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
   .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
@@ -1155,8 +1170,6 @@ details[open] summary::after{ transform: rotate(0deg); }
   #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
-  .sticky-command{top:6px;gap:6px;padding:4px 7px;}
-  .sticky-command button{min-height:34px;padding:6px 9px;}
   .jobs-primary-row{align-items:stretch;flex-wrap:wrap;}
 }
 
@@ -1165,12 +1178,14 @@ details[open] summary::after{ transform: rotate(0deg); }
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
   .jobs-primary-row{gap:6px;}
-  #job_sort{flex:0 0 auto;max-width:110px;}
-  .sticky-command .muted{max-width:46vw;}
+  .sort-wrap{flex:0 0 118px;}
+  #job_sort{max-width:118px;}
 }
 
 @media (max-width: 360px){
   .searchbar-row{gap:6px;}
+  .sort-wrap{flex:0 0 108px;}
+  #job_sort{max-width:108px;}
 }
 
   </style>
@@ -1191,8 +1206,9 @@ details[open] summary::after{ transform: rotate(0deg); }
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
+        <button type="button" class="linkbtn tertiary" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
         <button type="button" class="linkbtn tertiary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
-        <button type="button" class="linkbtn tertiary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn tertiary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced maintenance">Advanced</button>
       </div>
     </header>
 
@@ -1200,7 +1216,6 @@ details[open] summary::after{ transform: rotate(0deg); }
       <summary>System details</summary>
       <div class="header-meta-content" aria-label="System metadata">
         <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
-        <span class="meta-item">Auto refresh <strong id="autostate">on</strong></span>
         <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
       </div>
     </details>
@@ -1244,16 +1259,12 @@ details[open] summary::after{ transform: rotate(0deg); }
               </button>
             </div>
           </div>
-          <div class="meta-strip passive-meta" id="stats_kv" aria-label="Runner metadata"></div>
         </div>
       </section>
 <!-- Section: Jobs list and filters -->
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
-          <h2>Jobs</h2>
-          <div class="actionsbar right">
-            <span class="muted" id="jobs_hint">Search, filter, sort, then open details.</span>
-          </div>
+          <h2>Jobs <span class="jobs-count" id="jobs_count" aria-live="polite">0</span></h2>
         </div>
         <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
@@ -1271,7 +1282,16 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div class="searchbar-row">
               <label for="search" class="sr-only">Search jobs</label>
               <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
-              <button type="button" class="small tertiary clear-inline" data-action="clear-filters" aria-label="Clear search and filters">Clear</button>
+              <button type="button" class="small tertiary clear-inline" data-action="clear-filters" id="clear_filters" aria-label="Clear search and filters" hidden>Clear</button>
+              <div class="sort-wrap">
+                <label for="job_sort">Sort</label>
+                <select id="job_sort" aria-label="Sort jobs">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="active">Active first</option>
+                  <option value="errors">Errors first</option>
+                </select>
+              </div>
             </div>
 
             <div class="jobs-primary-row" aria-label="Primary jobs controls">
@@ -1282,32 +1302,19 @@ details[open] summary::after{ transform: rotate(0deg); }
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-              <label for="job_sort" class="sr-only">Sort jobs</label>
-              <select id="job_sort" aria-label="Sort jobs">
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="active">Active first</option>
-                <option value="errors">Errors first</option>
-              </select>
             </div>
 
             <details class="secondary-panel">
-              <summary>More filters</summary>
+              <summary>Filters</summary>
               <div class="secondary-panel-body">
                 <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
               </div>
             </details>
           </div>
 
-          <div id="sticky_command" class="sticky-command" role="region" aria-label="Quick jobs shortcuts" hidden>
-            <span id="sticky_status" class="status-inline">Connecting…</span>
-            <span id="sticky_summary" class="muted">All jobs</span>
-            <button type="button" class="small tertiary" data-action="focus-search">Search</button>
-          </div>
-
           <div class="table-region" aria-live="polite">
             <div class="tablewrap">
-              <table id="jobtable" aria-describedby="jobs_hint">
+              <table id="jobtable">
                 <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
                 <thead>
                   <tr>
@@ -1325,8 +1332,12 @@ details[open] summary::after{ transform: rotate(0deg); }
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
               <div id="empty_title" class="empty-title">No jobs yet</div>
-              <div id="empty_body" class="empty-body">Run something from Pythonista, then use Refresh in the header. This page updates automatically when auto refresh is on.</div>
-              <div id="empty_action" class="empty-action">Need setup help? Open Help for quick start and troubleshooting.</div>
+              <div id="empty_body" class="empty-body">Run a sample task to confirm setup, then open job details.</div>
+              <div class="help-actions-row">
+                <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
+                <button type="button" class="small tertiary" data-action="open-about">Open quick start</button>
+              </div>
+              <div id="empty_action" class="empty-action">After run, press Refresh or wait for auto refresh and open View.</div>
             </div>
           </div>
         </div>
@@ -1457,19 +1468,43 @@ details[open] summary::after{ transform: rotate(0deg); }
       </section>
     </main>
   </div>
-<!-- Section: Advanced settings panel -->
+<!-- Section: Advanced maintenance panel -->
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal mobile-panel" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
-          <div class="modal-sub" id="adv_sub">Polling and maintenance</div>
+          <div class="modal-sub" id="adv_sub">Maintenance actions</div>
         </div>
-        <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
+        <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced">Close</button>
       </div>
       <div class="modal-body">
         <details open>
-          <summary>Polling</summary>
+          <summary>Maintenance</summary>
+          <div class="actionsbar destructive-group">
+            <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+            <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
+          </div>
+          <div class="actionsbar utility-group">
+            <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+<!-- Section: Settings panel -->
+  <div id="settings_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal mobile-panel" id="settings_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="settings_title" aria-describedby="settings_sub">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="settings_title">Settings</div>
+          <div class="modal-sub" id="settings_sub">Runtime and UI preferences</div>
+        </div>
+        <button type="button" id="settings_close" class="small tertiary" data-action="close-settings" aria-label="Close settings">Close</button>
+      </div>
+      <div class="modal-body">
+        <details open>
+          <summary>Refresh behavior</summary>
           <label class="tog"><input type="checkbox" id="auto"/> Auto refresh</label>
           <div class="field adv-field">
             <label for="pollms">Poll interval (ms)</label>
@@ -1478,14 +1513,28 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
         </details>
 
-        <details>
-          <summary>Maintenance</summary>
-          <div class="actionsbar destructive-group">
-            <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
-            <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
+        <details open>
+          <summary>Jobs list defaults</summary>
+          <div class="field adv-field">
+            <label for="settings_default_sort">Default sort</label>
+            <select id="settings_default_sort" aria-label="Default sort">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="active">Active first</option>
+              <option value="errors">Errors first</option>
+            </select>
           </div>
-          <div class="actionsbar utility-group">
-            <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+          <label class="tog"><input type="checkbox" id="settings_keep_secondary"/> Keep secondary filters between sessions</label>
+        </details>
+
+        <details>
+          <summary>Display</summary>
+          <div class="field adv-field">
+            <label for="settings_density">UI density</label>
+            <select id="settings_density" aria-label="UI density">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
           </div>
         </details>
       </div>
@@ -1505,10 +1554,17 @@ details[open] summary::after{ transform: rotate(0deg); }
         <details open>
           <summary>Quick start</summary>
           <ol class="steps">
-            <li>Submit a zip from Pythonista using <code>POST /run</code>.</li>
-            <li>Use Search and state filters to find the job quickly.</li>
-            <li>Open <strong>View</strong> to inspect logs and download the result zip.</li>
+            <li>Copy the Python sample below and run it from Pythonista with your add-on URL and token.</li>
+            <li>Return here and open the new job with <strong>View</strong>.</li>
+            <li>Success means the job shows <strong>done</strong> and a result zip link appears.</li>
           </ol>
+          <div class="hint compact-hint">Token header <code>X-Runner-Token</code> is required for direct access. Ingress sessions usually provide auth automatically.</div>
+          <div class="help-actions-row">
+            <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
+            <button type="button" class="small tertiary" data-action="copy-curl">Copy curl sample</button>
+          </div>
+          <textarea id="about_python" rows="11" readonly aria-label="Python quick start sample"></textarea>
+          <textarea id="about_curl" rows="8" readonly aria-label="curl quick start sample"></textarea>
         </details>
 
         <details open>
@@ -1516,21 +1572,19 @@ details[open] summary::after{ transform: rotate(0deg); }
           <ul class="steps help-bullets">
             <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
             <li><strong>Unauthorized:</strong> verify <code>X-Runner-Token</code> and token value.</li>
-            <li><strong>No jobs:</strong> confirm the Pythonista script uploads to <code>/run</code>.</li>
+            <li><strong>No jobs:</strong> submit the sample task, then press header Refresh.</li>
           </ul>
         </details>
 
         <details>
           <summary>API reference</summary>
-          <div class="hint compact-hint">Expanded only when needed to keep this panel focused for phone workflows.</div>
+          <div class="hint compact-hint">Use this for deeper endpoint inspection after quick start succeeds.</div>
           <div id="about_api" class="api-grid"></div>
 
           <div class="help-actions-row">
             <button type="button" class="small tertiary" data-action="copy-base">Copy base URL</button>
             <button type="button" class="small tertiary" data-action="open-info">Open raw info.json</button>
           </div>
-
-          <textarea id="about_curl" rows="6" readonly aria-label="curl examples"></textarea>
         </details>
       </div>
     </div>
@@ -1569,6 +1623,8 @@ details[open] summary::after{ transform: rotate(0deg); }
   let view = "all";
   let sortMode = "newest";
   let filterHasResult = false;
+  let keepSecondaryFilters = true;
+  let uiDensity = "comfortable";
   let firstJobsLoad = true;
   let jobsViewState = "initial";
 
@@ -1760,41 +1816,12 @@ function parseUtcSeconds(v) {
     els.statusline.textContent = text;
     els.statuspill.classList.remove("ok", "err", "warn");
     if (kind) els.statuspill.classList.add(kind);
-    if (els.sticky_status) els.sticky_status.textContent = text;
   }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
   }
 
-  /**
-   * Update the sticky summary text to reflect current view, sort, search and result-filter state.
-   *
-   * If the sticky summary element is not present, the function returns without action.
-   *
-   * The summary shows a base view label ("All jobs" or "State: <view>"), a human-friendly
-   * sort label ("Newest", "Oldest", "Active first" or "Errors first" for other modes),
-   * an optional search fragment ("Search: <query>") when a search is active, and an optional
-   * "Result ready" token when the result filter is enabled. Parts are joined with " · ".
-   */
-  function updateStickySummary() {
-    if (!els.sticky_summary) return;
-    const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
-    const bits = [];
-    bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    const sortModeLabels = {
-      newest: "Newest",
-      oldest: "Oldest",
-      active: "Active first",
-    };
-    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
-      ? sortModeLabels[sortMode]
-      : (sortMode ? String(sortMode) : "Errors first");
-    bits.push(sortLabel);
-    if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("Result ready");
-    els.sticky_summary.textContent = bits.join(" · ");
-  }
 
   /**
    * Update live/paused UI controls to reflect the current follow and paused state.
@@ -2005,7 +2032,6 @@ function parseUtcSeconds(v) {
     storageSet("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
-    updateStickySummary();
   }
 
   function setTab(next) {
@@ -2073,6 +2099,20 @@ function parseUtcSeconds(v) {
   }
 
   
+
+  function updateDensityUi() {
+    if (document && document.body) document.body.dataset.density = uiDensity;
+  }
+
+  function updateClearButtonVisibility() {
+    if (!els.clear_filters || !els.search) return;
+    const hasSearch = !!String(els.search.value || "").trim();
+    const hasSecondary = !!filterHasResult;
+    const hasNonDefaultSort = sortMode !== "newest";
+    const hasStateFilter = view !== "all";
+    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter);
+  }
+
   function clearFilters() {
     els.search.value = "";
     setView("all");
@@ -2084,13 +2124,13 @@ function parseUtcSeconds(v) {
     storageSet("pjr_sort", sortMode);
     storageSet("pjr_has_result", "0");
     applyFilters();
-    updateStickySummary();
+    updateClearButtonVisibility();
   }
 
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary"
     ];
     for (const k of keys) storageRemove(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -2364,8 +2404,8 @@ function applyFilters() {
       return tb - ta;
     });
 
-    updateStickySummary();
     renderJobs(jobs, q);
+    updateClearButtonVisibility();
   }
 
   /**
@@ -2525,6 +2565,7 @@ function applyFilters() {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
+    if (els.jobs_count) els.jobs_count.textContent = String(jobs.length);
 
     if (!hasJobs) {
       const emptyTitle = document.getElementById("empty_title");
@@ -2541,7 +2582,7 @@ function applyFilters() {
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
+          emptyBody.textContent = "Run a first test task, then open View to inspect details and outputs.";
         }
 
         const emptyAction = document.getElementById("empty_action");
@@ -2551,7 +2592,7 @@ function applyFilters() {
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
-            emptyAction.textContent = "Need setup help? Open Help for quick start and endpoint examples.";
+            emptyAction.textContent = "Copy sample Python task, run it in Pythonista, then open the new job.";
           }
         }
       }
@@ -2591,25 +2632,6 @@ function applyFilters() {
     els.kpi_done.textContent = String(done);
     els.kpi_error.textContent = String(error);
     els.kpi_total.textContent = String(total);
-
-    // Meta pills
-    els.stats_kv.textContent = "";
-    const pills = [];
-
-    if (s.runner_version) pills.push(`runner: ${s.runner_version}`);
-    if (Number.isFinite(Number(s.job_retention_hours))) pills.push(`retention: ${s.job_retention_hours}h`);
-
-    if (Number.isFinite(Number(s.disk_free_bytes)) && Number.isFinite(Number(s.disk_total_bytes)) && Number(s.disk_total_bytes) > 0) {
-      pills.push(`disk free: ${fmtBytes(s.disk_free_bytes)} of ${fmtBytes(s.disk_total_bytes)}`);
-    }
-    if (Number.isFinite(Number(s.jobs_dir_bytes))) pills.push(`jobs dir: ${fmtBytes(s.jobs_dir_bytes)}`);
-
-    for (const t of pills) {
-      const span = document.createElement("span");
-      span.className = "pill passive-pill";
-      span.textContent = t;
-      els.stats_kv.appendChild(span);
-    }
 
     els.stats.hidden = false;
   }
@@ -2708,18 +2730,42 @@ function applyFilters() {
     }
 
     const base = baseUrl();
+    const pythonSample = [
+      "import io",
+      "import json",
+      "import zipfile",
+      "import requests",
+      "",
+      `BASE = "${base}"`,
+      'TOKEN = "YOUR_TOKEN_HERE"  # Needed for direct access',
+      "",
+      "task_code = 'print(\"hello from Pythonista\")'",
+      "zip_buf = io.BytesIO()",
+      'with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:',
+      '    zf.writestr("main.py", task_code)',
+      "zip_buf.seek(0)",
+      "",
+      'headers = {"X-Runner-Token": TOKEN}',
+      'files = {"file": ("task.zip", zip_buf.getvalue(), "application/zip")}',
+      'res = requests.post(f"{BASE}/run", headers=headers, files=files, timeout=30)',
+      "res.raise_for_status()",
+      "payload = res.json()",
+      "print(json.dumps(payload, indent=2))",
+      "",
+      "# Success: a job_id is returned; open it in the Jobs list and watch for done + result zip.",
+    ].join("\n");
     const curl = [
       `# ${service} ${version ? `v${version}` : ""}`.trim(),
       "# Direct access requires X-Runner-Token unless you are using Ingress",
-      `BASE=\"${base}\"`,
-      "TOKEN=\"YOUR_TOKEN_HERE\"",
+      `BASE="${base}"`,
+      'TOKEN="YOUR_TOKEN_HERE"',
       "",
-      "curl \"$BASE/health\"",
-      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/jobs.json\"",
-      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/stats.json\"",
-      "curl -H \"X-Runner-Token: $TOKEN\" -X POST \"$BASE/purge\" -H \"content-type: application/json\" -d '{\"state\":\"done\"}'",
-      "# Run requires a zip payload; see DOCS.md for the Pythonista client",
+      'curl -H "X-Runner-Token: $TOKEN" "$BASE/health"',
+      'curl -H "X-Runner-Token: $TOKEN" "$BASE/jobs.json"',
+      'curl -H "X-Runner-Token: $TOKEN" "$BASE/stats.json"',
+      "# /run needs a zip payload from Pythonista (see sample above)",
     ].join("\n");
+    if (els.about_python) els.about_python.value = pythonSample;
     els.about_curl.value = curl;
   }
 
@@ -2728,8 +2774,23 @@ function applyFilters() {
     renderInfo(infoCache);
   }
 
+
+  async function copySampleTask() {
+    if (!els.about_python?.value) {
+      await loadInfo();
+    }
+    const code = els.about_python?.value || "";
+    if (!code) {
+      toast("err", "No sample available", "Could not prepare sample Python task");
+      return;
+    }
+    await copyTextToClipboard(code);
+    toast("ok", "Copied", "Sample Python task copied");
+  }
+
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
+  let _settingsReturnFocus = null;
 
   async function openAbout() {
     _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
@@ -2746,6 +2807,7 @@ function applyFilters() {
     } catch (e) {
       els.about_sub.textContent = "Help";
       els.about_api.textContent = "";
+      if (els.about_python) els.about_python.value = "";
       els.about_curl.value = "";
       const msg = String(e && e.message ? e.message : e);
       toast("err", "Could not load info", msg);
@@ -2779,6 +2841,36 @@ function applyFilters() {
       try { _advReturnFocus.focus(); } catch (e) {}
     }
     _advReturnFocus = null;
+  }
+
+  function openSettings() {
+    _settingsReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.settings_overlay.hidden = false;
+    els.settings_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.settings_close) els.settings_close.focus();
+    else if (els.settings_modal) els.settings_modal.focus();
+    if (els.auto) els.auto.checked = auto;
+    if (els.pollms) els.pollms.value = String(pollMs);
+    if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+    if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
+    if (els.settings_density) els.settings_density.value = uiDensity;
+  }
+
+  function closeSettings() {
+    els.settings_overlay.hidden = true;
+    els.settings_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_settingsReturnFocus && (document.contains(_settingsReturnFocus))) {
+      try { _settingsReturnFocus.focus(); } catch (e) {}
+    }
+    _settingsReturnFocus = null;
   }
 
 function closeAbout() {
@@ -3303,7 +3395,7 @@ Client IP: ${ip || ""}`;
   }
 function toggleAuto() {
     auto = !auto;
-    els.autostate.textContent = auto ? "on" : "off";
+    if (els.auto) els.auto.checked = auto;
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
   }
 
@@ -3318,6 +3410,8 @@ function toggleAuto() {
       const action = btn.getAttribute("data-action");
       try {
         if (action === "refresh") await refreshAll();
+        if (action === "open-settings") openSettings();
+        if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
@@ -3332,6 +3426,7 @@ function toggleAuto() {
         if (action === "find-prev") findPrev();
         if (action === "clear-search") clearSearch();
         if (action === "copy-curl") await copyCurl();
+        if (action === "copy-sample-task") await copySampleTask();
         if (action === "open-about") await openAbout();
         if (action === "close-about") closeAbout();
         if (action === "copy-base") await copyBase();
@@ -3365,6 +3460,12 @@ function toggleAuto() {
       });
     }
 
+    if (els.settings_overlay) {
+      els.settings_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.settings_overlay) closeSettings();
+      });
+    }
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -3387,15 +3488,27 @@ function toggleAuto() {
       els.adv_close.addEventListener("touchend", close, { passive: false });
     }
 
+    if (els.settings_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeSettings();
+      };
+      els.settings_close.addEventListener("click", close);
+      els.settings_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
+        if (!els.settings_overlay.hidden) closeSettings();
         return;
       }
       if (ev.key === "Tab") {
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
+        if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
       }
     });
 
@@ -3406,13 +3519,14 @@ function toggleAuto() {
     els.search.addEventListener("input", () => {
       storageSet("pjr_search", String(els.search.value || ""));
       applyFilters();
+      updateClearButtonVisibility();
     });
     if (els.job_sort) {
       els.job_sort.addEventListener("change", () => {
         sortMode = els.job_sort.value || "newest";
         storageSet("pjr_sort", sortMode);
         applyFilters();
-        updateStickySummary();
+        updateClearButtonVisibility();
       });
     }
     if (els.filter_has_result) {
@@ -3420,14 +3534,38 @@ function toggleAuto() {
         filterHasResult = !!els.filter_has_result.checked;
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
         applyFilters();
-        updateStickySummary();
+        updateClearButtonVisibility();
       });
     }
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
         storageSet("pjr_auto", auto ? "1" : "0");
-        els.autostate.textContent = auto ? "on" : "off";
+      });
+    }
+
+    if (els.settings_default_sort) {
+      els.settings_default_sort.addEventListener("change", () => {
+        sortMode = els.settings_default_sort.value || "newest";
+        if (els.job_sort) els.job_sort.value = sortMode;
+        storageSet("pjr_sort", sortMode);
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.settings_keep_secondary) {
+      els.settings_keep_secondary.addEventListener("change", () => {
+        keepSecondaryFilters = !!els.settings_keep_secondary.checked;
+        storageSet("pjr_keep_secondary", keepSecondaryFilters ? "1" : "0");
+      });
+    }
+
+    if (els.settings_density) {
+      els.settings_density.addEventListener("change", () => {
+        uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
+        storageSet("pjr_density", uiDensity);
+        updateDensityUi();
       });
     }
 
@@ -3518,14 +3656,12 @@ function toggleAuto() {
     els.jobs_banner = document.getElementById("jobs_banner");
     els.jobs_loading = document.getElementById("jobs_loading");
 
-    els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
     els.job_sort = document.getElementById("job_sort");
     els.filter_has_result = document.getElementById("filter_has_result");
-    els.sticky_command = document.getElementById("sticky_command");
-    els.sticky_status = document.getElementById("sticky_status");
-    els.sticky_summary = document.getElementById("sticky_summary");
+    els.clear_filters = document.getElementById("clear_filters");
+    els.jobs_count = document.getElementById("jobs_count");
     els.main_header = document.getElementById("main_header");
 
     els.detail = document.getElementById("detail");
@@ -3575,7 +3711,15 @@ function toggleAuto() {
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
+    els.about_python = document.getElementById("about_python");
     els.about_curl = document.getElementById("about_curl");
+
+    els.settings_overlay = document.getElementById("settings_overlay");
+    els.settings_modal = document.getElementById("settings_modal");
+    els.settings_close = document.getElementById("settings_close");
+    els.settings_default_sort = document.getElementById("settings_default_sort");
+    els.settings_keep_secondary = document.getElementById("settings_keep_secondary");
+    els.settings_density = document.getElementById("settings_density");
 
     els.adv_overlay = document.getElementById("adv_overlay");
     els.adv_modal = document.getElementById("adv_modal");
@@ -3613,7 +3757,6 @@ function toggleAuto() {
 
     const savedAuto = storageGet("pjr_auto");
     if (savedAuto !== null) auto = (savedAuto === "1");
-    els.autostate.textContent = auto ? "on" : "off";
     if (els.auto) els.auto.checked = auto;
 
     const savedSearch = storageGet("pjr_search");
@@ -3623,9 +3766,18 @@ function toggleAuto() {
     if (savedSort) sortMode = savedSort;
     if (els.job_sort) els.job_sort.value = sortMode;
 
+    const savedKeepSecondary = storageGet("pjr_keep_secondary");
+    if (savedKeepSecondary !== null) keepSecondaryFilters = (savedKeepSecondary === "1");
+    if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
+
     const savedHasResult = storageGet("pjr_has_result");
-    if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
+    if (savedHasResult !== null && keepSecondaryFilters) filterHasResult = (savedHasResult === "1");
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
+
+    const savedDensity = storageGet("pjr_density");
+    if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";
+    if (els.settings_density) els.settings_density.value = uiDensity;
+    updateDensityUi();
 
     const savedFollow = storageGet("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
@@ -3651,6 +3803,8 @@ function toggleAuto() {
     _loadHighlightTerms();
     updateHighlightUi();
 
+    if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+
     const savedPane = storageGet("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";
     setPane(pane);
@@ -3658,18 +3812,6 @@ function toggleAuto() {
 
     applyLogStyle();
 
-    if (els.main_header && els.sticky_command) {
-      const syncSticky = () => {
-        const r = els.main_header.getBoundingClientRect();
-        const show = isNarrow() && r.bottom < 0;
-        els.sticky_command.hidden = !show;
-      };
-      window.addEventListener("scroll", syncSticky, { passive: true });
-      window.addEventListener("resize", syncSticky);
-      syncSticky();
-    }
-
-    updateStickySummary();
     setStatus("warn", "Connecting…");
     await refreshAll();
 
@@ -3678,6 +3820,7 @@ function toggleAuto() {
 
     setView(view);
     setTab(currentTab);
+    updateClearButtonVisibility();
     window.addEventListener("beforeunload", () => {
       if (tickTimer) window.clearTimeout(tickTimer);
       tickTimer = null;

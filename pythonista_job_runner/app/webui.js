@@ -20,6 +20,8 @@
   let view = "all";
   let sortMode = "newest";
   let filterHasResult = false;
+  let keepSecondaryFilters = true;
+  let uiDensity = "comfortable";
   let firstJobsLoad = true;
   let jobsViewState = "initial";
 
@@ -211,41 +213,12 @@ function parseUtcSeconds(v) {
     els.statusline.textContent = text;
     els.statuspill.classList.remove("ok", "err", "warn");
     if (kind) els.statuspill.classList.add(kind);
-    if (els.sticky_status) els.sticky_status.textContent = text;
   }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
   }
 
-  /**
-   * Update the sticky summary text to reflect current view, sort, search and result-filter state.
-   *
-   * If the sticky summary element is not present, the function returns without action.
-   *
-   * The summary shows a base view label ("All jobs" or "State: <view>"), a human-friendly
-   * sort label ("Newest", "Oldest", "Active first" or "Errors first" for other modes),
-   * an optional search fragment ("Search: <query>") when a search is active, and an optional
-   * "Result ready" token when the result filter is enabled. Parts are joined with " · ".
-   */
-  function updateStickySummary() {
-    if (!els.sticky_summary) return;
-    const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
-    const bits = [];
-    bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    const sortModeLabels = {
-      newest: "Newest",
-      oldest: "Oldest",
-      active: "Active first",
-    };
-    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
-      ? sortModeLabels[sortMode]
-      : (sortMode ? String(sortMode) : "Errors first");
-    bits.push(sortLabel);
-    if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("Result ready");
-    els.sticky_summary.textContent = bits.join(" · ");
-  }
 
   /**
    * Update live/paused UI controls to reflect the current follow and paused state.
@@ -456,7 +429,6 @@ function parseUtcSeconds(v) {
     storageSet("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
-    updateStickySummary();
   }
 
   function setTab(next) {
@@ -524,6 +496,20 @@ function parseUtcSeconds(v) {
   }
 
   
+
+  function updateDensityUi() {
+    if (document && document.body) document.body.dataset.density = uiDensity;
+  }
+
+  function updateClearButtonVisibility() {
+    if (!els.clear_filters || !els.search) return;
+    const hasSearch = !!String(els.search.value || "").trim();
+    const hasSecondary = !!filterHasResult;
+    const hasNonDefaultSort = sortMode !== "newest";
+    const hasStateFilter = view !== "all";
+    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter);
+  }
+
   function clearFilters() {
     els.search.value = "";
     setView("all");
@@ -535,13 +521,13 @@ function parseUtcSeconds(v) {
     storageSet("pjr_sort", sortMode);
     storageSet("pjr_has_result", "0");
     applyFilters();
-    updateStickySummary();
+    updateClearButtonVisibility();
   }
 
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary"
     ];
     for (const k of keys) storageRemove(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -815,8 +801,8 @@ function applyFilters() {
       return tb - ta;
     });
 
-    updateStickySummary();
     renderJobs(jobs, q);
+    updateClearButtonVisibility();
   }
 
   /**
@@ -976,6 +962,7 @@ function applyFilters() {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
+    if (els.jobs_count) els.jobs_count.textContent = String(jobs.length);
 
     if (!hasJobs) {
       const emptyTitle = document.getElementById("empty_title");
@@ -992,7 +979,7 @@ function applyFilters() {
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Runner is connected but idle. Submit a job from Pythonista, then refresh if needed.";
+          emptyBody.textContent = "Run a first test task, then open View to inspect details and outputs.";
         }
 
         const emptyAction = document.getElementById("empty_action");
@@ -1002,7 +989,7 @@ function applyFilters() {
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
-            emptyAction.textContent = "Need setup help? Open Help for quick start and endpoint examples.";
+            emptyAction.textContent = "Copy sample Python task, run it in Pythonista, then open the new job.";
           }
         }
       }
@@ -1042,25 +1029,6 @@ function applyFilters() {
     els.kpi_done.textContent = String(done);
     els.kpi_error.textContent = String(error);
     els.kpi_total.textContent = String(total);
-
-    // Meta pills
-    els.stats_kv.textContent = "";
-    const pills = [];
-
-    if (s.runner_version) pills.push(`runner: ${s.runner_version}`);
-    if (Number.isFinite(Number(s.job_retention_hours))) pills.push(`retention: ${s.job_retention_hours}h`);
-
-    if (Number.isFinite(Number(s.disk_free_bytes)) && Number.isFinite(Number(s.disk_total_bytes)) && Number(s.disk_total_bytes) > 0) {
-      pills.push(`disk free: ${fmtBytes(s.disk_free_bytes)} of ${fmtBytes(s.disk_total_bytes)}`);
-    }
-    if (Number.isFinite(Number(s.jobs_dir_bytes))) pills.push(`jobs dir: ${fmtBytes(s.jobs_dir_bytes)}`);
-
-    for (const t of pills) {
-      const span = document.createElement("span");
-      span.className = "pill passive-pill";
-      span.textContent = t;
-      els.stats_kv.appendChild(span);
-    }
 
     els.stats.hidden = false;
   }
@@ -1159,18 +1127,42 @@ function applyFilters() {
     }
 
     const base = baseUrl();
+    const pythonSample = [
+      "import io",
+      "import json",
+      "import zipfile",
+      "import requests",
+      "",
+      `BASE = "${base}"`,
+      'TOKEN = "YOUR_TOKEN_HERE"  # Needed for direct access',
+      "",
+      "task_code = 'print(\"hello from Pythonista\")'",
+      "zip_buf = io.BytesIO()",
+      'with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:',
+      '    zf.writestr("main.py", task_code)',
+      "zip_buf.seek(0)",
+      "",
+      'headers = {"X-Runner-Token": TOKEN}',
+      'files = {"file": ("task.zip", zip_buf.getvalue(), "application/zip")}',
+      'res = requests.post(f"{BASE}/run", headers=headers, files=files, timeout=30)',
+      "res.raise_for_status()",
+      "payload = res.json()",
+      "print(json.dumps(payload, indent=2))",
+      "",
+      "# Success: a job_id is returned; open it in the Jobs list and watch for done + result zip.",
+    ].join("\n");
     const curl = [
       `# ${service} ${version ? `v${version}` : ""}`.trim(),
       "# Direct access requires X-Runner-Token unless you are using Ingress",
-      `BASE=\"${base}\"`,
-      "TOKEN=\"YOUR_TOKEN_HERE\"",
+      `BASE="${base}"`,
+      'TOKEN="YOUR_TOKEN_HERE"',
       "",
-      "curl \"$BASE/health\"",
-      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/jobs.json\"",
-      "curl -H \"X-Runner-Token: $TOKEN\" \"$BASE/stats.json\"",
-      "curl -H \"X-Runner-Token: $TOKEN\" -X POST \"$BASE/purge\" -H \"content-type: application/json\" -d '{\"state\":\"done\"}'",
-      "# Run requires a zip payload; see DOCS.md for the Pythonista client",
+      'curl -H "X-Runner-Token: $TOKEN" "$BASE/health"',
+      'curl -H "X-Runner-Token: $TOKEN" "$BASE/jobs.json"',
+      'curl -H "X-Runner-Token: $TOKEN" "$BASE/stats.json"',
+      "# /run needs a zip payload from Pythonista (see sample above)",
     ].join("\n");
+    if (els.about_python) els.about_python.value = pythonSample;
     els.about_curl.value = curl;
   }
 
@@ -1179,8 +1171,24 @@ function applyFilters() {
     renderInfo(infoCache);
   }
 
+
+  async function copySampleTask() {
+    const txt = (els.about_python && els.about_python.value) ? els.about_python.value : "";
+    if (!txt) {
+      await loadInfo();
+    }
+    const code = (els.about_python && els.about_python.value) ? els.about_python.value : "";
+    if (!code) {
+      toast("err", "No sample available", "Could not prepare sample Python task");
+      return;
+    }
+    await copyTextToClipboard(code);
+    toast("ok", "Copied", "Sample Python task copied");
+  }
+
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
+  let _settingsReturnFocus = null;
 
   async function openAbout() {
     _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
@@ -1197,6 +1205,7 @@ function applyFilters() {
     } catch (e) {
       els.about_sub.textContent = "Help";
       els.about_api.textContent = "";
+      if (els.about_python) els.about_python.value = "";
       els.about_curl.value = "";
       const msg = String(e && e.message ? e.message : e);
       toast("err", "Could not load info", msg);
@@ -1230,6 +1239,36 @@ function applyFilters() {
       try { _advReturnFocus.focus(); } catch (e) {}
     }
     _advReturnFocus = null;
+  }
+
+  function openSettings() {
+    _settingsReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.settings_overlay.hidden = false;
+    els.settings_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.settings_close) els.settings_close.focus();
+    else if (els.settings_modal) els.settings_modal.focus();
+    if (els.auto) els.auto.checked = auto;
+    if (els.pollms) els.pollms.value = String(pollMs);
+    if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+    if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
+    if (els.settings_density) els.settings_density.value = uiDensity;
+  }
+
+  function closeSettings() {
+    els.settings_overlay.hidden = true;
+    els.settings_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_settingsReturnFocus && (document.contains(_settingsReturnFocus))) {
+      try { _settingsReturnFocus.focus(); } catch (e) {}
+    }
+    _settingsReturnFocus = null;
   }
 
 function closeAbout() {
@@ -1754,7 +1793,7 @@ Client IP: ${ip || ""}`;
   }
 function toggleAuto() {
     auto = !auto;
-    els.autostate.textContent = auto ? "on" : "off";
+    if (els.auto) els.auto.checked = auto;
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
   }
 
@@ -1769,6 +1808,8 @@ function toggleAuto() {
       const action = btn.getAttribute("data-action");
       try {
         if (action === "refresh") await refreshAll();
+        if (action === "open-settings") openSettings();
+        if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
@@ -1783,6 +1824,7 @@ function toggleAuto() {
         if (action === "find-prev") findPrev();
         if (action === "clear-search") clearSearch();
         if (action === "copy-curl") await copyCurl();
+        if (action === "copy-sample-task") await copySampleTask();
         if (action === "open-about") await openAbout();
         if (action === "close-about") closeAbout();
         if (action === "copy-base") await copyBase();
@@ -1816,6 +1858,12 @@ function toggleAuto() {
       });
     }
 
+    if (els.settings_overlay) {
+      els.settings_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.settings_overlay) closeSettings();
+      });
+    }
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -1838,15 +1886,27 @@ function toggleAuto() {
       els.adv_close.addEventListener("touchend", close, { passive: false });
     }
 
+    if (els.settings_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeSettings();
+      };
+      els.settings_close.addEventListener("click", close);
+      els.settings_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
+        if (!els.settings_overlay.hidden) closeSettings();
         return;
       }
       if (ev.key === "Tab") {
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
+        if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
       }
     });
 
@@ -1857,13 +1917,14 @@ function toggleAuto() {
     els.search.addEventListener("input", () => {
       storageSet("pjr_search", String(els.search.value || ""));
       applyFilters();
+      updateClearButtonVisibility();
     });
     if (els.job_sort) {
       els.job_sort.addEventListener("change", () => {
         sortMode = els.job_sort.value || "newest";
         storageSet("pjr_sort", sortMode);
         applyFilters();
-        updateStickySummary();
+        updateClearButtonVisibility();
       });
     }
     if (els.filter_has_result) {
@@ -1871,14 +1932,38 @@ function toggleAuto() {
         filterHasResult = !!els.filter_has_result.checked;
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
         applyFilters();
-        updateStickySummary();
+        updateClearButtonVisibility();
       });
     }
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
         storageSet("pjr_auto", auto ? "1" : "0");
-        els.autostate.textContent = auto ? "on" : "off";
+      });
+    }
+
+    if (els.settings_default_sort) {
+      els.settings_default_sort.addEventListener("change", () => {
+        sortMode = els.settings_default_sort.value || "newest";
+        if (els.job_sort) els.job_sort.value = sortMode;
+        storageSet("pjr_sort", sortMode);
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.settings_keep_secondary) {
+      els.settings_keep_secondary.addEventListener("change", () => {
+        keepSecondaryFilters = !!els.settings_keep_secondary.checked;
+        storageSet("pjr_keep_secondary", keepSecondaryFilters ? "1" : "0");
+      });
+    }
+
+    if (els.settings_density) {
+      els.settings_density.addEventListener("change", () => {
+        uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
+        storageSet("pjr_density", uiDensity);
+        updateDensityUi();
       });
     }
 
@@ -1969,14 +2054,12 @@ function toggleAuto() {
     els.jobs_banner = document.getElementById("jobs_banner");
     els.jobs_loading = document.getElementById("jobs_loading");
 
-    els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
     els.job_sort = document.getElementById("job_sort");
     els.filter_has_result = document.getElementById("filter_has_result");
-    els.sticky_command = document.getElementById("sticky_command");
-    els.sticky_status = document.getElementById("sticky_status");
-    els.sticky_summary = document.getElementById("sticky_summary");
+    els.clear_filters = document.getElementById("clear_filters");
+    els.jobs_count = document.getElementById("jobs_count");
     els.main_header = document.getElementById("main_header");
 
     els.detail = document.getElementById("detail");
@@ -2026,7 +2109,15 @@ function toggleAuto() {
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
+    els.about_python = document.getElementById("about_python");
     els.about_curl = document.getElementById("about_curl");
+
+    els.settings_overlay = document.getElementById("settings_overlay");
+    els.settings_modal = document.getElementById("settings_modal");
+    els.settings_close = document.getElementById("settings_close");
+    els.settings_default_sort = document.getElementById("settings_default_sort");
+    els.settings_keep_secondary = document.getElementById("settings_keep_secondary");
+    els.settings_density = document.getElementById("settings_density");
 
     els.adv_overlay = document.getElementById("adv_overlay");
     els.adv_modal = document.getElementById("adv_modal");
@@ -2064,7 +2155,6 @@ function toggleAuto() {
 
     const savedAuto = storageGet("pjr_auto");
     if (savedAuto !== null) auto = (savedAuto === "1");
-    els.autostate.textContent = auto ? "on" : "off";
     if (els.auto) els.auto.checked = auto;
 
     const savedSearch = storageGet("pjr_search");
@@ -2074,9 +2164,18 @@ function toggleAuto() {
     if (savedSort) sortMode = savedSort;
     if (els.job_sort) els.job_sort.value = sortMode;
 
+    const savedKeepSecondary = storageGet("pjr_keep_secondary");
+    if (savedKeepSecondary !== null) keepSecondaryFilters = (savedKeepSecondary === "1");
+    if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
+
     const savedHasResult = storageGet("pjr_has_result");
-    if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
+    if (savedHasResult !== null && keepSecondaryFilters) filterHasResult = (savedHasResult === "1");
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
+
+    const savedDensity = storageGet("pjr_density");
+    if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";
+    if (els.settings_density) els.settings_density.value = uiDensity;
+    updateDensityUi();
 
     const savedFollow = storageGet("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
@@ -2102,6 +2201,8 @@ function toggleAuto() {
     _loadHighlightTerms();
     updateHighlightUi();
 
+    if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+
     const savedPane = storageGet("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";
     setPane(pane);
@@ -2109,18 +2210,6 @@ function toggleAuto() {
 
     applyLogStyle();
 
-    if (els.main_header && els.sticky_command) {
-      const syncSticky = () => {
-        const r = els.main_header.getBoundingClientRect();
-        const show = isNarrow() && r.bottom < 0;
-        els.sticky_command.hidden = !show;
-      };
-      window.addEventListener("scroll", syncSticky, { passive: true });
-      window.addEventListener("resize", syncSticky);
-      syncSticky();
-    }
-
-    updateStickySummary();
     setStatus("warn", "Connecting…");
     await refreshAll();
 
@@ -2129,6 +2218,7 @@ function toggleAuto() {
 
     setView(view);
     setTab(currentTab);
+    updateClearButtonVisibility();
     window.addEventListener("beforeunload", () => {
       if (tickTimer) window.clearTimeout(tickTimer);
       tickTimer = null;

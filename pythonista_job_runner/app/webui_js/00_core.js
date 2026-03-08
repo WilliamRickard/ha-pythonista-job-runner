@@ -19,6 +19,8 @@
   let view = "all";
   let sortMode = "newest";
   let filterHasResult = false;
+  let keepSecondaryFilters = true;
+  let uiDensity = "comfortable";
   let firstJobsLoad = true;
   let jobsViewState = "initial";
 
@@ -210,41 +212,12 @@ function parseUtcSeconds(v) {
     els.statusline.textContent = text;
     els.statuspill.classList.remove("ok", "err", "warn");
     if (kind) els.statuspill.classList.add(kind);
-    if (els.sticky_status) els.sticky_status.textContent = text;
   }
 
   function setLastUpdated(ts) {
     els.lastupdated.textContent = ts;
   }
 
-  /**
-   * Update the sticky summary text to reflect current view, sort, search and result-filter state.
-   *
-   * If the sticky summary element is not present, the function returns without action.
-   *
-   * The summary shows a base view label ("All jobs" or "State: <view>"), a human-friendly
-   * sort label ("Newest", "Oldest", "Active first" or "Errors first" for other modes),
-   * an optional search fragment ("Search: <query>") when a search is active, and an optional
-   * "Result ready" token when the result filter is enabled. Parts are joined with " · ".
-   */
-  function updateStickySummary() {
-    if (!els.sticky_summary) return;
-    const q = (els.search && els.search.value ? String(els.search.value).trim() : "");
-    const bits = [];
-    bits.push(view === "all" ? "All jobs" : `State: ${view}`);
-    const sortModeLabels = {
-      newest: "Newest",
-      oldest: "Oldest",
-      active: "Active first",
-    };
-    const sortLabel = Object.prototype.hasOwnProperty.call(sortModeLabels, sortMode)
-      ? sortModeLabels[sortMode]
-      : (sortMode ? String(sortMode) : "Errors first");
-    bits.push(sortLabel);
-    if (q) bits.push(`Search: ${q}`);
-    if (filterHasResult) bits.push("Result ready");
-    els.sticky_summary.textContent = bits.join(" · ");
-  }
 
   /**
    * Update live/paused UI controls to reflect the current follow and paused state.
@@ -455,7 +428,6 @@ function parseUtcSeconds(v) {
     storageSet("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
-    updateStickySummary();
   }
 
   function setTab(next) {
@@ -523,6 +495,20 @@ function parseUtcSeconds(v) {
   }
 
   
+
+  function updateDensityUi() {
+    if (document && document.body) document.body.dataset.density = uiDensity;
+  }
+
+  function updateClearButtonVisibility() {
+    if (!els.clear_filters || !els.search) return;
+    const hasSearch = !!String(els.search.value || "").trim();
+    const hasSecondary = !!filterHasResult;
+    const hasNonDefaultSort = sortMode !== "newest";
+    const hasStateFilter = view !== "all";
+    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter);
+  }
+
   function clearFilters() {
     els.search.value = "";
     setView("all");
@@ -534,13 +520,13 @@ function parseUtcSeconds(v) {
     storageSet("pjr_sort", sortMode);
     storageSet("pjr_has_result", "0");
     applyFilters();
-    updateStickySummary();
+    updateClearButtonVisibility();
   }
 
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary"
     ];
     for (const k of keys) storageRemove(k);
     toast("ok", "Reset", "UI settings cleared");

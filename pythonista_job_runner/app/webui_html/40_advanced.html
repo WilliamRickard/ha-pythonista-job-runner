@@ -1,25 +1,15 @@
-<!-- Section: Advanced settings panel -->
+<!-- Section: Advanced maintenance panel -->
   <div id="adv_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal mobile-panel" id="adv_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="adv_title" aria-describedby="adv_sub">
       <div class="modal-header">
         <div>
           <div class="modal-title" id="adv_title">Advanced</div>
-          <div class="modal-sub" id="adv_sub">Polling and maintenance</div>
+          <div class="modal-sub" id="adv_sub">Maintenance actions</div>
         </div>
-        <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced settings">Close</button>
+        <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced">Close</button>
       </div>
       <div class="modal-body">
         <details open>
-          <summary>Polling</summary>
-          <label class="tog"><input type="checkbox" id="auto"/> Auto refresh</label>
-          <div class="field adv-field">
-            <label for="pollms">Poll interval (ms)</label>
-            <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-            <div class="hint compact-hint">Lower intervals update faster but use more battery and network.</div>
-          </div>
-        </details>
-
-        <details>
           <summary>Maintenance</summary>
           <div class="actionsbar destructive-group">
             <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>

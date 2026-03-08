@@ -1,6 +1,6 @@
 function toggleAuto() {
     auto = !auto;
-    els.autostate.textContent = auto ? "on" : "off";
+    if (els.auto) els.auto.checked = auto;
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
   }
 
@@ -15,6 +15,8 @@ function toggleAuto() {
       const action = btn.getAttribute("data-action");
       try {
         if (action === "refresh") await refreshAll();
+        if (action === "open-settings") openSettings();
+        if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
@@ -29,6 +31,7 @@ function toggleAuto() {
         if (action === "find-prev") findPrev();
         if (action === "clear-search") clearSearch();
         if (action === "copy-curl") await copyCurl();
+        if (action === "copy-sample-task") await copySampleTask();
         if (action === "open-about") await openAbout();
         if (action === "close-about") closeAbout();
         if (action === "copy-base") await copyBase();
@@ -62,6 +65,12 @@ function toggleAuto() {
       });
     }
 
+    if (els.settings_overlay) {
+      els.settings_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.settings_overlay) closeSettings();
+      });
+    }
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -84,15 +93,27 @@ function toggleAuto() {
       els.adv_close.addEventListener("touchend", close, { passive: false });
     }
 
+    if (els.settings_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeSettings();
+      };
+      els.settings_close.addEventListener("click", close);
+      els.settings_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
+        if (!els.settings_overlay.hidden) closeSettings();
         return;
       }
       if (ev.key === "Tab") {
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
+        if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
       }
     });
 
@@ -103,13 +124,14 @@ function toggleAuto() {
     els.search.addEventListener("input", () => {
       storageSet("pjr_search", String(els.search.value || ""));
       applyFilters();
+      updateClearButtonVisibility();
     });
     if (els.job_sort) {
       els.job_sort.addEventListener("change", () => {
         sortMode = els.job_sort.value || "newest";
         storageSet("pjr_sort", sortMode);
         applyFilters();
-        updateStickySummary();
+        updateClearButtonVisibility();
       });
     }
     if (els.filter_has_result) {
@@ -117,14 +139,38 @@ function toggleAuto() {
         filterHasResult = !!els.filter_has_result.checked;
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
         applyFilters();
-        updateStickySummary();
+        updateClearButtonVisibility();
       });
     }
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
         storageSet("pjr_auto", auto ? "1" : "0");
-        els.autostate.textContent = auto ? "on" : "off";
+      });
+    }
+
+    if (els.settings_default_sort) {
+      els.settings_default_sort.addEventListener("change", () => {
+        sortMode = els.settings_default_sort.value || "newest";
+        if (els.job_sort) els.job_sort.value = sortMode;
+        storageSet("pjr_sort", sortMode);
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.settings_keep_secondary) {
+      els.settings_keep_secondary.addEventListener("change", () => {
+        keepSecondaryFilters = !!els.settings_keep_secondary.checked;
+        storageSet("pjr_keep_secondary", keepSecondaryFilters ? "1" : "0");
+      });
+    }
+
+    if (els.settings_density) {
+      els.settings_density.addEventListener("change", () => {
+        uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
+        storageSet("pjr_density", uiDensity);
+        updateDensityUi();
       });
     }
 
@@ -215,14 +261,12 @@ function toggleAuto() {
     els.jobs_banner = document.getElementById("jobs_banner");
     els.jobs_loading = document.getElementById("jobs_loading");
 
-    els.autostate = document.getElementById("autostate");
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
     els.job_sort = document.getElementById("job_sort");
     els.filter_has_result = document.getElementById("filter_has_result");
-    els.sticky_command = document.getElementById("sticky_command");
-    els.sticky_status = document.getElementById("sticky_status");
-    els.sticky_summary = document.getElementById("sticky_summary");
+    els.clear_filters = document.getElementById("clear_filters");
+    els.jobs_count = document.getElementById("jobs_count");
     els.main_header = document.getElementById("main_header");
 
     els.detail = document.getElementById("detail");
@@ -272,7 +316,15 @@ function toggleAuto() {
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");
     els.about_api = document.getElementById("about_api");
+    els.about_python = document.getElementById("about_python");
     els.about_curl = document.getElementById("about_curl");
+
+    els.settings_overlay = document.getElementById("settings_overlay");
+    els.settings_modal = document.getElementById("settings_modal");
+    els.settings_close = document.getElementById("settings_close");
+    els.settings_default_sort = document.getElementById("settings_default_sort");
+    els.settings_keep_secondary = document.getElementById("settings_keep_secondary");
+    els.settings_density = document.getElementById("settings_density");
 
     els.adv_overlay = document.getElementById("adv_overlay");
     els.adv_modal = document.getElementById("adv_modal");
@@ -310,7 +362,6 @@ function toggleAuto() {
 
     const savedAuto = storageGet("pjr_auto");
     if (savedAuto !== null) auto = (savedAuto === "1");
-    els.autostate.textContent = auto ? "on" : "off";
     if (els.auto) els.auto.checked = auto;
 
     const savedSearch = storageGet("pjr_search");
@@ -320,9 +371,18 @@ function toggleAuto() {
     if (savedSort) sortMode = savedSort;
     if (els.job_sort) els.job_sort.value = sortMode;
 
+    const savedKeepSecondary = storageGet("pjr_keep_secondary");
+    if (savedKeepSecondary !== null) keepSecondaryFilters = (savedKeepSecondary === "1");
+    if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
+
     const savedHasResult = storageGet("pjr_has_result");
-    if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
+    if (savedHasResult !== null && keepSecondaryFilters) filterHasResult = (savedHasResult === "1");
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
+
+    const savedDensity = storageGet("pjr_density");
+    if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";
+    if (els.settings_density) els.settings_density.value = uiDensity;
+    updateDensityUi();
 
     const savedFollow = storageGet("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
@@ -348,6 +408,8 @@ function toggleAuto() {
     _loadHighlightTerms();
     updateHighlightUi();
 
+    if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+
     const savedPane = storageGet("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";
     setPane(pane);
@@ -355,18 +417,6 @@ function toggleAuto() {
 
     applyLogStyle();
 
-    if (els.main_header && els.sticky_command) {
-      const syncSticky = () => {
-        const r = els.main_header.getBoundingClientRect();
-        const show = isNarrow() && r.bottom < 0;
-        els.sticky_command.hidden = !show;
-      };
-      window.addEventListener("scroll", syncSticky, { passive: true });
-      window.addEventListener("resize", syncSticky);
-      syncSticky();
-    }
-
-    updateStickySummary();
     setStatus("warn", "Connecting…");
     await refreshAll();
 
@@ -375,6 +425,7 @@ function toggleAuto() {
 
     setView(view);
     setTab(currentTab);
+    updateClearButtonVisibility();
     window.addEventListener("beforeunload", () => {
       if (tickTimer) window.clearTimeout(tickTimer);
       tickTimer = null;
