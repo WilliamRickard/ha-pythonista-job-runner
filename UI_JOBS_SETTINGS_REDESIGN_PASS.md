@@ -1,6 +1,7 @@
 # UI Jobs + Settings Redesign Pass (Living Plan)
 
 ## Current Jobs-flow problems
+
 1. Jobs subtitle text is redundant clutter.
 2. Sticky summary strip duplicates context and adds cognitive noise.
 3. `Newest` appears without clear sort affordance.
@@ -11,6 +12,7 @@
 8. Screen reads as compressed dashboard, not a calm mobile operations workflow.
 
 ## Controls/text to remove
+
 - Remove Jobs subtitle hint text.
 - Remove sticky command summary row from Jobs surface.
 - Remove passive header auto-refresh metadata line (keep only system facts there).
@@ -18,6 +20,7 @@
 - Remove ambiguous bare `Newest` semantics in favor of explicit `Sort` label.
 
 ## New Jobs information architecture
+
 - Jobs header row: `Jobs` + compact count.
 - Toolbar row: Search + conditional Clear + `Sort` label/select.
 - Primary filters row: All / Running / Queued / Errors / Done.
@@ -25,6 +28,7 @@
 - Immediate content area: job list or empty state with actionable next steps.
 
 ## Settings ownership decisions
+
 ### Belongs in Web UI Settings
 - Auto refresh toggle (UI behavior).
 - Poll interval (UI behavior).
@@ -38,6 +42,7 @@
 - Backend retention controls unless existing runtime-safe API exists (no new unsafe mutation added).
 
 ## Ordered milestones
+
 1. Remove redundant rows/text, simplify header secondary actions, quiet metadata, rebalance hierarchy.
 2. Rebuild Jobs list-first controls, explicit Sort, unified search/clear/filter system, preserve no-flicker polling behavior.
 3. Improve empty state, add copyable sample Python task, rewrite Help quick start with concrete success path and auth guidance.
@@ -45,6 +50,7 @@
 5. Shrink queue snapshot, tighten hierarchy/accessibility/spacing, provide viewport evidence (320/375/430 + wide), final truthfulness sweep.
 
 ## Files expected to change
+
 - `UI_JOBS_SETTINGS_REDESIGN_PASS.md`
 - `pythonista_job_runner/app/webui_html/00_shell.html`
 - `pythonista_job_runner/app/webui_html/10_overview.html`
@@ -63,11 +69,13 @@
 - `pythonista_job_runner/tests/test_webui_mobile_accessibility_and_detail.py`
 
 ## Validation commands per milestone
+
 - Milestone 1-2: `cd pythonista_job_runner && python app/webui_build.py --check`, `cd pythonista_job_runner && node --check app/webui.js`
 - Milestone 3-4: `cd pythonista_job_runner && pytest -q tests/test_webui_js_regressions.py tests/test_webui_mobile_accessibility_and_detail.py`
 - Milestone 5/final: `cd pythonista_job_runner && pytest -q tests/test_webui_*.py`
 
 ## Problem-to-implementation checklist
+
 - [x] Jobs subtitle removed.
 - [x] Sticky summary row removed.
 - [x] Sort control explicitly labeled `Sort`.
