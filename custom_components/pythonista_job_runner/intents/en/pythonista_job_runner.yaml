@@ -1,0 +1,22 @@
+language: "en"
+intents:
+  PythonistaRunnerJobsRunningIntent:
+    data:
+      - sentences:
+          - "how many pythonista jobs are running"
+          - "pythonista running jobs"
+  PythonistaRunnerQueueDepthIntent:
+    data:
+      - sentences:
+          - "how many pythonista jobs are queued"
+          - "pythonista queue depth"
+  PythonistaRunnerRefreshIntent:
+    data:
+      - sentences:
+          - "refresh pythonista runner"
+          - "update pythonista runner status"
+  PythonistaRunnerPurgeDoneIntent:
+    data:
+      - sentences:
+          - "purge completed pythonista jobs"
+          - "clean up finished pythonista jobs"

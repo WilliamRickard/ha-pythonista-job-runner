@@ -393,6 +393,8 @@ class Runner:
         )
 
         self._pending_slots = 0  # reserved queue slots during new_job initialisation
+        self._paused = False
+        self._pause_reason = ""
         self._status_write_warned: set[str] = set()
 
         # Centralised mutable job registry. Tests historically access Runner._jobs and
@@ -540,6 +542,24 @@ class Runner:
         except Exception:
             return
         self._write_status(j)
+
+
+    def pause_for_backup(self, reason: str = "backup") -> dict[str, object]:
+        """Pause acceptance of new jobs for backup operations."""
+        self._paused = True
+        self._pause_reason = str(reason or "backup")
+        return {"paused": True, "reason": self._pause_reason}
+
+    def resume_after_backup(self) -> dict[str, object]:
+        """Resume normal job intake after backup operations."""
+        self._paused = False
+        reason = self._pause_reason
+        self._pause_reason = ""
+        return {"paused": False, "previous_reason": reason}
+
+    def pause_status(self) -> dict[str, object]:
+        """Return current pause state used by backup flow."""
+        return {"paused": bool(self._paused), "reason": self._pause_reason}
 
     def support_bundle_dict(self) -> Dict[str, Any]:
         """Return redacted support-bundle payload for troubleshooting."""

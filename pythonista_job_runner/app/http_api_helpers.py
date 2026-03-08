@@ -71,5 +71,8 @@ def info_payload(version: str) -> dict[str, Any]:
             "purge": "POST /purge",
             "cancel": "POST /cancel/<job_id>",
             "delete": "DELETE /job/<job_id>",
+            "backup_pause": "POST /backup/pause",
+            "backup_resume": "POST /backup/resume",
+            "backup_status": "/backup/status.json",
         },
     }

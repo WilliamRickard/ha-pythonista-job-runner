@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
@@ -48,27 +49,41 @@ class RunnerClient:
         return headers
 
     def health(self) -> dict:
+        """Return API health payload."""
         return self._json_get("/health")
 
     def stats(self) -> dict:
+        """Return stats payload."""
         return self._json_get("/stats.json")
 
-    def purge(self, states: list[str], older_than_hours: int = 0, dry_run: bool = False) -> dict:
-        return self._json_post("/purge", {"states": states, "older_than_hours": older_than_hours, "dry_run": dry_run})
-    def purge(self, states: list[str], older_than_hours: int = 0, dry_run: bool = False) -> dict:
-        return self._json_post("/purge", {"states": states, "older_than_hours": older_than_hours, "dry_run": dry_run})
-
-    def jobs(self) -> dict:
     def jobs(self) -> dict:
         """Return current jobs payload."""
         return self._json_get("/jobs.json")
+
+    def info(self) -> dict:
+        """Return service info payload."""
+        return self._json_get("/info.json")
 
     def support_bundle(self) -> dict:
         """Return redacted support bundle from add-on API."""
         return self._json_get("/support_bundle.json")
 
-from urllib.parse import quote
+    def purge(self, states: list[str], older_than_hours: int = 0, dry_run: bool = False) -> dict:
+        """Purge jobs matching selected states."""
+        return self._json_post("/purge", {"states": states, "older_than_hours": older_than_hours, "dry_run": dry_run})
 
     def cancel(self, job_id: str) -> dict:
         """Cancel a job by id."""
         return self._json_post(f"/cancel/{quote(job_id, safe='')}", {})
+
+    def backup_pause(self) -> dict:
+        """Pause new-job intake for backup."""
+        return self._json_post("/backup/pause", {})
+
+    def backup_resume(self) -> dict:
+        """Resume new-job intake after backup."""
+        return self._json_post("/backup/resume", {})
+
+    def backup_status(self) -> dict:
+        """Return backup pause status."""
+        return self._json_get("/backup/status.json")
