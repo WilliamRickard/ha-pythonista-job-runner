@@ -1,3 +1,4 @@
+Version: 0.6.12-review-s05.1
 # S05 Full Web UI Review (Review-only pass)
 
 ## 1) Executive summary
@@ -54,7 +55,7 @@ This merged Step 5 review covered the full Web UI source system: generator/canon
 
 ## 3) Validation context
 
-Baseline full-repo validation is already recorded in `FULL_CODE_REVIEW_PLAN.md` and was not repeated.
+Baseline full-repo validation is already recorded in `reviews/FULL_CODE_REVIEW_PLAN.md` and was not repeated.
 
 Commands run for this Step 5 review:
 - `pytest -q pythonista_job_runner/tests/test_webui*.py` (pass: 44 passed)

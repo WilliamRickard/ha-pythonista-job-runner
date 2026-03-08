@@ -1,3 +1,4 @@
+Version: 0.6.12-review-s02.1
 # S02 HTTP API Review (Review-only pass)
 
 ## Executive summary
@@ -25,7 +26,7 @@ This Step 2 review covered the HTTP API/auth/helpers, audit logging, and support
 
 ## Validation context
 
-Baseline validations are already recorded in `FULL_CODE_REVIEW_PLAN.md` and were not re-run broadly in this slice.
+Baseline validations are already recorded in `reviews/FULL_CODE_REVIEW_PLAN.md` and were not re-run broadly in this slice.
 
 Commands executed for this Step 2 review:
 - `pytest -q pythonista_job_runner/tests/test_http_api_*.py pythonista_job_runner/tests/test_support_bundle.py pythonista_job_runner/tests/test_redaction.py` (pass: 25 passed)
