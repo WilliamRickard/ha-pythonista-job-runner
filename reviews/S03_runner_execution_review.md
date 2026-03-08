@@ -1,3 +1,4 @@
+Version: 0.6.12-review-s03.1
 # S03 Runner Execution Pipeline Review (Review-only pass)
 
 ## Executive summary
@@ -30,7 +31,7 @@ This Step 3 review covered the runner execution pipeline modules (executor/proce
 
 ## Validation context
 
-Baseline validations are already recorded in `FULL_CODE_REVIEW_PLAN.md`; they were not repeated broadly.
+Baseline validations are already recorded in `reviews/FULL_CODE_REVIEW_PLAN.md`; they were not repeated broadly.
 
 Commands executed for this Step 3 review:
 - `pytest -q pythonista_job_runner/tests/test_runner_core_process_and_notify.py pythonista_job_runner/tests/test_runner_core_outputs_and_load.py pythonista_job_runner/tests/test_redaction.py pythonista_job_runner/tests/test_job_runner.py pythonista_job_runner/tests/test_runner_core_regressions_apply.py` (pass: 14 passed)

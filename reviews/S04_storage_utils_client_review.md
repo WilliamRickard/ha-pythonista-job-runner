@@ -1,3 +1,4 @@
+Version: 0.6.12-review-s04.1
 # S04 Storage + Utilities/Client Review (Review-only pass)
 
 ## 1) Executive summary
@@ -33,7 +34,7 @@ This merged Step 4 review covered runner storage/lifecycle/persistence/housekeep
 
 ## 3) Validation context
 
-Baseline full-repo validations are already recorded in `FULL_CODE_REVIEW_PLAN.md` and were not repeated.
+Baseline full-repo validations are already recorded in `reviews/FULL_CODE_REVIEW_PLAN.md` and were not repeated.
 
 Commands executed for this merged Step 4 review:
 - `pytest -q pythonista_job_runner/tests/test_job_store_registry.py pythonista_job_runner/tests/test_backup_pause_resume.py pythonista_job_runner/tests/test_api_contract.py pythonista_job_runner/tests/test_pythonista_client.py pythonista_job_runner/tests/test_utils_zip_extract.py` (pass: 23 passed)

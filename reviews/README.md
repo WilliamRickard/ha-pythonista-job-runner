@@ -1,4 +1,4 @@
-Version: 0.6.12-review-readme.1
+Version: 0.6.12-review-readme.2
 # Code Review Artefacts
 
 This directory stores per-slice review artefacts for the Pythonista Job Runner review programme.
@@ -14,7 +14,7 @@ Each slice has two phases:
 2. **Apply-only phase**
    - Implements fixes from the review artefact
    - Must map each change back to finding IDs
-   - In this repo, apply status is recorded in `FULL_CODE_REVIEW_PLAN.md` unless a separate apply artefact is created explicitly
+   - In this repo, apply status is recorded in `reviews/FULL_CODE_REVIEW_PLAN.md` unless a separate apply artefact is created explicitly
 
 Review-only and apply-only work must remain separated.
 
