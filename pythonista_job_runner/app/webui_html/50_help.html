@@ -12,17 +12,23 @@
         <details open>
           <summary>Quick start</summary>
           <ol class="steps">
-            <li>Copy the Python sample below and run it from Pythonista with your add-on URL and token.</li>
-            <li>Return here and open the new job with <strong>View</strong>.</li>
-            <li>Success means the job shows <strong>done</strong> and a result zip link appears.</li>
+            <li>Copy the sample Python task and paste in your add-on URL and token if you are not using Ingress.</li>
+            <li>Run it from Pythonista, then return here and open the new job with <strong>View</strong>.</li>
+            <li>Success means the job reaches <strong>done</strong> and a result zip link appears.</li>
           </ol>
-          <div class="hint compact-hint">Token header <code>X-Runner-Token</code> is required for direct access. Ingress sessions usually provide auth automatically.</div>
+          <div class="hint compact-hint">Direct access needs an <code>X-Runner-Token</code> header. Ingress sessions usually provide auth automatically.</div>
           <div class="help-actions-row">
             <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
             <button type="button" class="small tertiary" data-action="copy-about-curl">Copy curl sample</button>
           </div>
-          <textarea id="about_python" rows="11" readonly aria-label="Python quick start sample"></textarea>
-          <textarea id="about_curl" rows="8" readonly aria-label="curl quick start sample"></textarea>
+          <details class="sample-panel" open>
+            <summary>Preview Python sample</summary>
+            <textarea id="about_python" rows="8" readonly aria-label="Python quick start sample"></textarea>
+          </details>
+          <details class="sample-panel">
+            <summary>curl alternative</summary>
+            <textarea id="about_curl" rows="6" readonly aria-label="curl quick start sample"></textarea>
+          </details>
         </details>
 
         <details open>
@@ -30,13 +36,13 @@
           <ul class="steps help-bullets">
             <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
             <li><strong>Unauthorized:</strong> verify <code>X-Runner-Token</code> and token value.</li>
-            <li><strong>No jobs:</strong> submit the sample task, then press header Refresh.</li>
+            <li><strong>No jobs:</strong> copy the sample task, run it, then use the header Refresh once if the list does not update automatically.</li>
           </ul>
         </details>
 
         <details>
           <summary>API reference</summary>
-          <div class="hint compact-hint">Use this for deeper endpoint inspection after quick start succeeds.</div>
+          <div class="hint compact-hint">Use this after quick start succeeds or when you need to inspect endpoints in more detail.</div>
           <div id="about_api" class="api-grid"></div>
 
           <div class="help-actions-row">

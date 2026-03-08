@@ -92,7 +92,7 @@
 }
 
 .modal-body{
-  padding: 12px;
+  padding: 10px 12px 14px;
   font-size: var(--fs-sm);
   line-height: 1.5;
   display:grid;
@@ -100,9 +100,9 @@
 }
 
 details{
-  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--panel2) 62%, transparent);
+  background: color-mix(in srgb, var(--panel2) 52%, transparent);
   padding: 8px 10px;
 }
 
@@ -153,6 +153,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   display:grid;
   grid-template-columns: 1fr;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .api-row{
@@ -203,9 +204,10 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 .compact-hint{margin-top:8px;}
 .help-actions-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-#about_curl{margin-top:10px;}
+#about_curl{margin-top:8px;}
 .adv-field{margin-top:10px;}
-
-#about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;}
+.sample-panel{margin-top:8px;}
+.sample-panel textarea{margin-top:8px;}
+#about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;max-height:220px;font-size:12px;line-height:1.4;border-radius:12px;background:color-mix(in srgb, var(--panel2) 72%, transparent);}
 #about_api .api-path{overflow-wrap:anywhere;}
 .help-actions-row button{min-height:40px;}

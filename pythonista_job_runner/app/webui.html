@@ -99,8 +99,8 @@ a:hover{ text-decoration: underline; }
 
 .brand h1{
   margin: 0;
-  font-size: 22px;
-  letter-spacing: 0.2px;
+  font-size: 20px;
+  letter-spacing: 0.1px;
 }
 
 .subline{
@@ -142,8 +142,8 @@ a:hover{ text-decoration: underline; }
 }
 
 .monitor-header{
-  align-items:center;
-  margin-bottom: 6px;
+  align-items:flex-start;
+  margin-bottom: 4px;
 }
 
 .monitor-subline{
@@ -156,10 +156,10 @@ a:hover{ text-decoration: underline; }
 }
 
 .header-meta{
-  margin-bottom: 8px;
-  border: 1px solid var(--line);
+  margin-bottom: 6px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   border-radius: 9px;
-  background: color-mix(in srgb, var(--panel2) 62%, transparent);
+  background: color-mix(in srgb, var(--panel2) 42%, transparent);
   padding: 4px 8px;
 }
 
@@ -355,15 +355,16 @@ label{
 .kpis{
   display:grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
 }
 
 .kpi{
-  background: color-mix(in srgb, var(--panel2) 55%, transparent);
-  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: color-mix(in srgb, var(--panel2) 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 56%, transparent);
   border-radius: 10px;
-  padding: 6px 8px;
+  padding: 5px 7px;
   text-align:left;
+  min-height: 64px;
 }
 
 .kpi .label{
@@ -372,9 +373,9 @@ label{
 }
 
 .kpi .value{
-  margin-top: 2px;
-  font-size: 16px;
-  letter-spacing: 0.2px;
+  margin-top: 1px;
+  font-size: 15px;
+  letter-spacing: 0.1px;
 }
 
 .kpi.running .value{ color: var(--link); }
@@ -533,8 +534,9 @@ label{
 }
 
 .queue-compact{
-  border-color: color-mix(in srgb, var(--line) 48%, transparent);
+  border-color: color-mix(in srgb, var(--line) 36%, transparent);
   box-shadow: none;
+  opacity: 0.96;
 }
 
 .queue-compact .card-header{
@@ -543,7 +545,7 @@ label{
 }
 
 .queue-compact .card-body.compact{
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .jobs-header h2{
@@ -559,25 +561,26 @@ label{
 }
 
 .jobs-body{
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;padding:6px 0 4px;}
-.searchbar-row{display:flex;align-items:flex-end;gap:8px;}
+.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;padding:4px 0 2px;}
+.searchbar-row{display:flex;align-items:center;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;}
 .clear-inline{flex:0 0 auto;min-width:64px;}
-.sort-wrap{display:flex;flex-direction:column;gap:4px;flex:0 0 124px;}
-.sort-wrap label{margin:0;color:var(--muted);font-size:12px;}
 .state-filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
 .state-filters .chip{flex:0 0 auto;padding:8px 11px;min-height:40px;border-radius:10px;}
-.table-region{min-height:300px;display:flex;flex-direction:column;}
+.table-region{min-height:260px;display:flex;flex-direction:column;}
 .destructive-group button{border-color:rgba(255,92,92,0.6);}
 .utility-group button{background:transparent;color:var(--muted);}
-.jobs-primary-row{display:flex;gap:8px;justify-content:space-between;align-items:center;}
-#job_sort{min-height:44px;border-radius:10px;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);max-width:140px;}
+.jobs-primary-row{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;}
+.jobs-secondary-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+.sort-inline{display:inline-flex;align-items:center;gap:8px;margin:0;padding:0;color:var(--muted);font-size:12px;}
+.sort-inline span{display:inline-block;font-weight:650;color:var(--muted);}
+#job_sort{min-height:40px;border-radius:10px;padding:7px 10px;background:color-mix(in srgb, var(--panel2) 65%, transparent);color:var(--text);border:1px solid color-mix(in srgb, var(--line) 74%, transparent);min-width:138px;}
 .secondary-panel{position:relative;border:0;padding:0;background:transparent;}
-.secondary-panel summary{list-style:none;cursor:pointer;padding:7px 10px;border:1px solid color-mix(in srgb, var(--line) 78%, transparent);border-radius:10px;background:transparent;font-size:12px;color:var(--muted);display:inline-flex;}
-.secondary-panel[open] .secondary-panel-body{margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:7px 10px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:10px;background:transparent;font-size:12px;color:var(--muted);display:inline-flex;}
+.secondary-panel[open] .secondary-panel-body{margin-top:6px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:10px;padding:8px 10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
@@ -1017,7 +1020,7 @@ pre.nowrap{ white-space: pre; }
 }
 
 .modal-body{
-  padding: 12px;
+  padding: 10px 12px 14px;
   font-size: var(--fs-sm);
   line-height: 1.5;
   display:grid;
@@ -1025,9 +1028,9 @@ pre.nowrap{ white-space: pre; }
 }
 
 details{
-  border: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--panel2) 62%, transparent);
+  background: color-mix(in srgb, var(--panel2) 52%, transparent);
   padding: 8px 10px;
 }
 
@@ -1078,6 +1081,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   display:grid;
   grid-template-columns: 1fr;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .api-row{
@@ -1128,10 +1132,11 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 .compact-hint{margin-top:8px;}
 .help-actions-row{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
-#about_curl{margin-top:10px;}
+#about_curl{margin-top:8px;}
 .adv-field{margin-top:10px;}
-
-#about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;}
+.sample-panel{margin-top:8px;}
+.sample-panel textarea{margin-top:8px;}
+#about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;max-height:220px;font-size:12px;line-height:1.4;border-radius:12px;background:color-mix(in srgb, var(--panel2) 72%, transparent);}
 #about_api .api-path{overflow-wrap:anywhere;}
 .help-actions-row button{min-height:40px;}
 :focus-visible{
@@ -1148,11 +1153,14 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 720px){
   .monitor-header{gap:8px;margin-bottom:6px;}
-  .header-actions{width:100%;justify-content:flex-start;}
+  .header-actions{width:100%;justify-content:flex-start;gap:6px;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
   .clear-inline{padding:10px 11px;min-width:68px;}
   .kpis{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .jobs-primary-row{gap:8px;}
+  .jobs-secondary-row{width:100%;justify-content:flex-start;}
+  .sort-inline{width:auto;}
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
   .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
@@ -1178,14 +1186,13 @@ details[open] summary::after{ transform: rotate(0deg); }
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
   .jobs-primary-row{gap:6px;}
-  .sort-wrap{flex:0 0 118px;}
-  #job_sort{max-width:118px;}
+  .jobs-secondary-row{gap:6px;}
+  #job_sort{min-width:122px;max-width:122px;}
 }
 
 @media (max-width: 360px){
   .searchbar-row{gap:6px;}
-  .sort-wrap{flex:0 0 108px;}
-  #job_sort{max-width:108px;}
+  #job_sort{min-width:112px;max-width:112px;}
 }
 
   </style>
@@ -1208,7 +1215,6 @@ details[open] summary::after{ transform: rotate(0deg); }
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
         <button type="button" class="linkbtn tertiary" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
         <button type="button" class="linkbtn tertiary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
-        <button type="button" class="linkbtn tertiary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced maintenance">Advanced</button>
       </div>
     </header>
 
@@ -1264,7 +1270,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 <!-- Section: Jobs list and filters -->
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
-          <h2>Jobs <span class="jobs-count" id="jobs_count" aria-live="polite">0</span></h2>
+          <h2>Jobs</h2>
         </div>
         <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
@@ -1283,15 +1289,6 @@ details[open] summary::after{ transform: rotate(0deg); }
               <label for="search" class="sr-only">Search jobs</label>
               <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
               <button type="button" class="small tertiary clear-inline" data-action="clear-filters" id="clear_filters" aria-label="Clear search and filters" hidden>Clear</button>
-              <div class="sort-wrap">
-                <label for="job_sort">Sort</label>
-                <select id="job_sort" aria-label="Sort jobs">
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="active">Active first</option>
-                  <option value="errors">Errors first</option>
-                </select>
-              </div>
             </div>
 
             <div class="jobs-primary-row" aria-label="Primary jobs controls">
@@ -1302,14 +1299,24 @@ details[open] summary::after{ transform: rotate(0deg); }
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-            </div>
-
-            <details class="secondary-panel">
-              <summary>Filters</summary>
-              <div class="secondary-panel-body">
-                <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+              <div class="jobs-secondary-row">
+                <label class="sort-inline" for="job_sort">
+                  <span>Sort</span>
+                  <select id="job_sort" aria-label="Sort jobs">
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="active">Active first</option>
+                    <option value="errors">Errors first</option>
+                  </select>
+                </label>
+                <details class="secondary-panel">
+                  <summary>More filters</summary>
+                  <div class="secondary-panel-body">
+                    <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                  </div>
+                </details>
               </div>
-            </details>
+            </div>
           </div>
 
           <div class="table-region" aria-live="polite">
@@ -1332,7 +1339,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
               <div id="empty_title" class="empty-title">No jobs yet</div>
-              <div id="empty_body" class="empty-body">Run a sample task to confirm setup, then open job details.</div>
+              <div id="empty_body" class="empty-body">Run the sample task to confirm setup, then open the new job when it appears.</div>
               <div class="help-actions-row">
                 <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
                 <button type="button" class="small tertiary" data-action="open-about">Open quick start</button>
@@ -1537,6 +1544,13 @@ details[open] summary::after{ transform: rotate(0deg); }
             </select>
           </div>
         </details>
+        <details>
+          <summary>Maintenance</summary>
+          <div class="hint compact-hint">Advanced cleanup and maintenance actions live here so the main header stays focused on jobs.</div>
+          <div class="help-actions-row">
+            <button type="button" class="small tertiary" data-action="open-advanced">Open maintenance tools</button>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -1554,17 +1568,23 @@ details[open] summary::after{ transform: rotate(0deg); }
         <details open>
           <summary>Quick start</summary>
           <ol class="steps">
-            <li>Copy the Python sample below and run it from Pythonista with your add-on URL and token.</li>
-            <li>Return here and open the new job with <strong>View</strong>.</li>
-            <li>Success means the job shows <strong>done</strong> and a result zip link appears.</li>
+            <li>Copy the sample Python task and paste in your add-on URL and token if you are not using Ingress.</li>
+            <li>Run it from Pythonista, then return here and open the new job with <strong>View</strong>.</li>
+            <li>Success means the job reaches <strong>done</strong> and a result zip link appears.</li>
           </ol>
-          <div class="hint compact-hint">Token header <code>X-Runner-Token</code> is required for direct access. Ingress sessions usually provide auth automatically.</div>
+          <div class="hint compact-hint">Direct access needs an <code>X-Runner-Token</code> header. Ingress sessions usually provide auth automatically.</div>
           <div class="help-actions-row">
             <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
-            <button type="button" class="small tertiary" data-action="copy-curl">Copy curl sample</button>
+            <button type="button" class="small tertiary" data-action="copy-about-curl">Copy curl sample</button>
           </div>
-          <textarea id="about_python" rows="11" readonly aria-label="Python quick start sample"></textarea>
-          <textarea id="about_curl" rows="8" readonly aria-label="curl quick start sample"></textarea>
+          <details class="sample-panel" open>
+            <summary>Preview Python sample</summary>
+            <textarea id="about_python" rows="8" readonly aria-label="Python quick start sample"></textarea>
+          </details>
+          <details class="sample-panel">
+            <summary>curl alternative</summary>
+            <textarea id="about_curl" rows="6" readonly aria-label="curl quick start sample"></textarea>
+          </details>
         </details>
 
         <details open>
@@ -1572,13 +1592,13 @@ details[open] summary::after{ transform: rotate(0deg); }
           <ul class="steps help-bullets">
             <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
             <li><strong>Unauthorized:</strong> verify <code>X-Runner-Token</code> and token value.</li>
-            <li><strong>No jobs:</strong> submit the sample task, then press header Refresh.</li>
+            <li><strong>No jobs:</strong> copy the sample task, run it, then use the header Refresh once if the list does not update automatically.</li>
           </ul>
         </details>
 
         <details>
           <summary>API reference</summary>
-          <div class="hint compact-hint">Use this for deeper endpoint inspection after quick start succeeds.</div>
+          <div class="hint compact-hint">Use this after quick start succeeds or when you need to inspect endpoints in more detail.</div>
           <div id="about_api" class="api-grid"></div>
 
           <div class="help-actions-row">
@@ -2592,7 +2612,7 @@ function applyFilters() {
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
-            emptyAction.textContent = "Copy sample Python task, run it in Pythonista, then open the new job.";
+            emptyAction.textContent = "Copy the sample task, run it in Pythonista, then open the new job.";
           }
         }
       }
@@ -2776,16 +2796,32 @@ function applyFilters() {
 
 
   async function copySampleTask() {
-    if (!els.about_python?.value) {
+    const txt = (els.about_python && els.about_python.value) ? els.about_python.value : "";
+    if (!txt) {
       await loadInfo();
     }
-    const code = els.about_python?.value || "";
+    const code = (els.about_python && els.about_python.value) ? els.about_python.value : "";
     if (!code) {
       toast("err", "No sample available", "Could not prepare sample Python task");
       return;
     }
     await copyTextToClipboard(code);
     toast("ok", "Copied", "Sample Python task copied");
+  }
+
+
+  async function copyAboutCurl() {
+    const txt = (els.about_curl && els.about_curl.value) ? els.about_curl.value : "";
+    if (!txt) {
+      await loadInfo();
+    }
+    const code = (els.about_curl && els.about_curl.value) ? els.about_curl.value : "";
+    if (!code) {
+      toast("err", "No sample available", "Could not prepare curl sample");
+      return;
+    }
+    await copyTextToClipboard(code);
+    toast("ok", "Copied", "curl sample copied");
   }
 
   let _aboutReturnFocus = null;
@@ -3427,6 +3463,7 @@ function toggleAuto() {
         if (action === "clear-search") clearSearch();
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
+        if (action === "copy-about-curl") await copyAboutCurl();
         if (action === "open-about") await openAbout();
         if (action === "close-about") closeAbout();
         if (action === "copy-base") await copyBase();

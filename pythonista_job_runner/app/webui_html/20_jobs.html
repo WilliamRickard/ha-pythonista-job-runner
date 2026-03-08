@@ -1,7 +1,7 @@
 <!-- Section: Jobs list and filters -->
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
-          <h2>Jobs <span class="jobs-count" id="jobs_count" aria-live="polite">0</span></h2>
+          <h2>Jobs</h2>
         </div>
         <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
@@ -20,15 +20,6 @@
               <label for="search" class="sr-only">Search jobs</label>
               <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
               <button type="button" class="small tertiary clear-inline" data-action="clear-filters" id="clear_filters" aria-label="Clear search and filters" hidden>Clear</button>
-              <div class="sort-wrap">
-                <label for="job_sort">Sort</label>
-                <select id="job_sort" aria-label="Sort jobs">
-                  <option value="newest">Newest first</option>
-                  <option value="oldest">Oldest first</option>
-                  <option value="active">Active first</option>
-                  <option value="errors">Errors first</option>
-                </select>
-              </div>
             </div>
 
             <div class="jobs-primary-row" aria-label="Primary jobs controls">
@@ -39,14 +30,24 @@
                 <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
                 <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
               </div>
-            </div>
-
-            <details class="secondary-panel">
-              <summary>Filters</summary>
-              <div class="secondary-panel-body">
-                <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+              <div class="jobs-secondary-row">
+                <label class="sort-inline" for="job_sort">
+                  <span>Sort</span>
+                  <select id="job_sort" aria-label="Sort jobs">
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="active">Active first</option>
+                    <option value="errors">Errors first</option>
+                  </select>
+                </label>
+                <details class="secondary-panel">
+                  <summary>More filters</summary>
+                  <div class="secondary-panel-body">
+                    <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                  </div>
+                </details>
               </div>
-            </details>
+            </div>
           </div>
 
           <div class="table-region" aria-live="polite">
@@ -69,7 +70,7 @@
 
             <div id="empty" class="empty" role="status" aria-live="polite" hidden>
               <div id="empty_title" class="empty-title">No jobs yet</div>
-              <div id="empty_body" class="empty-body">Run a sample task to confirm setup, then open job details.</div>
+              <div id="empty_body" class="empty-body">Run the sample task to confirm setup, then open the new job when it appears.</div>
               <div class="help-actions-row">
                 <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
                 <button type="button" class="small tertiary" data-action="open-about">Open quick start</button>

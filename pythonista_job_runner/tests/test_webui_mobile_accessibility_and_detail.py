@@ -76,7 +76,7 @@ def test_bundle_has_sort_secondary_filters_and_no_sticky_summary_row() -> None:
     html = build_webui()
 
     assert 'id="job_sort"' in html
-    assert 'for="job_sort">Sort<' in html
+    assert 'class="sort-inline" for="job_sort"' in html
     assert 'id="filter_has_result"' in html
     assert 'id="sticky_command"' not in html
     assert "Search, filter, sort, then open details." not in html
@@ -133,4 +133,5 @@ def test_single_primary_refresh_and_secondary_header_actions() -> None:
     assert html.count('data-action="refresh"') == 1
     assert 'class="linkbtn tertiary" data-action="open-settings"' in html
     assert 'class="linkbtn tertiary" data-action="open-about"' in html
-    assert 'class="linkbtn tertiary" data-action="open-advanced"' in html
+    assert 'class="linkbtn tertiary" data-action="open-settings"' in html
+    assert 'data-action="open-advanced"' in html

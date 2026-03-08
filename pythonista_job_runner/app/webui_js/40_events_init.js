@@ -32,6 +32,7 @@ function toggleAuto() {
         if (action === "clear-search") clearSearch();
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
+        if (action === "copy-about-curl") await copyAboutCurl();
         if (action === "open-about") await openAbout();
         if (action === "close-about") closeAbout();
         if (action === "copy-base") await copyBase();
