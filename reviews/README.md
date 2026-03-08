@@ -1,5 +1,6 @@
-Version: 0.6.12-review-readme.2
 # Code Review Artefacts
+
+Version: 0.6.12-review-readme.2
 
 This directory stores per-slice review artefacts for the Pythonista Job Runner review programme.
 
