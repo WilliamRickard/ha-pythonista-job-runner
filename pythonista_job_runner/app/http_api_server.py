@@ -206,6 +206,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/support_bundle.json":
             self._json(200, runner.support_bundle_dict())
             return
+        if path == "/backup/status.json":
+            self._json(200, runner.pause_status())
+            return
         if path.startswith("/job/") and path.endswith(".json"):
             j = self._get_job_or_404("/job/", ".json")
             if j:
@@ -306,6 +309,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/run":
             self._handle_run_post()
             return
+        if path == "/backup/pause":
+            self._handle_backup_pause_post()
+            return
+        if path == "/backup/resume":
+            self._handle_backup_resume_post()
+            return
         self._json(404, {"error": "not_found"})
 
     def _handle_cancel_post(self) -> None:
@@ -398,6 +407,17 @@ class Handler(BaseHTTPRequestHandler):
 
         self._json(202, {"job_id": j.job_id, "tail_url": f"/tail/{j.job_id}.json", "result_url": f"/result/{j.job_id}.zip", "jobs_url": "/jobs.json"})
 
+
+
+    def _handle_backup_pause_post(self) -> None:
+        if not self._require_auth():
+            return
+        self._json(200, self.server.runner.pause_for_backup(reason="ha_backup"))
+
+    def _handle_backup_resume_post(self) -> None:
+        if not self._require_auth():
+            return
+        self._json(200, self.server.runner.resume_after_backup())
 
     def do_DELETE(self) -> None:  # noqa: N802
         path = urlparse(self.path).path

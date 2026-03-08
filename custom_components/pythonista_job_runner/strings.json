@@ -7,14 +7,24 @@
         "data": {
           "base_url": "Base URL",
           "token": "Access token",
-          "verify_ssl": "Verify TLS certificate",
-          "scan_interval": "Polling interval (seconds)",
-          "create_repairs": "Create Repairs issues for connectivity failures"
+          "verify_ssl": "Verify TLS certificate"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Pythonista Job Runner",
+        "description": "Update connection details without removing the integration.",
+        "data": {
+          "base_url": "Base URL",
+          "token": "Access token",
+          "verify_ssl": "Verify TLS certificate"
         }
       }
     },
     "error": {
       "cannot_connect": "Failed to connect to the add-on endpoint"
+    },
+    "abort": {
+      "reconfigure_successful": "Settings updated successfully"
     }
   },
   "options": {
@@ -23,7 +33,10 @@
         "title": "Pythonista Job Runner options",
         "data": {
           "scan_interval": "Polling interval (seconds)",
-          "create_repairs": "Create Repairs issues for connectivity failures"
+          "create_repairs": "Create Repairs issues for connectivity failures",
+          "notify_policy": "Notification policy",
+          "notify_target": "Notify service target (domain.service, optional)",
+          "notify_throttle_seconds": "Notification suppression window (seconds)"
         }
       }
     }

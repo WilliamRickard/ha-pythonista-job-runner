@@ -2,62 +2,75 @@
   "config": {
     "step": {
       "user": {
-        "title": "Conectar a Pythonista Job Runner",
-        "description": "Configura el acceso al endpoint de la API del complemento.",
+        "title": "Connect to Pythonista Job Runner",
+        "description": "Configure access to the add-on API endpoint.",
         "data": {
-          "base_url": "URL base",
-          "token": "Token de acceso",
-          "verify_ssl": "Verificar certificado TLS",
-          "scan_interval": "Intervalo de sondeo (segundos)",
-          "create_repairs": "Crear incidencias de Reparaciones para fallos de conectividad"
+          "base_url": "Base URL",
+          "token": "Access token",
+          "verify_ssl": "Verify TLS certificate"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Pythonista Job Runner",
+        "description": "Update connection details without removing the integration.",
+        "data": {
+          "base_url": "Base URL",
+          "token": "Access token",
+          "verify_ssl": "Verify TLS certificate"
         }
       }
     },
     "error": {
-      "cannot_connect": "No se pudo conectar al endpoint del complemento"
+      "cannot_connect": "Failed to connect to the add-on endpoint"
+    },
+    "abort": {
+      "reconfigure_successful": "Settings updated successfully"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Opciones de Pythonista Job Runner",
+        "title": "Pythonista Job Runner options",
         "data": {
-          "scan_interval": "Intervalo de sondeo (segundos)",
-          "create_repairs": "Crear incidencias de Reparaciones para fallos de conectividad"
+          "scan_interval": "Polling interval (seconds)",
+          "create_repairs": "Create Repairs issues for connectivity failures",
+          "notify_policy": "Notification policy",
+          "notify_target": "Notify service target (domain.service, optional)",
+          "notify_throttle_seconds": "Notification suppression window (seconds)"
         }
       }
     }
   },
   "issues": {
     "endpoint_unreachable": {
-      "title": "No se puede acceder al endpoint de Pythonista Job Runner",
-      "description": "La integración no puede alcanzar el endpoint configurado. Detalles: {detail}. Abre la configuración de la integración y verifica host, puerto y token."
+      "title": "Pythonista Job Runner endpoint is unreachable",
+      "description": "The integration cannot reach the configured endpoint. Details: {detail}. Open integration settings and verify host, port, and token."
     },
     "auth_failed": {
-      "title": "Falló la autenticación de Pythonista Job Runner",
-      "description": "La integración no pudo autenticarse contra el endpoint. Detalles: {detail}. Actualiza el token de acceso configurado."
+      "title": "Pythonista Job Runner authentication failed",
+      "description": "The integration could not authenticate against the endpoint. Details: {detail}. Update the configured access token."
     }
   },
   "services": {
     "purge_jobs": {
-      "name": "Purgar trabajos del runner",
-      "description": "Elimina trabajos de la cola/historial del complemento."
+      "name": "Purge runner jobs",
+      "description": "Purge jobs from the add-on queue/history."
     },
     "purge_done_jobs": {
-      "name": "Purgar trabajos completados",
-      "description": "Elimina trabajos en estado done."
+      "name": "Purge completed jobs",
+      "description": "Purge jobs currently in done state."
     },
     "purge_failed_jobs": {
-      "name": "Purgar trabajos fallidos",
-      "description": "Elimina trabajos en estado error."
+      "name": "Purge failed jobs",
+      "description": "Purge jobs currently in error state."
     },
     "refresh": {
-      "name": "Actualizar datos del runner",
-      "description": "Lanza una actualización inmediata del coordinador para una entrada de integración."
+      "name": "Refresh runner data",
+      "description": "Trigger an immediate coordinator refresh for one integration entry."
     },
     "cancel_job": {
-      "name": "Cancelar trabajo",
-      "description": "Solicita la cancelación de un trabajo en cola o en ejecución."
+      "name": "Cancel job",
+      "description": "Request cancellation of a queued or running job."
     }
   }
 }

@@ -36,6 +36,8 @@ class JobLifecycle:
 
     def new_job(self, zip_bytes: bytes | Path, headers: Any, client_ip: str) -> object:
         runner = self._runner
+        if bool(getattr(runner, "_paused", False)):
+            raise RuntimeError("runner_paused_for_backup")
         if bool(getattr(runner, "_is_root", False)) and (
             getattr(runner, "_job_uid", None) is None or getattr(runner, "_job_gid", None) is None
         ):
