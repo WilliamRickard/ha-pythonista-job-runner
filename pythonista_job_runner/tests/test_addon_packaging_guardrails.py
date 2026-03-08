@@ -104,3 +104,10 @@ def test_docs_include_architecture_validation_scope_note() -> None:
 
     assert "automated test suite in this repository executes on `amd64` CI runners" in root_readme
     assert "automated runtime tests in this repository execute on `amd64` CI runners" in docs
+
+
+def test_custom_apparmor_allows_supervisor_init_entrypoint() -> None:
+    profile = _read("pythonista_job_runner/apparmor.txt")
+
+    assert "/init rix," in profile
+    assert "/run.sh rix," in profile
