@@ -1,4 +1,4 @@
-# Version: 0.6.12-supportbundle.1
+# Version: 0.6.12-supportbundle.2
 """Support-bundle builders with redaction-safe diagnostics content."""
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ SECRET_KEYS = {
 
 
 def _redact_key_value(key: str, value: Any) -> Any:
-    """Redact known secret-like keys in nested mappings/lists."""
+    """Redact known secret-like keys in nested mappings and lists."""
     key_l = str(key).lower()
     if any(secret in key_l for secret in SECRET_KEYS):
         return "***REDACTED***"
@@ -37,7 +37,7 @@ def redacted_options_summary(opts: dict[str, Any]) -> dict[str, Any]:
 
 
 def _tail_jsonl(path: Path, max_lines: int = 30) -> list[dict[str, Any]]:
-    """Read up to ``max_lines`` JSONL entries from end of file."""
+    """Read up to ``max_lines`` JSONL entries from the end of file."""
     if not path.exists():
         return []
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -53,7 +53,7 @@ def _tail_jsonl(path: Path, max_lines: int = 30) -> list[dict[str, Any]]:
 
 
 def build_support_bundle(runner: Any) -> dict[str, Any]:
-    """Build redacted support bundle payload for add-on troubleshooting."""
+    """Build a redacted support bundle payload for add-on troubleshooting."""
     jobs = []
     for job in runner.list_jobs()[:20]:
         status = job.status_dict()
@@ -91,9 +91,15 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
         "stats": runner.stats_dict(),
         "queue": {
             "jobs_total": len(runner.list_jobs()),
-            "jobs_running": sum(1 for j in runner.list_jobs() if getattr(j, "state", "") == "running"),
-            "jobs_queued": sum(1 for j in runner.list_jobs() if getattr(j, "state", "") == "queued"),
-            "jobs_error": sum(1 for j in runner.list_jobs() if getattr(j, "state", "") == "error"),
+            "jobs_running": sum(
+                1 for job in runner.list_jobs() if getattr(job, "state", "") == "running"
+            ),
+            "jobs_queued": sum(
+                1 for job in runner.list_jobs() if getattr(job, "state", "") == "queued"
+            ),
+            "jobs_error": sum(
+                1 for job in runner.list_jobs() if getattr(job, "state", "") == "error"
+            ),
         },
         "recent_jobs": jobs,
         "audit_recent": audit_recent,
