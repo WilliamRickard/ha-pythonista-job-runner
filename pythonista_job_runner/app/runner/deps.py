@@ -28,9 +28,10 @@ def maybe_install_requirements(runner: object, j: object, env: Dict[str, str]) -
     if not bool(getattr(runner, "install_requirements", False)):
         return None
 
+    is_root = bool(getattr(runner, "_is_root", False))
     job_uid = getattr(runner, "_job_uid", None)
     job_gid = getattr(runner, "_job_gid", None)
-    if job_uid is None or job_gid is None:
+    if is_root and (job_uid is None or job_gid is None):
         return "pip_install_disabled_no_job_user"
 
     work_dir = getattr(j, "work_dir")

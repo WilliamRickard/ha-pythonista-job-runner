@@ -4,6 +4,7 @@ from __future__ import annotations
 import ipaddress
 import json
 import os
+import queue
 import re
 import sys
 import threading
@@ -239,7 +240,7 @@ def _ha_persistent_notification(title: str, message: str, notification_id: Optio
 class Runner:
     """Main coordinator object used by the HTTP API server."""
 
-    def __init__(self, opts: Dict[str, Any]) -> None:
+    def __init__(self, opts: Dict[str, Any], *, start_reaper: bool = True) -> None:
         self._opts = opts
 
         # These instance attributes capture module-level constants at construction time so
@@ -415,9 +416,16 @@ class Runner:
         self._jobs_bytes_cache_ts = 0.0
         self._jobs_bytes_cache = 0
 
+        self._stop_event = threading.Event()
+        self._reaper_thread: threading.Thread | None = None
+        self._telemetry_queue: queue.Queue[tuple[str, str]] = queue.Queue(maxsize=256)
+        self._telemetry_thread: threading.Thread | None = None
+
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
         self._load_jobs_from_disk()
-        threading.Thread(target=self._reaper, daemon=True).start()
+        if start_reaper:
+            self._reaper_thread = threading.Thread(target=self._reaper, name="runner-reaper", daemon=True)
+            self._reaper_thread.start()
 
     @property
     def _lock(self) -> threading.Lock:
@@ -565,13 +573,55 @@ class Runner:
         """Return redacted support-bundle payload for troubleshooting."""
         return build_support_bundle(self)
 
+    def _start_telemetry_worker_if_needed(self) -> None:
+        """Start the telemetry worker lazily when telemetry publication is enabled."""
+        th = self._telemetry_thread
+        if th is not None and th.is_alive():
+            return
+        self._telemetry_thread = threading.Thread(target=self._telemetry_worker_loop, name="publish-telemetry", daemon=True)
+        self._telemetry_thread.start()
+
+    def _telemetry_worker_loop(self) -> None:
+        """Drain queued telemetry events and publish them best-effort."""
+        while True:
+            if self._stop_event.is_set() and self._telemetry_queue.empty():
+                return
+            try:
+                topic, body = self._telemetry_queue.get(timeout=0.5)
+            except queue.Empty:
+                continue
+            try:
+                req = Request(
+                    url=f"{SUPERVISOR_CORE_API}/services/mqtt/publish",
+                    data=json.dumps({"topic": topic, "payload": body, "retain": False}).encode("utf-8"),
+                    headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}", "Content-Type": "application/json"},
+                    method="POST",
+                )
+                # Use a reduced timeout here so that even the background
+                # worker does not block for an extended period on network I/O.
+                with urlopen(req, timeout=2) as resp:  # noqa: S310
+                    _ = resp.read()
+            except Exception:
+                # Telemetry failures are intentionally ignored; they should not
+                # affect core runner behavior.
+                pass
+            finally:
+                self._telemetry_queue.task_done()
+
+    def stop_background_workers(self, timeout_seconds: float = 1.0) -> None:
+        """Request background worker shutdown and join briefly (best-effort)."""
+        self._stop_event.set()
+        if self._reaper_thread is not None:
+            self._reaper_thread.join(timeout=max(0.0, float(timeout_seconds)))
+        if self._telemetry_thread is not None:
+            self._telemetry_thread.join(timeout=max(0.0, float(timeout_seconds)))
+
     def publish_telemetry(self, event_type: str, payload: Dict[str, Any]) -> None:
         """Publish optional telemetry over Home Assistant MQTT service.
 
         This method is intentionally non-blocking with respect to network I/O:
-        the actual HTTP call to the Supervisor API is dispatched to a
-        background thread so that audit/event paths remain responsive even
-        when the Supervisor or MQTT service is slow or unavailable.
+        enqueueing is best-effort and returns immediately; a bounded background
+        worker performs the Supervisor API call.
         """
         if not self.telemetry_mqtt_enabled:
             return
@@ -581,24 +631,13 @@ class Runner:
         topic = f"{self.telemetry_topic_prefix.rstrip('/')}/{event_type.strip('/') or 'event'}"
         body = json.dumps(payload, separators=(",", ":"))
 
-        def _worker() -> None:
-            req = Request(
-                url=f"{SUPERVISOR_CORE_API}/services/mqtt/publish",
-                data=json.dumps({"topic": topic, "payload": body, "retain": False}).encode("utf-8"),
-                headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}", "Content-Type": "application/json"},
-                method="POST",
-            )
-            try:
-                # Use a reduced timeout here so that even the background
-                # worker does not block for an extended period on network I/O.
-                with urlopen(req, timeout=2) as resp:  # noqa: S310
-                    _ = resp.read()
-            except Exception:
-                # Telemetry failures are intentionally ignored; they should not
-                # affect core runner behavior.
-                return
+        self._start_telemetry_worker_if_needed()
+        try:
+            self._telemetry_queue.put_nowait((topic, body))
+        except queue.Full:
+            # Drop telemetry when saturated; never block core execution paths.
+            return
 
-        threading.Thread(target=_worker, name="publish-telemetry", daemon=True).start()
     def _write_status(self, j: Job) -> None:
         return self._job_store.write_status(j)
 
@@ -618,7 +657,7 @@ class Runner:
         return _results.make_result_zip(self, j)
 
     def _reaper(self) -> None:
-        return _housekeeping.reaper_loop(self)
+        return _housekeeping.reaper_loop(self, stop_event=self._stop_event)
 
     def _load_jobs_from_disk(self) -> None:
         return self._job_store.load_jobs_from_disk()

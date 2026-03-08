@@ -82,11 +82,21 @@ class Handler(BaseHTTPRequestHandler):
                 while received < length:
                     chunk = self.rfile.read(min(65536, length - received))
                     if not chunk:
+                        try:
+                            os_path.unlink(missing_ok=True)
+                        except Exception:
+                            pass
                         return "incomplete_upload", None, None
                     out.write(chunk)
                     hasher.update(chunk)
                     received += len(chunk)
             return None, os_path, hasher.hexdigest()
+        except Exception:
+            try:
+                os_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            raise
         finally:
             try:
                 import os

@@ -74,17 +74,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 create_unreachable_issue(hass, entry.entry_id, detail)
         raise ConfigEntryNotReady from exc
 
+    unsub_backup_started = hass.bus.async_listen(
+        "backup_started", lambda _: hass.async_create_task(_async_handle_backup_event(hass, "backup_started"))
+    )
+    unsub_backup_ended = hass.bus.async_listen(
+        "backup_ended", lambda _: hass.async_create_task(_async_handle_backup_event(hass, "backup_ended"))
+    )
+
     clear_issues(hass, entry.entry_id)
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
         "coordinator": coordinator,
         "base_url": base_url,
         "intents": register_intents(hass),
+        "backup_event_unsubs": [unsub_backup_started, unsub_backup_ended],
     }
 
     await async_register_services(hass)
-    hass.bus.async_listen("backup_started", lambda _: hass.async_create_task(_async_handle_backup_event(hass, "backup_started")))
-    hass.bus.async_listen("backup_ended", lambda _: hass.async_create_task(_async_handle_backup_event(hass, "backup_ended")))
     entry.async_on_unload(entry.add_update_listener(async_reload_on_entry_update))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -109,6 +115,9 @@ async def async_reload_on_entry_update(hass: HomeAssistant, entry: ConfigEntry) 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload an entry."""
+    entry_data = hass.data[DOMAIN].get(entry.entry_id, {})
+    for unsub in entry_data.get("backup_event_unsubs", []):
+        unsub()
     ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)

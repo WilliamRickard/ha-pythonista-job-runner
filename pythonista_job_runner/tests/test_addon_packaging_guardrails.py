@@ -126,3 +126,28 @@ def test_custom_apparmor_includes_required_s6_overlay_rules() -> None:
 
     for rule in required_rules:
         assert rule in profile
+
+
+def test_bind_port_contract_is_fixed_to_8787() -> None:
+    config_text = _read("pythonista_job_runner/config.yaml")
+    dockerfile = _read("pythonista_job_runner/Dockerfile")
+
+    assert "ingress_port: 8787" in config_text
+    assert "8787/tcp: 8787" in config_text
+    assert "bind_port:" not in config_text
+    assert "localhost:8787/health" in dockerfile
+
+
+def test_dockerfile_apk_policy_avoids_revision_pins() -> None:
+    dockerfile = _read("pythonista_job_runner/Dockerfile")
+
+    assert "cpulimit=0.2-r" not in dockerfile
+    assert "curl=8." not in dockerfile
+    assert "zip=3.0-r" not in dockerfile
+
+
+def test_workflow_runs_root_pytest() -> None:
+    workflow = _read(".github/workflows/lint.yml")
+
+    assert "pytest -q" in workflow
+    assert "cd pythonista_job_runner" not in workflow

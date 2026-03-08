@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import time
-import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+from utils import SafeZipLimits, safe_extract_zip_bytes
 
 
 class RunnerClientError(RuntimeError):
@@ -136,13 +137,16 @@ class RunnerClient:
         return out
 
     @staticmethod
-    def extract_result_zip(zip_path: Path | str, out_dir: Path | str) -> Path:
-        """Extract a result zip to an output directory."""
+    def extract_result_zip(
+        zip_path: Path | str,
+        out_dir: Path | str,
+        *,
+        limits: SafeZipLimits | None = None,
+    ) -> Path:
+        """Extract a result zip to an output directory using safe extraction limits."""
         zip_file = Path(zip_path)
         dst = Path(out_dir)
-        dst.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(zip_file, "r") as zf:
-            zf.extractall(dst)
+        safe_extract_zip_bytes(zip_file.read_bytes(), dst, limits or SafeZipLimits())
         return dst
 
     def run_zip_and_collect(

@@ -98,16 +98,16 @@ function toggleAuto() {
 
     els.pollms.addEventListener("change", () => {
       setPollMsFromInput();
-      localStorage.setItem("pjr_pollms", String(pollMs));
+      storageSet("pjr_pollms", String(pollMs));
     });
     els.search.addEventListener("input", () => {
-      localStorage.setItem("pjr_search", String(els.search.value || ""));
+      storageSet("pjr_search", String(els.search.value || ""));
       applyFilters();
     });
     if (els.job_sort) {
       els.job_sort.addEventListener("change", () => {
         sortMode = els.job_sort.value || "newest";
-        localStorage.setItem("pjr_sort", sortMode);
+        storageSet("pjr_sort", sortMode);
         applyFilters();
         updateStickySummary();
       });
@@ -115,7 +115,7 @@ function toggleAuto() {
     if (els.filter_has_result) {
       els.filter_has_result.addEventListener("change", () => {
         filterHasResult = !!els.filter_has_result.checked;
-        localStorage.setItem("pjr_has_result", filterHasResult ? "1" : "0");
+        storageSet("pjr_has_result", filterHasResult ? "1" : "0");
         applyFilters();
         updateStickySummary();
       });
@@ -123,39 +123,39 @@ function toggleAuto() {
     if (els.auto) {
       els.auto.addEventListener("change", () => {
         auto = !!els.auto.checked;
-        localStorage.setItem("pjr_auto", auto ? "1" : "0");
+        storageSet("pjr_auto", auto ? "1" : "0");
         els.autostate.textContent = auto ? "on" : "off";
       });
     }
 
     els.follow.addEventListener("change", () => {
       follow = !!els.follow.checked;
-      localStorage.setItem("pjr_follow", follow ? "1" : "0");
+      storageSet("pjr_follow", follow ? "1" : "0");
     });
 
     els.wrap.addEventListener("change", () => {
       wrap = !!els.wrap.checked;
-      localStorage.setItem("pjr_wrap", wrap ? "1" : "0");
+      storageSet("pjr_wrap", wrap ? "1" : "0");
       applyLogStyle();
       renderLog(currentTab);
     });
 
     els.font.addEventListener("input", () => {
       fontSize = clampInt(els.font.value, 11, 18, fontSize);
-      localStorage.setItem("pjr_font", String(fontSize));
+      storageSet("pjr_font", String(fontSize));
       applyLogStyle();
     });
 
     if (els.pause) {
       els.pause.addEventListener("change", () => {
         paused = !!els.pause.checked;
-        localStorage.setItem("pjr_pause", paused ? "1" : "0");
+        storageSet("pjr_pause", paused ? "1" : "0");
       });
     }
     if (els.hilite) {
       els.hilite.addEventListener("change", () => {
         hilite = !!els.hilite.checked;
-        localStorage.setItem("pjr_hilite", hilite ? "1" : "0");
+        storageSet("pjr_hilite", hilite ? "1" : "0");
         renderLog(currentTab);
       });
     }
@@ -298,57 +298,57 @@ function toggleAuto() {
     cacheEls();
     bindEvents();
 
-    const savedView = localStorage.getItem("pjr_view");
+    const savedView = storageGet("pjr_view");
     if (savedView) view = savedView;
 
-    const savedTab = localStorage.getItem("pjr_tab");
+    const savedTab = storageGet("pjr_tab");
     if (savedTab) currentTab = savedTab;
 
-    const savedPoll = localStorage.getItem("pjr_pollms");
+    const savedPoll = storageGet("pjr_pollms");
     if (savedPoll) pollMs = clampInt(savedPoll, 250, 10000, pollMs);
     els.pollms.value = String(pollMs);
 
-    const savedAuto = localStorage.getItem("pjr_auto");
+    const savedAuto = storageGet("pjr_auto");
     if (savedAuto !== null) auto = (savedAuto === "1");
     els.autostate.textContent = auto ? "on" : "off";
     if (els.auto) els.auto.checked = auto;
 
-    const savedSearch = localStorage.getItem("pjr_search");
+    const savedSearch = storageGet("pjr_search");
     if (savedSearch !== null) els.search.value = savedSearch;
 
-    const savedSort = localStorage.getItem("pjr_sort");
+    const savedSort = storageGet("pjr_sort");
     if (savedSort) sortMode = savedSort;
     if (els.job_sort) els.job_sort.value = sortMode;
 
-    const savedHasResult = localStorage.getItem("pjr_has_result");
+    const savedHasResult = storageGet("pjr_has_result");
     if (savedHasResult !== null) filterHasResult = (savedHasResult === "1");
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
 
-    const savedFollow = localStorage.getItem("pjr_follow");
+    const savedFollow = storageGet("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
     els.follow.checked = follow;
 
-    const savedWrap = localStorage.getItem("pjr_wrap");
+    const savedWrap = storageGet("pjr_wrap");
     if (savedWrap !== null) wrap = (savedWrap === "1");
     els.wrap.checked = wrap;
 
-    const savedFont = localStorage.getItem("pjr_font");
+    const savedFont = storageGet("pjr_font");
     if (savedFont) fontSize = clampInt(savedFont, 11, 18, fontSize);
     els.font.value = String(fontSize);
 
-    const savedPause = localStorage.getItem("pjr_pause");
+    const savedPause = storageGet("pjr_pause");
     if (savedPause !== null) paused = (savedPause === "1");
     if (els.pause) els.pause.checked = paused;
     updateLiveUi();
 
-    const savedHilite = localStorage.getItem("pjr_hilite");
+    const savedHilite = storageGet("pjr_hilite");
     if (savedHilite !== null) hilite = (savedHilite === "1");
     if (els.hilite) els.hilite.checked = hilite;
 
     _loadHighlightTerms();
     updateHighlightUi();
 
-    const savedPane = localStorage.getItem("pjr_pane");
+    const savedPane = storageGet("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";
     setPane(pane);
     ensurePaneForViewport();

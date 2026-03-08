@@ -105,3 +105,22 @@ def test_jobs_command_row_keeps_refresh_in_primary_surface() -> None:
 
     assert 'class="searchbar-row command-row"' in html
     assert 'data-action="refresh" aria-label="Refresh jobs now"' in html
+
+
+def test_localstorage_access_uses_safe_wrappers() -> None:
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+
+    assert "function storageGet(" in core
+    assert "function storageSet(" in core
+    assert "function storageRemove(" in core
+
+    assert "localStorage.getItem(" not in core
+    assert "localStorage.setItem(" not in core
+    assert "localStorage.removeItem(" not in core
+
+    assert "localStorage.getItem(" not in init
+    assert "localStorage.setItem(" not in init
+    assert "localStorage.removeItem(" not in init
+    assert "storageGet(" in init
+    assert "storageSet(" in init

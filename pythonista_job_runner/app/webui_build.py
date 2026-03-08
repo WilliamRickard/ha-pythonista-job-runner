@@ -48,6 +48,8 @@ _README_VERSION_RE = re.compile(
     re.IGNORECASE,
 )
 
+_HTML_PART_VERSION_RE = re.compile(r'^\s*<!--\s*Version:\s*([^ ]+)\s*-->\s*$', re.IGNORECASE)
+
 
 def _assert_parts_readme_versions(p: "WebUiPaths") -> None:
     """Ensure webui_* part README files do not declare a version header.
@@ -173,11 +175,23 @@ _ROOT_RELATIVE_PATTERNS_HTML: tuple[str, ...] = (
     "href='/",
     'src="/',
     "src='/",
+    'srcset="/',
+    "srcset='/",
+    'action="/',
+    "action='/",
 )
 
 _ROOT_RELATIVE_PATTERNS_JS: tuple[str, ...] = (
     'fetch("/',
     "fetch('/",
+    'new URL("/',
+    "new URL('/",
+    'window.open("/',
+    "window.open('/",
+    'window.location = "/',
+    "window.location = '/",
+    'location.href = "/',
+    "location.href = '/",
 )
 
 _ROOT_RELATIVE_PATTERNS_CSS: tuple[str, ...] = (
@@ -298,6 +312,11 @@ def _read_html_parts(p: WebUiPaths) -> str:
         txt = part.read_text(encoding="utf-8").rstrip()
         if any(_RE_JS_VERSION_HEADER.search(line) for line in txt.splitlines()[:3]):
             raise RuntimeError(f"HTML part must not contain JavaScript-style VERSION header: {part}")
+        for i, line in enumerate(txt.splitlines(), start=1):
+            if _HTML_PART_VERSION_RE.match(line):
+                raise RuntimeError(
+                    f"HTML part must not declare Version header comment: webui_html/{part.name}:{i}"
+                )
         for pat in banned_patterns:
             if pat.search(txt):
                 raise RuntimeError(f"HTML part contains forbidden tag/pattern ({pat.pattern}): {part}")

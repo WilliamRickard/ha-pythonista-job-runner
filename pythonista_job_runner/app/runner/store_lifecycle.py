@@ -150,8 +150,8 @@ class JobLifecycle:
                 deleted.append(job_id)
                 continue
             try:
-                self.delete_job(job_id, actor=actor)
-                deleted.append(job_id)
+                if self.delete_job(job_id, actor=actor):
+                    deleted.append(job_id)
             except Exception:
                 continue
         result = {"ok": True, "deleted": deleted, "count": len(deleted), "dry_run": dry_run}

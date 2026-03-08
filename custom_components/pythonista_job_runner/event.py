@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, EVENT_JOB_COMPLETED, EVENT_JOB_FAILED, EVENT_JOB_STARTED
+from .const import EVENT_JOB_COMPLETED, EVENT_JOB_FAILED, EVENT_JOB_STARTED
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:

@@ -13,6 +13,7 @@ import pytest
 import http_api
 import runner_core
 from pythonista_client import RunnerClient, RunnerClientError
+from utils import SafeZipLimits
 
 
 def _start_server(runner: runner_core.Runner):
@@ -140,3 +141,33 @@ def test_runner_client_invalid_json_response_raises() -> None:
     client = _BadJsonClient("http://example", "t")
     with pytest.raises(RunnerClientError, match="invalid_json_response"):
         client.get_job("job-1")
+
+
+def test_runner_client_extract_result_zip_enforces_member_limit(tmp_path: Path) -> None:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("a.txt", "a")
+        zf.writestr("b.txt", "b")
+        zf.writestr("c.txt", "c")
+
+    zip_path = tmp_path / "result.zip"
+    zip_path.write_bytes(buf.getvalue())
+
+    with pytest.raises(RuntimeError, match="zip_too_many_members"):
+        RunnerClient.extract_result_zip(zip_path, tmp_path / "out", limits=SafeZipLimits(max_members=2))
+
+
+def test_runner_client_extract_result_zip_enforces_member_size_limit(tmp_path: Path) -> None:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("big.bin", b"x" * 16)
+
+    zip_path = tmp_path / "result.zip"
+    zip_path.write_bytes(buf.getvalue())
+
+    with pytest.raises(RuntimeError, match="zip_member_too_large"):
+        RunnerClient.extract_result_zip(
+            zip_path,
+            tmp_path / "out",
+            limits=SafeZipLimits(max_members=10, max_total_uncompressed=1024, max_single_uncompressed=8),
+        )

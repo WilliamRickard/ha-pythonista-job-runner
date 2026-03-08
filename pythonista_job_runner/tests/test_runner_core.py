@@ -708,7 +708,7 @@ class TestEdgeCases:
         assert isinstance(result, str)
 
     def test_runner_cpu_limit_mode_validation(self, tmp_path, monkeypatch):
-        """Test Runner validates cpu_limit_mode correctly."""
+        """Test Runner stores configured cpu_limit_mode; normalization occurs in limit parsing."""
         jobs_dir = tmp_path / "jobs"
         jobs_dir.mkdir()
         monkeypatch.setattr("runner_core.JOBS_DIR", jobs_dir)
@@ -719,8 +719,8 @@ class TestEdgeCases:
         }
         runner = Runner(opts)
 
-        # Should fall back to default
-        assert runner.cpu_limit_mode == "invalid_mode"  # Stores as-is
+        # Runner stores raw configured value; normalization happens when job limits are parsed.
+        assert runner.cpu_limit_mode == "invalid_mode"
 
     def test_runner_allow_env_filters_invalid_names(self, tmp_path, monkeypatch):
         """Test Runner filters out invalid environment variable names."""

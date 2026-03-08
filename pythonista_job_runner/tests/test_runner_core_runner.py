@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import queue
 import os
 from pathlib import Path
 
@@ -203,6 +204,79 @@ def test_list_jobs_preserves_order(temp_data_dir):
 
     jobs = runner.list_jobs()
     assert [j.job_id for j in jobs] == ["third", "second", "first"]
+
+
+
+def test_runner_can_disable_reaper_thread_start(temp_data_dir, basic_opts):
+    runner = runner_core.Runner(basic_opts, start_reaper=False)
+
+    assert runner._reaper_thread is None
+
+
+def test_runner_stop_background_workers_stops_reaper(temp_data_dir, basic_opts, monkeypatch):
+    observed = {"stop_seen": False}
+
+    def _fake_reaper_loop(_runner, stop_event=None):
+        assert stop_event is not None
+        stop_event.wait(5.0)
+        observed["stop_seen"] = bool(stop_event.is_set())
+
+    monkeypatch.setattr(runner_core._housekeeping, "reaper_loop", _fake_reaper_loop)
+
+    runner = runner_core.Runner(basic_opts)
+    assert runner._reaper_thread is not None
+
+    runner.stop_background_workers(timeout_seconds=1.0)
+
+    assert observed["stop_seen"] is True
+
+
+def test_publish_telemetry_uses_single_worker_no_per_event_thread_spawn(temp_data_dir, monkeypatch):
+    monkeypatch.setattr(runner_core, "SUPERVISOR_TOKEN", "test-token")
+
+    runner = runner_core.Runner(
+        {
+            "token": "t",
+            "telemetry_mqtt_enabled": True,
+            "telemetry_topic_prefix": "pythonista_job_runner",
+        },
+        start_reaper=False,
+    )
+
+    # After worker startup, publish path must not create additional threads per event.
+    def _unexpected_thread(*_args, **_kwargs):
+        raise AssertionError("publish_telemetry should not spawn per-event threads")
+
+    monkeypatch.setattr(runner_core.threading, "Thread", _unexpected_thread)
+    runner._telemetry_thread = type("AliveThread", (), {"is_alive": lambda self: True})()
+
+    for idx in range(20):
+        runner.publish_telemetry("audit", {"n": idx})
+
+
+def test_publish_telemetry_drops_when_queue_is_full(temp_data_dir, monkeypatch):
+    monkeypatch.setattr(runner_core, "SUPERVISOR_TOKEN", "test-token")
+
+    runner = runner_core.Runner({"token": "t", "telemetry_mqtt_enabled": True}, start_reaper=False)
+
+    class _FullQueue:
+        def put_nowait(self, _item):
+            raise queue.Full
+
+    runner._telemetry_queue = _FullQueue()
+    runner._telemetry_thread = type("DeadThread", (), {"is_alive": lambda self: True})()
+
+    runner.publish_telemetry("audit", {"k": "v"})
+
+
+def test_cpu_limit_mode_invalid_is_normalized_when_new_job_limits_are_parsed(temp_data_dir, minimal_job_zip, monkeypatch):
+    runner = runner_core.Runner({"token": "t", "cpu_limit_mode": "invalid_mode", "job_user": "root" if hasattr(os, "getuid") else "jobrunner"}, start_reaper=False)
+
+    monkeypatch.setattr(runner, "_run_job", lambda *_args, **_kwargs: None)
+
+    job = runner.new_job(minimal_job_zip, {}, "127.0.0.1")
+
+    assert job.cpu_limit_mode == "single_core"
 
 
 def test_options_version_matches_config_yaml():
