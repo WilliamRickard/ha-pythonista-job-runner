@@ -100,7 +100,7 @@ def test_jobs_command_row_removes_duplicate_refresh_controls() -> None:
     assert 'Search, filter, sort, then open details.' not in html
     assert 'data-action="refresh" aria-label="Refresh jobs now"' not in html
     assert shell.count('data-action="refresh"') == 1
-    assert 'for="job_sort">Sort<' in html
+    assert 'class="sort-inline" for="job_sort"' in html
 
 
 def test_localstorage_access_uses_safe_wrappers() -> None:

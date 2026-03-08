@@ -989,7 +989,7 @@ function applyFilters() {
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
-            emptyAction.textContent = "Copy sample Python task, run it in Pythonista, then open the new job.";
+            emptyAction.textContent = "Copy the sample task, run it in Pythonista, then open the new job.";
           }
         }
       }
@@ -1184,6 +1184,21 @@ function applyFilters() {
     }
     await copyTextToClipboard(code);
     toast("ok", "Copied", "Sample Python task copied");
+  }
+
+
+  async function copyAboutCurl() {
+    const txt = (els.about_curl && els.about_curl.value) ? els.about_curl.value : "";
+    if (!txt) {
+      await loadInfo();
+    }
+    const code = (els.about_curl && els.about_curl.value) ? els.about_curl.value : "";
+    if (!code) {
+      toast("err", "No sample available", "Could not prepare curl sample");
+      return;
+    }
+    await copyTextToClipboard(code);
+    toast("ok", "Copied", "curl sample copied");
   }
 
   let _aboutReturnFocus = null;
@@ -1825,6 +1840,7 @@ function toggleAuto() {
         if (action === "clear-search") clearSearch();
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
+        if (action === "copy-about-curl") await copyAboutCurl();
         if (action === "open-about") await openAbout();
         if (action === "close-about") closeAbout();
         if (action === "copy-base") await copyBase();
