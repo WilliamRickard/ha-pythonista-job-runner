@@ -7,6 +7,9 @@ from pathlib import Path
 from runner.store_lifecycle import JobLifecycle
 
 
+REPO_PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+
+
 class _DummyIndex:
     def reserve_pending_slot(self, _max_jobs: int) -> None:
         return
@@ -30,7 +33,7 @@ def test_lifecycle_rejects_new_job_when_paused() -> None:
 
 
 def test_runner_core_contains_pause_restore_methods() -> None:
-    text = Path("app/runner_core.py").read_text(encoding="utf-8")
+    text = (REPO_PACKAGE_ROOT / "app/runner_core.py").read_text(encoding="utf-8")
     assert "def pause_for_backup" in text
     assert "def resume_after_backup" in text
     assert "def pause_status" in text
