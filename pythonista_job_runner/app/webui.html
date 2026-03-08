@@ -2776,11 +2776,10 @@ function applyFilters() {
 
 
   async function copySampleTask() {
-    const txt = (els.about_python && els.about_python.value) ? els.about_python.value : "";
-    if (!txt) {
+    if (!els.about_python?.value) {
       await loadInfo();
     }
-    const code = (els.about_python && els.about_python.value) ? els.about_python.value : "";
+    const code = els.about_python?.value || "";
     if (!code) {
       toast("err", "No sample available", "Could not prepare sample Python task");
       return;
