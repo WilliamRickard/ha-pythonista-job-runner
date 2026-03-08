@@ -77,13 +77,12 @@ def test_jobs_filters_include_sort_and_secondary_flags() -> None:
     assert 'filterHasResult' in render
 
 
-def test_sticky_command_bar_state_sync_present() -> None:
+def test_jobs_controls_use_clear_visibility_instead_of_sticky_summary() -> None:
     core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
-    events = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
 
-    assert "function updateStickySummary()" in core
-    assert "sticky_summary" in core
-    assert "syncSticky" in events
+    assert "function updateClearButtonVisibility()" in core
+    assert "sticky_summary" not in core
+    assert "function updateStickySummary()" not in core
 
 
 def test_row_overflow_actions_used_instead_of_many_inline_buttons() -> None:
@@ -93,20 +92,15 @@ def test_row_overflow_actions_used_instead_of_many_inline_buttons() -> None:
     assert 'Copy id' in render
 
 
-def test_sticky_command_focus_action_targets_search() -> None:
-    events = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
-
-    assert 'action === "focus-search"' in events
-    assert 'els.search.focus();' in events
-
-
 def test_jobs_command_row_removes_duplicate_refresh_controls() -> None:
     html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "20_jobs.html")
     shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
 
     assert 'class="searchbar-row"' in html
+    assert 'Search, filter, sort, then open details.' not in html
     assert 'data-action="refresh" aria-label="Refresh jobs now"' not in html
     assert shell.count('data-action="refresh"') == 1
+    assert 'for="job_sort">Sort<' in html
 
 
 def test_localstorage_access_uses_safe_wrappers() -> None:

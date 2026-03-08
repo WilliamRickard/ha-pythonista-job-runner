@@ -12,10 +12,17 @@
         <details open>
           <summary>Quick start</summary>
           <ol class="steps">
-            <li>Submit a zip from Pythonista using <code>POST /run</code>.</li>
-            <li>Use Search and state filters to find the job quickly.</li>
-            <li>Open <strong>View</strong> to inspect logs and download the result zip.</li>
+            <li>Copy the Python sample below and run it from Pythonista with your add-on URL and token.</li>
+            <li>Return here and open the new job with <strong>View</strong>.</li>
+            <li>Success means the job shows <strong>done</strong> and a result zip link appears.</li>
           </ol>
+          <div class="hint compact-hint">Token header <code>X-Runner-Token</code> is required for direct access. Ingress sessions usually provide auth automatically.</div>
+          <div class="help-actions-row">
+            <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
+            <button type="button" class="small tertiary" data-action="copy-curl">Copy curl sample</button>
+          </div>
+          <textarea id="about_python" rows="11" readonly aria-label="Python quick start sample"></textarea>
+          <textarea id="about_curl" rows="8" readonly aria-label="curl quick start sample"></textarea>
         </details>
 
         <details open>
@@ -23,21 +30,19 @@
           <ul class="steps help-bullets">
             <li><strong>Disconnected:</strong> check add-on logs and network/access path.</li>
             <li><strong>Unauthorized:</strong> verify <code>X-Runner-Token</code> and token value.</li>
-            <li><strong>No jobs:</strong> confirm the Pythonista script uploads to <code>/run</code>.</li>
+            <li><strong>No jobs:</strong> submit the sample task, then press header Refresh.</li>
           </ul>
         </details>
 
         <details>
           <summary>API reference</summary>
-          <div class="hint compact-hint">Expanded only when needed to keep this panel focused for phone workflows.</div>
+          <div class="hint compact-hint">Use this for deeper endpoint inspection after quick start succeeds.</div>
           <div id="about_api" class="api-grid"></div>
 
           <div class="help-actions-row">
             <button type="button" class="small tertiary" data-action="copy-base">Copy base URL</button>
             <button type="button" class="small tertiary" data-action="open-info">Open raw info.json</button>
           </div>
-
-          <textarea id="about_curl" rows="6" readonly aria-label="curl examples"></textarea>
         </details>
       </div>
     </div>

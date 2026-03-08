@@ -144,6 +144,7 @@ WEBUI_HTML_PARTS: tuple[str, ...] = (
     "20_jobs.html",
     "30_detail.html",
     "40_advanced.html",
+    "45_settings.html",
     "50_help.html",
     "60_toast.html",
 )
