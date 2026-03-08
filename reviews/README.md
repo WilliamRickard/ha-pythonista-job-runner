@@ -14,7 +14,7 @@ Each slice has two phases:
 2. **Apply-only phase**
    - Implements fixes from the review artefact
    - Must map each change back to finding IDs
-   - In this repo, apply status is recorded in `reviews/FULL_CODE_REVIEW_PLAN.md` unless a separate apply artefact is created explicitly
+   - In this repo, the canonical master plan and apply status are recorded in `reviews/FULL_CODE_REVIEW_PLAN.md` (any per-batch copies under `reviews/code-review/` are snapshots that should redirect back to this root file), unless a separate apply artefact is created explicitly
 
 Review-only and apply-only work must remain separated.
 
