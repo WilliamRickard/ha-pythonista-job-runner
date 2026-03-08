@@ -15,8 +15,7 @@
   .header-actions{width:100%;justify-content:flex-start;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
-  .searchbar-row .primary{min-width:84px;}
-  .clear-inline{padding:10px 11px;min-width:68px;}
+    .clear-inline{padding:10px 11px;min-width:68px;}
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
@@ -35,22 +34,20 @@
   #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
-  .sticky-command{top:6px;gap:6px;padding:6px 8px;}
-  .sticky-command button{min-height:40px;padding:8px 10px;}
-  .jobs-control-row{align-items:stretch;}
-  .command-row{padding:7px;}
+  .sticky-command{top:6px;gap:6px;padding:4px 7px;}
+  .sticky-command button{min-height:34px;padding:6px 9px;}
+  .jobs-primary-row{align-items:stretch;flex-wrap:wrap;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
 
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
-  .secondary-filters{width:100%;justify-content:space-between;}
-  .sticky-command .muted{max-width:44vw;}
-  .secondary-filters select{flex:1 1 auto;min-width:0;}
+  .jobs-primary-row{gap:6px;}
+  #job_sort{flex:0 0 auto;max-width:110px;}
+  .sticky-command .muted{max-width:46vw;}
 }
 
 @media (max-width: 360px){
-  .searchbar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}
-  .header-title-row{align-items:flex-start;}
+  .searchbar-row{gap:6px;}
 }

@@ -3,10 +3,7 @@
   <div class="container">
     <header class="page-header monitor-header" id="main_header">
       <div class="brand">
-        <div class="header-title-row">
-          <h1>Pythonista Job Runner</h1>
-          <span class="meta-text quiet-meta">v__ADDON_VERSION__</span>
-        </div>
+        <h1>Pythonista Job Runner</h1>
         <div class="subline monitor-subline">
           <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
@@ -16,14 +13,15 @@
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn secondary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
-        <button type="button" class="linkbtn secondary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
+        <button type="button" class="linkbtn tertiary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <button type="button" class="linkbtn tertiary" data-action="open-advanced" aria-haspopup="dialog" aria-label="Open advanced settings">Advanced</button>
       </div>
     </header>
 
     <details class="header-meta" id="header_meta">
       <summary>System details</summary>
       <div class="header-meta-content" aria-label="System metadata">
+        <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
         <span class="meta-item">Auto refresh <strong id="autostate">on</strong></span>
         <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
       </div>

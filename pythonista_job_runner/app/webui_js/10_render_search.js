@@ -331,7 +331,7 @@ function applyFilters() {
         const emptyAction = document.getElementById("empty_action");
         if (emptyAction) {
           if (jobsViewState === "disconnected") {
-            emptyAction.textContent = "Try Refresh. If it persists, open Help for troubleshooting steps.";
+            emptyAction.textContent = "Use header Refresh. If it persists, open Help for troubleshooting steps.";
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
@@ -390,7 +390,7 @@ function applyFilters() {
 
     for (const t of pills) {
       const span = document.createElement("span");
-      span.className = "pill";
+      span.className = "pill passive-pill";
       span.textContent = t;
       els.stats_kv.appendChild(span);
     }
