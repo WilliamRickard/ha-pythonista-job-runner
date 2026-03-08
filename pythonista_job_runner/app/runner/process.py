@@ -18,6 +18,15 @@ def kill_process_group(p: subprocess.Popen, soft_seconds: int) -> None:
             p.terminate()
         except Exception:
             pass
+        t0 = time.time()
+        while time.time() - t0 < float(soft_seconds):
+            if p.poll() is not None:
+                return
+            time.sleep(0.1)
+        try:
+            p.kill()
+        except Exception:
+            pass
         return
 
     try:

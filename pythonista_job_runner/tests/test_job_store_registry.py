@@ -5,6 +5,7 @@ from __future__ import annotations
 
 
 import io
+import json
 import threading
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import runner.executor as executor_mod
 import runner_core
 from runner.store import JobStore
 import runner.store as store_mod
+import runner.housekeeping as housekeeping_mod
 
 
 def _make_runner(temp_data_dir) -> runner_core.Runner:
@@ -224,3 +226,52 @@ def test_delete_requested_finalizes_after_executor_exit(monkeypatch, temp_data_d
     assert not job_dir.exists()
 
     assert kill_calls, "expected a kill_process_group call when cancelling the running job"
+
+
+def test_ensure_min_free_space_uses_directory_name_for_fallback_discard(monkeypatch, temp_data_dir):
+    runner = _make_runner(temp_data_dir)
+
+    job_id = "dir_job"
+    job_dir = Path(runner_core.JOBS_DIR) / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    (job_dir / "result.zip").write_bytes(b"zip")
+    (job_dir / "status.json").write_text(
+        json.dumps({"job_id": "mismatch_id", "state": "done", "finished_utc": runner_core.utc_now()}),
+        encoding="utf-8",
+    )
+
+    runner._jobs[job_id] = runner_core.Job(job_id=job_id, state="done", job_dir=job_dir)
+    runner._job_order.append(job_id)
+
+    monkeypatch.setattr(housekeeping_mod, "disk_free_bytes", lambda _runner: 0)
+    monkeypatch.setattr(runner, "delete", lambda _job_id: False)
+
+    runner.cleanup_min_free_mb = 1
+    housekeeping_mod.ensure_min_free_space(runner)
+
+    assert not job_dir.exists()
+    assert runner.get(job_id) is None
+
+
+def test_purge_does_not_report_job_deleted_when_delete_returns_false(monkeypatch, temp_data_dir):
+    runner = _make_runner(temp_data_dir)
+
+    j1 = runner_core.Job(job_id="job-ok", state="done")
+    j2 = runner_core.Job(job_id="job-no", state="done")
+    runner._jobs[j1.job_id] = j1
+    runner._jobs[j2.job_id] = j2
+    runner._job_order = [j1.job_id, j2.job_id]
+
+    original_delete = runner._job_store._lifecycle.delete_job
+
+    def _delete(job_id: str, actor=None):
+        if job_id == "job-no":
+            return False
+        return original_delete(job_id, actor=actor)
+
+    monkeypatch.setattr(runner._job_store._lifecycle, "delete_job", _delete)
+
+    res = runner.purge(states=["done"], older_than_hours=0, dry_run=False)
+
+    assert "job-ok" in res["deleted"]
+    assert "job-no" not in res["deleted"]

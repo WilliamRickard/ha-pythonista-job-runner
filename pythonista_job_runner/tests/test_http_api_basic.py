@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
+import time
 import threading
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -134,6 +137,102 @@ def test_run_rejects_oversize_upload(temp_data_dir, monkeypatch):
         httpd.shutdown()
         httpd.server_close()
 
+
+
+def test_run_incomplete_upload_cleans_tempfile(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+
+    before = {p.name for p in Path("/tmp").glob("upload_*.zip")}
+
+    try:
+        body = b"partial"
+        declared = len(body) + 64
+        req = (
+            f"POST /run HTTP/1.1\r\n"
+            f"Host: {host}:{port}\r\n"
+            "X-Runner-Token: t\r\n"
+            "Content-Type: application/zip\r\n"
+            f"Content-Length: {declared}\r\n"
+            "Connection: close\r\n\r\n"
+        ).encode("utf-8") + body
+
+        sock = socket.create_connection((host, port), timeout=5)
+        try:
+            sock.sendall(req)
+        finally:
+            sock.close()
+
+        time.sleep(0.2)
+        after = {p.name for p in Path("/tmp").glob("upload_*.zip")}
+        assert after == before
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_jobs_rejects_valid_token_outside_allowed_cidrs(temp_data_dir):
+    runner = runner_core.Runner(
+        {
+            "token": "t",
+            "bind_host": "127.0.0.1",
+            "bind_port": 0,
+            "api_allow_cidrs": ["10.0.0.0/8"],
+        }
+    )
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, _data = _request("GET", host, port, "/jobs.json", None, {"X-Runner-Token": "t"})
+        assert status == 401
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_jobs_accepts_valid_token_inside_allowed_cidrs(temp_data_dir):
+    runner = runner_core.Runner(
+        {
+            "token": "t",
+            "bind_host": "127.0.0.1",
+            "bind_port": 0,
+            "api_allow_cidrs": ["127.0.0.0/8"],
+        }
+    )
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request("GET", host, port, "/jobs.json", None, {"X-Runner-Token": "t"})
+        assert status == 200
+        assert json.loads(data.decode("utf-8")) == {"jobs": []}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_jobs_rejects_non_ingress_when_ingress_strict_enabled(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0, "ingress_strict": True})
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, _data = _request("GET", host, port, "/jobs.json", None, {"X-Runner-Token": "t"})
+        assert status == 401
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_jobs_allows_ingress_source_without_token_when_ingress_strict_enabled(temp_data_dir, monkeypatch):
+    import http_api_auth
+
+    monkeypatch.setattr(http_api_auth, "INGRESS_PROXY_IP", "127.0.0.1")
+
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0, "ingress_strict": True})
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, data = _request("GET", host, port, "/jobs.json", None, {})
+        assert status == 200
+        assert json.loads(data.decode("utf-8")) == {"jobs": []}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
 
 def test_stdout_rejects_multi_segment_job_id(temp_data_dir):
     runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})

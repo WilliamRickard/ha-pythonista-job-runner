@@ -11,8 +11,22 @@ def redact_basic_auth_in_urls(text: str) -> str:
     """Redact basic-auth credentials in URLs within a string."""
     if not text:
         return text
-    # Replace scheme://user:pass@host with scheme://user:***@host
-    return re.sub(r"(https?://)([^\s/:@]+):([^\s@]+)@", r"\1\2:***@", text)
+
+    def _mask_authority(match: re.Match[str]) -> str:
+        scheme = match.group(1)
+        authority = match.group(2)
+        if "@" not in authority:
+            return match.group(0)
+
+        userinfo, hostpart = authority.rsplit("@", 1)
+        if ":" not in userinfo:
+            return match.group(0)
+
+        username, _sep, _password = userinfo.partition(":")
+        return f"{scheme}{username}:***@{hostpart}"
+
+    # Match scheme://<authority> and redact credentials in authority section only.
+    return re.sub(r"(https?://)([^/\s]+)", _mask_authority, text)
 
 
 def redact_common_query_secrets(text: str) -> str:

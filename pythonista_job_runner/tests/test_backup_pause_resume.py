@@ -6,8 +6,7 @@ from pathlib import Path
 
 from runner.store_lifecycle import JobLifecycle
 
-
-REPO_PACKAGE_ROOT = Path(__file__).resolve().parents[1]
+import runner_core
 
 
 class _DummyIndex:
@@ -32,8 +31,15 @@ def test_lifecycle_rejects_new_job_when_paused() -> None:
         raise AssertionError("Expected RuntimeError when runner is paused")
 
 
-def test_runner_core_contains_pause_restore_methods() -> None:
-    text = (REPO_PACKAGE_ROOT / "app/runner_core.py").read_text(encoding="utf-8")
-    assert "def pause_for_backup" in text
-    assert "def resume_after_backup" in text
-    assert "def pause_status" in text
+def test_runner_pause_resume_status_runtime_contract(temp_data_dir) -> None:
+    runner = runner_core.Runner({"token": "t"}, start_reaper=False)
+
+    assert runner.pause_status() == {"paused": False, "reason": ""}
+
+    paused = runner.pause_for_backup(reason="ha_backup")
+    assert paused == {"paused": True, "reason": "ha_backup"}
+    assert runner.pause_status() == {"paused": True, "reason": "ha_backup"}
+
+    resumed = runner.resume_after_backup()
+    assert resumed == {"paused": False, "previous_reason": "ha_backup"}
+    assert runner.pause_status() == {"paused": False, "reason": ""}

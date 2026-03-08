@@ -125,3 +125,34 @@ def test_builder_reports_css_part_and_line_for_root_relative_import(tmp_path: Pa
     assert "Root-relative reference found" in msg
     assert "webui_css/00_tokens.css:1" in msg
     assert '@import "/' in msg
+
+
+def test_builder_reports_js_part_for_root_relative_new_url(tmp_path: Path) -> None:
+    """A root-relative new URL constructor in JS should fail with file and line details."""
+
+    paths = _write_minimal_webui_tree(
+        tmp_path,
+        js_parts={"00_core.js": 'const u = new URL("/bad", window.location.href)\n'},
+    )
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_webui(paths)
+
+    msg = str(excinfo.value)
+    assert "Root-relative reference found" in msg
+    assert "webui_js/00_core.js:1" in msg
+    assert 'new URL("/' in msg
+
+
+def test_builder_rejects_version_header_comment_in_html_parts(tmp_path: Path) -> None:
+    """Version header comments in HTML part files should be rejected."""
+
+    paths = _write_minimal_webui_tree(
+        tmp_path,
+        parts={"00_shell.html": "<!-- Version: 0.0.0 -->\n<div></div>\n"},
+    )
+
+    with pytest.raises(RuntimeError) as excinfo:
+        build_webui(paths)
+
+    assert "HTML part must not declare Version header comment" in str(excinfo.value)

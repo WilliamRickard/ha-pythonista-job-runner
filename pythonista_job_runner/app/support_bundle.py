@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -40,9 +41,17 @@ def _tail_jsonl(path: Path, max_lines: int = 30) -> list[dict[str, Any]]:
     """Read up to ``max_lines`` JSONL entries from the end of file."""
     if not path.exists():
         return []
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+    recent_lines: deque[str] = deque(maxlen=max(0, int(max_lines)))
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                recent_lines.append(line.rstrip("\n"))
+    except Exception:
+        return []
+
     out: list[dict[str, Any]] = []
-    for line in lines[-max_lines:]:
+    for line in recent_lines:
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
@@ -54,8 +63,10 @@ def _tail_jsonl(path: Path, max_lines: int = 30) -> list[dict[str, Any]]:
 
 def build_support_bundle(runner: Any) -> dict[str, Any]:
     """Build a redacted support bundle payload for add-on troubleshooting."""
+    jobs_snapshot = runner.list_jobs()
+
     jobs = []
-    for job in runner.list_jobs()[:20]:
+    for job in jobs_snapshot[:20]:
         status = job.status_dict()
         jobs.append(
             {
@@ -90,15 +101,15 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
         "options": redacted_options_summary(getattr(runner, "_opts", {}) or {}),
         "stats": runner.stats_dict(),
         "queue": {
-            "jobs_total": len(runner.list_jobs()),
+            "jobs_total": len(jobs_snapshot),
             "jobs_running": sum(
-                1 for job in runner.list_jobs() if getattr(job, "state", "") == "running"
+                1 for job in jobs_snapshot if getattr(job, "state", "") == "running"
             ),
             "jobs_queued": sum(
-                1 for job in runner.list_jobs() if getattr(job, "state", "") == "queued"
+                1 for job in jobs_snapshot if getattr(job, "state", "") == "queued"
             ),
             "jobs_error": sum(
-                1 for job in runner.list_jobs() if getattr(job, "state", "") == "error"
+                1 for job in jobs_snapshot if getattr(job, "state", "") == "error"
             ),
         },
         "recent_jobs": jobs,

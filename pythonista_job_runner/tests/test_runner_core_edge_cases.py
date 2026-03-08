@@ -17,7 +17,8 @@ def test_duration_seconds_handles_invalid_timestamps():
     assert d >= 0
 
 
-def test_cpu_limit_mode_is_stored_as_given(temp_data_dir):
+def test_cpu_limit_mode_is_stored_as_given_before_limit_parsing(temp_data_dir):
+    # Runner keeps the raw configured mode; runtime normalization happens in job limit parsing.
     runner = runner_core.Runner({"token": "t", "cpu_limit_mode": "invalid_mode"})
     assert runner.cpu_limit_mode == "invalid_mode"
 

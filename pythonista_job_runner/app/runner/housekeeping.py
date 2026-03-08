@@ -66,7 +66,7 @@ def ensure_min_free_space(runner: object) -> None:
         except Exception:
             continue
 
-        job_id = str(data.get("job_id") or p.name)
+        job_id = p.name
         state = str(data.get("state") or "")
         if state not in ("done", "error"):
             continue
@@ -105,10 +105,10 @@ def ensure_min_free_space(runner: object) -> None:
         except Exception:
             pass
 
-        JobStore.for_runner(runner).discard_job_id(job_id)
+        JobStore.for_runner(runner).discard_job_id(p.name)
 
 
-def reaper_loop(runner: object) -> None:
+def reaper_loop(runner: object, stop_event: object | None = None) -> None:
     """Background retention loop that deletes stale finished jobs."""
     store = JobStore.for_runner(runner)
     while True:
@@ -131,4 +131,12 @@ def reaper_loop(runner: object) -> None:
                 store.discard_job_id(jid)
         except Exception:
             pass
+
+        if stop_event is not None:
+            try:
+                if bool(getattr(stop_event, "wait")(600.0)):
+                    return
+                continue
+            except Exception:
+                pass
         time.sleep(600)

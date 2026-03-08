@@ -123,5 +123,4 @@ jobs:
           python -m pip install pytest
       - name: Run pytest
         run: |
-          cd pythonista_job_runner
           pytest -q

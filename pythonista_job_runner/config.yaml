@@ -44,7 +44,6 @@ options:
     api_allow_cidrs: []
   runner:
     bind_host: "0.0.0.0"
-    bind_port: 8787
     job_user: "jobrunner"
   jobs:
     timeout_seconds: 3600
@@ -95,7 +94,6 @@ schema:
       - str
   runner:
     bind_host: str
-    bind_port: port
     job_user: str
   jobs:
     timeout_seconds: "int(1,86400)"

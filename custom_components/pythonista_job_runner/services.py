@@ -44,36 +44,38 @@ async def async_register_services(hass: HomeAssistant) -> None:
         await hass.async_add_executor_job(entry_data["client"].cancel, call.data["job_id"])
         await entry_data["coordinator"].async_request_refresh()
 
-    if hass.services.has_service(DOMAIN, SERVICE_PURGE_JOBS):
-        return
-
     common_schema = vol.Schema({vol.Required("entry_id"): str, vol.Optional("older_than_hours", default=0): int, vol.Optional("dry_run", default=False): bool})
 
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_PURGE_JOBS,
-        _purge,
-        schema=vol.Schema(
-            {
-                vol.Required("entry_id"): str,
-                vol.Optional("states", default=[]): [str],
-                vol.Optional("older_than_hours", default=0): int,
-                vol.Optional("dry_run", default=False): bool,
-            }
-        ),
-    )
+    if not hass.services.has_service(DOMAIN, SERVICE_PURGE_JOBS):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_PURGE_JOBS,
+            _purge,
+            schema=vol.Schema(
+                {
+                    vol.Required("entry_id"): str,
+                    vol.Optional("states", default=[]): [str],
+                    vol.Optional("older_than_hours", default=0): int,
+                    vol.Optional("dry_run", default=False): bool,
+                }
+            ),
+        )
     async def _purge_done(call: ServiceCall) -> None:
         await _purge_predefined(call, ["done"])
 
     async def _purge_failed(call: ServiceCall) -> None:
         await _purge_predefined(call, ["error"])
 
-    hass.services.async_register(DOMAIN, SERVICE_PURGE_DONE_JOBS, _purge_done, schema=common_schema)
-    hass.services.async_register(DOMAIN, SERVICE_PURGE_FAILED_JOBS, _purge_failed, schema=common_schema)
-    hass.services.async_register(DOMAIN, SERVICE_REFRESH, _refresh, schema=vol.Schema({vol.Required("entry_id"): str}))
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_CANCEL_JOB,
-        _cancel,
-        schema=vol.Schema({vol.Required("entry_id"): str, vol.Required("job_id"): str}),
-    )
+    if not hass.services.has_service(DOMAIN, SERVICE_PURGE_DONE_JOBS):
+        hass.services.async_register(DOMAIN, SERVICE_PURGE_DONE_JOBS, _purge_done, schema=common_schema)
+    if not hass.services.has_service(DOMAIN, SERVICE_PURGE_FAILED_JOBS):
+        hass.services.async_register(DOMAIN, SERVICE_PURGE_FAILED_JOBS, _purge_failed, schema=common_schema)
+    if not hass.services.has_service(DOMAIN, SERVICE_REFRESH):
+        hass.services.async_register(DOMAIN, SERVICE_REFRESH, _refresh, schema=vol.Schema({vol.Required("entry_id"): str}))
+    if not hass.services.has_service(DOMAIN, SERVICE_CANCEL_JOB):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_CANCEL_JOB,
+            _cancel,
+            schema=vol.Schema({vol.Required("entry_id"): str, vol.Required("job_id"): str}),
+        )

@@ -69,9 +69,34 @@
     return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
   }
 
+
+  function storageGet(key) {
+    try {
+      return storageGet(key);
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function storageSet(key, value) {
+    try {
+      storageSet(key, value);
+    } catch (_err) {
+      // ignore storage write failures in restricted environments
+    }
+  }
+
+  function storageRemove(key) {
+    try {
+      storageRemove(key);
+    } catch (_err) {
+      // ignore storage remove failures in restricted environments
+    }
+  }
+
   function setPane(next) {
     pane = (next === "detail") ? "detail" : "jobs";
-    localStorage.setItem("pjr_pane", pane);
+    storageSet("pjr_pane", pane);
     ensurePaneForViewport();
   }
 
@@ -260,7 +285,7 @@ function parseUtcSeconds(v) {
   function setFollow(next) {
     follow = !!next;
     if (els.follow) els.follow.checked = follow;
-    localStorage.setItem("pjr_follow", follow ? "1" : "0");
+    storageSet("pjr_follow", follow ? "1" : "0");
     updateLiveUi();
   }
 
@@ -268,7 +293,7 @@ function parseUtcSeconds(v) {
     paused = !!next;
     autoPauseReason = paused ? String(reason || "") : "";
     if (els.pause) els.pause.checked = paused;
-    localStorage.setItem("pjr_pause", paused ? "1" : "0");
+    storageSet("pjr_pause", paused ? "1" : "0");
     updateLiveUi();
   }
 
@@ -290,13 +315,13 @@ function parseUtcSeconds(v) {
 
   function _saveHighlightTerms() {
     try {
-      localStorage.setItem("pjr_hterms", JSON.stringify(highlightTerms));
+      storageSet("pjr_hterms", JSON.stringify(highlightTerms));
     } catch (_e) {}
   }
 
   function _loadHighlightTerms() {
     try {
-      const raw = localStorage.getItem("pjr_hterms");
+      const raw = storageGet("pjr_hterms");
       if (!raw) return;
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) {
@@ -413,7 +438,7 @@ function parseUtcSeconds(v) {
   function setPollMsFromInput() {
     pollMs = clampInt(els.pollms.value, 250, 10000, pollMs);
     els.pollms.value = String(pollMs);
-    localStorage.setItem("pjr_pollms", String(pollMs));
+    storageSet("pjr_pollms", String(pollMs));
   }
 
   function setActiveButton(prefixId, activeId) {
@@ -427,7 +452,7 @@ function parseUtcSeconds(v) {
 
   function setView(next) {
     view = next;
-    localStorage.setItem("pjr_view", next);
+    storageSet("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
     updateStickySummary();
@@ -435,7 +460,7 @@ function parseUtcSeconds(v) {
 
   function setTab(next) {
     currentTab = next;
-    localStorage.setItem("pjr_tab", next);
+    storageSet("pjr_tab", next);
 
     const tStdout = document.getElementById("tab_stdout");
     const tStderr = document.getElementById("tab_stderr");
@@ -505,9 +530,9 @@ function parseUtcSeconds(v) {
     filterHasResult = false;
     if (els.job_sort) els.job_sort.value = sortMode;
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
-    localStorage.setItem("pjr_search", "");
-    localStorage.setItem("pjr_sort", sortMode);
-    localStorage.setItem("pjr_has_result", "0");
+    storageSet("pjr_search", "");
+    storageSet("pjr_sort", sortMode);
+    storageSet("pjr_has_result", "0");
     applyFilters();
     updateStickySummary();
   }
@@ -517,7 +542,7 @@ function parseUtcSeconds(v) {
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
       "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result"
     ];
-    for (const k of keys) localStorage.removeItem(k);
+    for (const k of keys) storageRemove(k);
     toast("ok", "Reset", "UI settings cleared");
     window.setTimeout(() => window.location.reload(), 500);
   }

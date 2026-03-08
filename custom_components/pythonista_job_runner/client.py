@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import ssl
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -21,10 +22,15 @@ class RunnerClient:
     token: str
     verify_ssl: bool = True
 
+    def _ssl_context(self) -> ssl.SSLContext:
+        if self.verify_ssl:
+            return ssl.create_default_context()
+        return ssl._create_unverified_context()  # noqa: SLF001
+
     def _json_get(self, path: str) -> dict:
         req = Request(f"{self.base_url.rstrip('/')}{path}", headers=self._headers(), method="GET")
         try:
-            with urlopen(req, timeout=10) as resp:  # noqa: S310
+            with urlopen(req, timeout=10, context=self._ssl_context()) as resp:  # noqa: S310
                 return json.loads(resp.read().decode("utf-8"))
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise RunnerClientError(str(exc)) from exc
@@ -37,7 +43,7 @@ class RunnerClient:
             method="POST",
         )
         try:
-            with urlopen(req, timeout=10) as resp:  # noqa: S310
+            with urlopen(req, timeout=10, context=self._ssl_context()) as resp:  # noqa: S310
                 return json.loads(resp.read().decode("utf-8"))
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise RunnerClientError(str(exc)) from exc

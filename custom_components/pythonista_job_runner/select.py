@@ -10,7 +10,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     CONF_NOTIFY_POLICY,
     DEFAULT_NOTIFY_POLICY,
-    DOMAIN,
     NOTIFY_POLICY_ALL,
     NOTIFY_POLICY_FAILURES_ONLY,
     NOTIFY_POLICY_OFF,

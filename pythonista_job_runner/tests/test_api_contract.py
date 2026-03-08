@@ -48,3 +48,25 @@ def test_openapi_contract_covers_major_error_cases() -> None:
         assert code in purge_responses
 
     assert "RunnerToken" in contract["components"]["securitySchemes"]
+
+
+def test_openapi_contract_includes_client_required_response_shapes() -> None:
+    contract = _load_contract()
+
+    run_202 = contract["paths"]["/run"]["post"]["responses"]["202"]["content"]["application/json"]["schema"]
+    assert run_202 == {"$ref": "#/components/schemas/RunAcceptedResponse"}
+
+    run_schema = contract["components"]["schemas"]["RunAcceptedResponse"]
+    assert set(run_schema.get("required", [])) >= {"job_id", "tail_url", "result_url", "jobs_url"}
+
+    job_200 = contract["paths"]["/job/{job_id}.json"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert job_200 == {"$ref": "#/components/schemas/JobStatus"}
+
+    job_schema = contract["components"]["schemas"]["JobStatus"]
+    assert set(job_schema.get("required", [])) >= {"job_id", "state", "phase", "runner_version", "limits"}
+
+    tail_200 = contract["paths"]["/tail/{job_id}.json"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert tail_200 == {"$ref": "#/components/schemas/TailResponse"}
+
+    tail_schema = contract["components"]["schemas"]["TailResponse"]
+    assert set(tail_schema.get("required", [])) >= {"status", "tail"}
