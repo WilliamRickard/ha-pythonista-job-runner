@@ -30,6 +30,7 @@ Review-only and apply-only work must remain separated.
 Each finding should include:
 - ID (`Sxx-C-01`, `Sxx-H-01`, `Sxx-M-01`, `Sxx-L-01`)
 - Title
+- Description of the issue
 - Exact file and function/class/region
 - Impact and risk category
 - Evidence (repro or static reasoning)
