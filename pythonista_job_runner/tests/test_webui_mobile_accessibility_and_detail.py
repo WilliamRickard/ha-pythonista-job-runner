@@ -56,7 +56,8 @@ def test_bundle_has_mobile_jobs_toolbar_help_settings_and_advanced_panels() -> N
     assert 'class="jobs-toolbar"' in html
     assert 'class="searchbar-row"' in html
     assert 'class="state-filters"' in html
-    assert 'id="settings_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
+    assert 'id="settings_modal" role="dialog"' in html
+    assert 'class="modal mobile-panel"' in html
     assert 'id="about_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
     assert 'id="adv_modal" role="dialog"' in html and 'class="modal mobile-panel"' in html
 
