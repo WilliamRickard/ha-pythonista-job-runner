@@ -16,14 +16,20 @@
 
   let currentJob = null;
   let initialTailForJob = null;
-  let currentTab = "stdout";
+  let currentTab = "overview";
   let view = "all";
   let sortMode = "newest";
   let filterHasResult = false;
+  let filterUser = "";
+  let filterSince = "";
+  let currentPage = 1;
+  const PAGE_SIZE = 12;
   let keepSecondaryFilters = true;
   let uiDensity = "comfortable";
+  let uiDirection = "auto";
   let firstJobsLoad = true;
   let jobsViewState = "initial";
+  let jobsPaneWidth = 460;
 
   let jobsCache = [];
   let follow = true;
@@ -43,6 +49,9 @@
   let toastActionHandler = null;
 
   let infoCache = null;
+  let rowPopoverMode = "manual";
+  let hoverPopoverTimer = null;
+  let hoverPopoverCloseTimer = null;
 
   let logSearch = "";
   let matchIdx = -1;
@@ -72,10 +81,15 @@
     return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
   }
 
+  function hasFinePointer() {
+    return !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  }
+
 
   function storageGet(key) {
     try {
-      return storageGet(key);
+      const ls = window["localStorage"];
+      return ls ? ls.getItem(key) : null;
     } catch (_err) {
       return null;
     }
@@ -83,7 +97,8 @@
 
   function storageSet(key, value) {
     try {
-      storageSet(key, value);
+      const ls = window["localStorage"];
+      if (ls) ls.setItem(key, value);
     } catch (_err) {
       // ignore storage write failures in restricted environments
     }
@@ -91,7 +106,8 @@
 
   function storageRemove(key) {
     try {
-      storageRemove(key);
+      const ls = window["localStorage"];
+      if (ls) ls.removeItem(key);
     } catch (_err) {
       // ignore storage remove failures in restricted environments
     }
@@ -101,6 +117,13 @@
     pane = (next === "detail") ? "detail" : "jobs";
     storageSet("pjr_pane", pane);
     ensurePaneForViewport();
+  }
+
+  function updateSplitUi() {
+    if (!document || !document.documentElement) return;
+    const maxWidth = Math.max(360, window.innerWidth - 420);
+    jobsPaneWidth = Math.max(360, Math.min(maxWidth, jobsPaneWidth));
+    document.documentElement.style.setProperty("--jobs-pane-width", `${jobsPaneWidth}px`);
   }
 
   function ensurePaneForViewport() {
@@ -426,6 +449,7 @@ function parseUtcSeconds(v) {
 
   function setView(next) {
     view = next;
+    currentPage = 1;
     storageSet("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
@@ -501,13 +525,29 @@ function parseUtcSeconds(v) {
     if (document && document.body) document.body.dataset.density = uiDensity;
   }
 
+  function updateDirectionUi() {
+    if (!document || !document.documentElement) return;
+    const rootEl = document.documentElement;
+    const body = document.body;
+    if (uiDirection === "rtl" || uiDirection === "ltr") {
+      rootEl.setAttribute("dir", uiDirection);
+      if (body) body.setAttribute("dir", uiDirection);
+    } else {
+      rootEl.removeAttribute("dir");
+      if (body) body.removeAttribute("dir");
+    }
+  }
+
   function updateClearButtonVisibility() {
     if (!els.clear_filters || !els.search) return;
     const hasSearch = !!String(els.search.value || "").trim();
     const hasSecondary = !!filterHasResult;
     const hasNonDefaultSort = sortMode !== "newest";
     const hasStateFilter = view !== "all";
-    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter);
+    const hasUserFilter = !!String(filterUser || "").trim();
+    const hasDateFilter = !!String(filterSince || "").trim();
+    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter || hasUserFilter || hasDateFilter);
+    if (els.clear_user_filter) els.clear_user_filter.hidden = !hasUserFilter;
   }
 
   function clearFilters() {
@@ -515,11 +555,18 @@ function parseUtcSeconds(v) {
     setView("all");
     sortMode = "newest";
     filterHasResult = false;
+    filterUser = "";
+    filterSince = "";
+    currentPage = 1;
+    if (els.filter_user) els.filter_user.value = "";
+    if (els.filter_since) els.filter_since.value = "";
     if (els.job_sort) els.job_sort.value = sortMode;
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
     storageSet("pjr_search", "");
     storageSet("pjr_sort", sortMode);
     storageSet("pjr_has_result", "0");
+    storageSet("pjr_filter_user", "");
+    storageSet("pjr_filter_since", "");
     applyFilters();
     updateClearButtonVisibility();
   }
@@ -527,7 +574,7 @@ function parseUtcSeconds(v) {
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary","pjr_dir","pjr_filter_user","pjr_filter_since","pjr_jobs_pane_width"
     ];
     for (const k of keys) storageRemove(k);
     toast("ok", "Reset", "UI settings cleared");
@@ -678,6 +725,136 @@ function escapeHtml(s) {
     });
   }
 
+  function updateUserFilterOptions(sourceJobs) {
+    if (!els.filter_user_list) return;
+    const jobs = Array.isArray(sourceJobs) ? sourceJobs : jobsCache;
+    const seen = new Set();
+    const frag = document.createDocumentFragment();
+    for (const j of jobs) {
+      const user = String((j && j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "").trim();
+      if (!user) continue;
+      const key = user.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const opt = document.createElement("option");
+      opt.value = user;
+      frag.appendChild(opt);
+    }
+    els.filter_user_list.textContent = "";
+    els.filter_user_list.appendChild(frag);
+  }
+
+  function updatePaginationUi(totalJobs, pageCount) {
+    if (!els.jobs_pagination || !els.page_prev || !els.page_next || !els.page_summary) return;
+    const pages = Math.max(1, pageCount || 1);
+    const total = Math.max(0, totalJobs || 0);
+    els.jobs_pagination.hidden = !(total > PAGE_SIZE);
+    els.page_prev.disabled = currentPage <= 1;
+    els.page_next.disabled = currentPage >= pages;
+    els.page_summary.textContent = `Page ${currentPage} of ${pages} · ${total} jobs`;
+  }
+
+  function _stateSpecificRowSummary(job) {
+    const state = String((job && job.state) || "queued");
+    const age = fmtAge(job && job.created_utc) || "Just now";
+    const dur = fmtDuration(job && job.duration_seconds) || "Not yet";
+    const user = String((job && job.submitted_by && (job.submitted_by.display_name || job.submitted_by.name)) || "").trim();
+    const exitText = (job && job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") ? `Exit ${job.exit_code}` : "";
+    const errorText = String((job && job.error) || "").trim();
+    const resultReady = !!(job && job.result_ready);
+
+    if (state === "running") {
+      return {
+        lead: "Running now",
+        pieces: [
+          { text: `Duration ${dur}`, cls: "meta-state" },
+          user ? { text: user } : null,
+          { text: "Live logs available" },
+        ].filter(Boolean),
+      };
+    }
+    if (state === "done") {
+      return {
+        lead: resultReady ? "Archive ready" : "Completed",
+        pieces: [
+          { text: `Duration ${dur}`, cls: "meta-state" },
+          user ? { text: user } : null,
+          exitText ? { text: exitText } : { text: "Ready to download" },
+        ].filter(Boolean),
+      };
+    }
+    if (state === "error") {
+      return {
+        lead: errorText ? errorText : "Failed",
+        pieces: [
+          exitText ? { text: exitText, cls: "meta-state" } : { text: `Duration ${dur}`, cls: "meta-state" },
+          user ? { text: user } : null,
+          { text: "Open details for stderr" },
+        ].filter(Boolean),
+      };
+    }
+    return {
+      lead: "Waiting to start",
+      pieces: [
+        { text: `Queued ${age}`, cls: "meta-state" },
+        user ? { text: user } : null,
+        { text: "Will run when a worker is free" },
+      ].filter(Boolean),
+    };
+  }
+
+  function _popoverSummaryForJob(job) {
+    const state = String((job && job.state) || "queued");
+    const user = String((job && job.submitted_by && (job.submitted_by.display_name || job.submitted_by.name)) || "").trim();
+    const dur = fmtDuration(job && job.duration_seconds) || "Not yet";
+    const exitText = (job && job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") ? `Exit ${job.exit_code}` : "";
+    const errorText = String((job && job.error) || "").trim();
+    const resultReady = !!(job && job.result_ready);
+
+    if (state === "running") {
+      return {
+        title: "Running",
+        body: user ? `${user} started this job. Live output is available now.` : "This job is running and live output is available now.",
+        extra: [["Duration", dur], ["Focus", "Watch stdout for progress"]],
+      };
+    }
+    if (state === "done") {
+      return {
+        title: resultReady ? "Archive ready" : "Completed",
+        body: resultReady ? "The result archive is ready to download." : "The job has finished. Open details to inspect outputs and status.",
+        extra: [["Duration", dur], ["Outcome", exitText || "Finished"]],
+      };
+    }
+    if (state === "error") {
+      return {
+        title: "Needs attention",
+        body: errorText || "The job failed. Open details to inspect stderr and status.",
+        extra: [["Duration", dur], ["Outcome", exitText || "Failed"]],
+      };
+    }
+    return {
+      title: "Queued",
+      body: user ? `${user} submitted this job. It will start when a worker slot is free.` : "This job is queued and waiting for a worker slot.",
+      extra: [["Age", fmtAge(job && job.created_utc) || "Just now"], ["Next step", "Wait for worker availability"]],
+    };
+  }
+
+  function setDatePreset(preset) {
+    const today = new Date();
+    const format = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (preset === "today") filterSince = format(today);
+    else if (preset === "7d") {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 6);
+      filterSince = format(d);
+    } else filterSince = "";
+    if (els.filter_since) els.filter_since.value = filterSince;
+    storageSet("pjr_filter_since", filterSince);
+    currentPage = 1;
+    applyFilters();
+    updateClearButtonVisibility();
+  }
+
   function renderLog(kind) {
     if (kind === "overview") return;
     const txt = buffers[kind] || "";
@@ -782,6 +959,8 @@ function escapeHtml(s) {
 
 function applyFilters() {
     const q = (els.search.value || "").trim().toLowerCase();
+    const userQ = String(filterUser || "").trim().toLowerCase();
+    const sinceTs = filterSince ? Math.floor(Date.parse(`${filterSince}T00:00:00`) / 1000) : 0;
     let jobs = jobsCache.slice(0);
 
     if (view !== "all") {
@@ -790,6 +969,17 @@ function applyFilters() {
 
     if (filterHasResult) {
       jobs = jobs.filter((j) => !!j.result_ready);
+    }
+
+    if (userQ) {
+      jobs = jobs.filter((j) => {
+        const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name) || "").toLowerCase();
+        return user.includes(userQ);
+      });
+    }
+
+    if (sinceTs) {
+      jobs = jobs.filter((j) => parseUtcSeconds(j.created_utc) >= sinceTs);
     }
 
     if (q) {
@@ -819,8 +1009,16 @@ function applyFilters() {
       return tb - ta;
     });
 
-    renderJobs(jobs, q);
+    const totalJobs = jobs.length;
+    const pageCount = Math.max(1, Math.ceil(totalJobs / PAGE_SIZE));
+    if (currentPage > pageCount) currentPage = pageCount;
+    if (currentPage < 1) currentPage = 1;
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const pagedJobs = jobs.slice(startIdx, startIdx + PAGE_SIZE);
+
+    renderJobs(pagedJobs, q, totalJobs, pageCount);
     updateSortUi();
+    updatePaginationUi(totalJobs, pageCount);
     updateClearButtonVisibility();
   }
 
@@ -837,6 +1035,64 @@ function applyFilters() {
 
     tr = document.createElement("tr");
     tr.dataset.jobId = jobId;
+    tr.tabIndex = 0;
+    tr.className = "job-row";
+    tr.addEventListener("click", (ev) => {
+      const target = ev.target;
+      if (target instanceof Element && target.closest("button,a,summary,details,input,select,textarea,label")) return;
+      selectJob(tr.dataset.jobId || "");
+    });
+    tr.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        selectJob(tr.dataset.jobId || "");
+      }
+      if (ev.key === "ContextMenu" || (ev.shiftKey && ev.key === "F10")) {
+        ev.preventDefault();
+        const rect = tr.getBoundingClientRect();
+        openRowMenu(tr.dataset.jobId || "", rect.left + 20, rect.top + 16);
+      }
+    });
+    tr.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault();
+      openRowMenu(tr.dataset.jobId || "", ev.clientX, ev.clientY);
+    });
+
+    const scheduleHoverOpen = (anchor) => {
+      if (!hasFinePointer()) return;
+      window.clearTimeout(hoverPopoverCloseTimer);
+      window.clearTimeout(hoverPopoverTimer);
+      hoverPopoverTimer = window.setTimeout(() => {
+        openRowPopover(tr.dataset.jobId || "", anchor, undefined, "hover");
+      }, 320);
+    };
+    const scheduleHoverClose = () => {
+      if (!hasFinePointer()) return;
+      window.clearTimeout(hoverPopoverTimer);
+      hoverPopoverCloseTimer = window.setTimeout(() => {
+        if (rowPopoverMode === "hover") closeRowPopover(true);
+      }, 160);
+    };
+
+    tr.addEventListener("touchstart", (ev) => {
+      const target = ev.target;
+      if (target instanceof Element && target.closest("button,a,summary,details,input,select,textarea,label")) return;
+      const touch = ev.touches && ev.touches[0];
+      if (!touch) return;
+      window.clearTimeout(_rowMenuTouchTimer);
+      _rowMenuTouchTimer = window.setTimeout(() => {
+        openRowMenu(tr.dataset.jobId || "", touch.clientX, touch.clientY);
+      }, 450);
+    }, { passive: true });
+    const clearTouchMenu = () => {
+      if (_rowMenuTouchTimer) {
+        window.clearTimeout(_rowMenuTouchTimer);
+        _rowMenuTouchTimer = null;
+      }
+    };
+    tr.addEventListener("touchend", clearTouchMenu, { passive: true });
+    tr.addEventListener("touchcancel", clearTouchMenu, { passive: true });
+    tr.addEventListener("touchmove", clearTouchMenu, { passive: true });
 
     const tdJob = document.createElement("td");
     tdJob.setAttribute("data-label", "Job");
@@ -847,32 +1103,69 @@ function applyFilters() {
 
     const btnJob = document.createElement("button");
     btnJob.type = "button";
-    btnJob.className = "small jobbtn";
+    btnJob.className = "small jobbtn tooltip-target hover-preview-trigger";
+    btnJob.setAttribute("data-tooltip", "Open details");
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
+    btnJob.addEventListener("mouseenter", () => scheduleHoverOpen(btnJob));
+    btnJob.addEventListener("mouseleave", scheduleHoverClose);
 
-    const inlineState = document.createElement("span");
-    inlineState.className = "state-badge-inline";
+    const inlineState = document.createElement("button");
+    inlineState.type = "button";
+    inlineState.className = "state-badge-inline state-badge-trigger tooltip-target hover-preview-trigger";
+    inlineState.setAttribute("aria-label", "Quick peek");
+    inlineState.setAttribute("data-tooltip", "Quick peek");
+    inlineState.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openRowPopover(tr.dataset.jobId || "", inlineState, undefined, "manual");
+    });
+    inlineState.addEventListener("mouseenter", () => scheduleHoverOpen(inlineState));
+    inlineState.addEventListener("mouseleave", scheduleHoverClose);
 
     line.append(btnJob, inlineState);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
 
-    wrap.append(line, meta);
+    const progressShell = document.createElement("div");
+    progressShell.className = "row-progress-shell";
+    progressShell.hidden = true;
+    const progress = document.createElement("div");
+    progress.className = "progress row-progress";
+    progress.setAttribute("role", "progressbar");
+    progress.setAttribute("aria-label", "Job progress");
+    const progressBar = document.createElement("div");
+    progressBar.className = "progress-bar";
+    progress.appendChild(progressBar);
+    const progressCopy = document.createElement("div");
+    progressCopy.className = "row-progress-copy";
+    progressShell.append(progress, progressCopy);
+
+    wrap.append(line, meta, progressShell);
     tdJob.appendChild(wrap);
 
     const tdState = document.createElement("td");
     tdState.setAttribute("data-label", "State");
+    const stateBtn = document.createElement("button");
+    stateBtn.type = "button";
+    stateBtn.className = "state-badge-trigger tooltip-target hover-preview-trigger";
+    stateBtn.setAttribute("aria-label", "Quick peek");
+    stateBtn.setAttribute("data-tooltip", "Quick peek");
+    stateBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openRowPopover(tr.dataset.jobId || "", stateBtn, undefined, "manual");
+    });
+    stateBtn.addEventListener("mouseenter", () => scheduleHoverOpen(stateBtn));
+    stateBtn.addEventListener("mouseleave", scheduleHoverClose);
+    tdState.appendChild(stateBtn);
 
     const tdAge = document.createElement("td");
     tdAge.setAttribute("data-label", "Age");
-
     const tdDur = document.createElement("td");
     tdDur.setAttribute("data-label", "Duration");
-
     const tdUser = document.createElement("td");
     tdUser.setAttribute("data-label", "User");
-
     const tdActions = document.createElement("td");
     tdActions.className = "actions";
     tdActions.setAttribute("data-label", "Actions");
@@ -883,40 +1176,18 @@ function applyFilters() {
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    const overflow = document.createElement("details");
-    overflow.className = "row-overflow";
-    const summary = document.createElement("summary");
-    summary.setAttribute("aria-label", "More actions");
-    summary.textContent = "More";
-
-    const menu = document.createElement("div");
-    menu.className = "row-overflow-menu";
-
-    const zip = document.createElement("a");
-    zip.className = "linkbtn secondary";
-    zip.textContent = "Zip";
-    zip.target = "_blank";
-    zip.rel = "noopener noreferrer";
-
-    const copyId = document.createElement("button");
-    copyId.type = "button";
-    copyId.className = "small secondary";
-    copyId.textContent = "Copy id";
-    copyId.addEventListener("click", async (ev) => {
+    const overflow = document.createElement("button");
+    overflow.type = "button";
+    overflow.className = "small tertiary row-overflow tooltip-target";
+    overflow.setAttribute("aria-label", "More row actions");
+    overflow.setAttribute("data-tooltip", "More actions");
+    overflow.textContent = "⋯";
+    overflow.addEventListener("click", (ev) => {
       ev.preventDefault();
-      const id = tr.dataset.jobId || "";
-      if (!id) return;
-      try {
-        await copyTextToClipboard(id);
-        toast("ok", "Copied", "Job id copied");
-        overflow.open = false;
-      } catch (err) {
-        toast("err", "Copy failed", (err && err.message) ? err.message : "Could not copy job id to clipboard");
-      }
+      ev.stopPropagation();
+      openRowMenu(tr.dataset.jobId || "", overflow);
     });
 
-    menu.append(zip, copyId);
-    overflow.append(summary, menu);
     tdActions.append(btnView, overflow);
     tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
     return tr;
@@ -930,6 +1201,7 @@ function applyFilters() {
     const dur = fmtDuration(j.duration_seconds);
 
     tr.dataset.jobId = jobId;
+    tr.dataset.state = state;
     const isSelected = !!(currentJob && jobId === currentJob);
     tr.classList.toggle("selected", isSelected);
     tr.setAttribute("aria-selected", isSelected ? "true" : "false");
@@ -940,23 +1212,23 @@ function applyFilters() {
       btnJob.textContent = jobId;
       btnJob.title = jobId;
     }
+    tr.setAttribute("aria-label", `Job ${jobId}, ${state}`);
 
     const meta = tdJob.querySelector(".jobmeta");
     if (meta) {
       meta.textContent = "";
-      const addMeta = (label, value) => {
-        const v = String(value || "");
+      const summary = _stateSpecificRowSummary(j);
+      const addMeta = (value, extraCls) => {
+        const v = String(value || "").trim();
         if (!v) return;
         const span = document.createElement("span");
-        span.className = "meta";
-        span.textContent = `${label}: ${v}`;
+        span.className = `meta${extraCls ? ` ${extraCls}` : ""}`;
+        span.textContent = v;
         meta.appendChild(span);
       };
 
-      addMeta("Age", age);
-      addMeta("Duration", dur);
-      addMeta("User", user);
-      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") addMeta("Exit", String(j.exit_code));
+      addMeta(summary.lead, "meta-primary");
+      for (const piece of summary.pieces) addMeta(piece.text, piece.cls || "");
     }
 
     const inlineState = tdJob.querySelector(".state-badge-inline");
@@ -965,10 +1237,22 @@ function applyFilters() {
       inlineState.appendChild(badgeEl(state));
     }
 
+    const progressShell = tdJob.querySelector(".row-progress-shell");
+    if (progressShell) {
+      const showProgress = state === "running" || state === "queued" || state === "error" || state === "done";
+      progressShell.hidden = !showProgress;
+      if (showProgress) {
+        _applyProgressUi(progressShell.querySelector(".row-progress"), progressShell.querySelector(".progress-bar"), progressShell.querySelector(".row-progress-copy"), state);
+      }
+    }
+
     const tdState = tr.children[1];
     if (!tdState) return;
-    tdState.textContent = "";
-    tdState.appendChild(badgeEl(state));
+    const stateBtn = tdState.querySelector(".state-badge-trigger");
+    if (stateBtn) {
+      stateBtn.textContent = "";
+      stateBtn.appendChild(badgeEl(state));
+    }
 
     tr.children[2].textContent = age;
     tr.children[3].textContent = dur;
@@ -986,7 +1270,7 @@ function applyFilters() {
    * @param {Array<Object>} jobs - Array of job objects to display; each should include a `job_id` property.
    * @param {string} [query] - Current search/filter query used to choose appropriate empty-state messaging.
    */
-  function renderJobs(jobs, query) {
+  function renderJobs(jobs, query, totalJobs, pageCount) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
@@ -994,7 +1278,8 @@ function applyFilters() {
     const tableRegion = document.querySelector(".table-region");
     if (tableWrap) tableWrap.hidden = !hasJobs;
     if (tableRegion) tableRegion.classList.toggle("has-jobs", hasJobs);
-    if (els.jobs_count) els.jobs_count.textContent = String(jobs.length);
+    if (els.jobs_count) els.jobs_count.textContent = String(totalJobs || jobs.length);
+    if (els.jobs_pagination) els.jobs_pagination.hidden = !(hasJobs && (totalJobs || 0) > PAGE_SIZE);
 
     if (!hasJobs) {
       const emptyTitle = document.getElementById("empty_title");
@@ -1006,7 +1291,7 @@ function applyFilters() {
         } else if (jobsViewState === "disconnected") {
           emptyTitle.textContent = "Cannot connect";
           emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
-        } else if (view !== "all" || (query && String(query).trim())) {
+        } else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) {
           emptyTitle.textContent = "No matching jobs";
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
@@ -1018,7 +1303,7 @@ function applyFilters() {
         if (emptyAction) {
           if (jobsViewState === "disconnected") {
             emptyAction.textContent = "Use header Refresh. If it persists, open Help for troubleshooting steps.";
-          } else if (view !== "all" || (query && String(query).trim())) {
+          } else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
             emptyAction.textContent = "Quick start has the step-by-step path if you want a guided first run.";
@@ -1033,7 +1318,7 @@ function applyFilters() {
     for (const j of jobs) {
       const jobId = j.job_id || "";
       if (!jobId) continue;
-      let tr = _ensureRow(jobId);
+      const tr = _ensureRow(jobId);
       if (!tr) continue;
       _patchRow(tr, j);
       seen.add(jobId);
@@ -1046,7 +1331,6 @@ function applyFilters() {
 
     tbody.appendChild(frag);
   }
-
 
   function renderStats(stats) {
     const s = stats || {};
@@ -1087,6 +1371,7 @@ function applyFilters() {
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
+      updateUserFilterOptions(jobsCache);
       applyFilters();
     } finally {
       if (els.jobs_loading && !silent) {
@@ -1257,6 +1542,59 @@ function applyFilters() {
   let _commandReturnFocus = null;
   let _confirmReturnFocus = null;
   let confirmActionHandler = null;
+  let _rowMenuJobId = null;
+  let _rowMenuReturnFocus = null;
+  let _rowMenuTouchTimer = null;
+  let _rowPopoverJobId = null;
+  let _rowPopoverReturnFocus = null;
+
+
+
+  function _jobById(jobId) {
+    return jobsCache.find((j) => (j.job_id || "") === String(jobId || "")) || null;
+  }
+
+  function _progressModelForState(state) {
+    const st = String(state || "queued");
+    if (st === "running") return { cls: "running", label: "Running now", detail: "Work is in progress." };
+    if (st === "queued") return { cls: "queued", label: "Queued", detail: "Waiting for an execution slot." };
+    if (st === "done") return { cls: "done", label: "Completed", detail: "Finished successfully." };
+    if (st === "error") return { cls: "error", label: "Failed", detail: "Finished with an error." };
+    return { cls: "queued", label: st || "Queued", detail: "Lifecycle information." };
+  }
+
+  function _applyProgressUi(progressEl, barEl, copyEl, state) {
+    if (!(progressEl instanceof HTMLElement) || !(barEl instanceof HTMLElement)) return;
+    const model = _progressModelForState(state);
+    progressEl.className = `progress ${model.cls}`;
+    if (copyEl instanceof HTMLElement) copyEl.textContent = model.detail;
+    progressEl.setAttribute("aria-valuetext", model.label);
+    if (model.cls === "done") {
+      progressEl.setAttribute("aria-valuenow", "100");
+    } else if (model.cls === "error") {
+      progressEl.setAttribute("aria-valuenow", "100");
+    } else {
+      progressEl.removeAttribute("aria-valuenow");
+    }
+  }
+
+  function _renderPopoverMeta(container, label, value) {
+    const v = String(value || "").trim();
+    if (!v || !(container instanceof HTMLElement)) return;
+    const row = document.createElement("div");
+    row.className = "item-slab";
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = label;
+    copy.appendChild(title);
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    meta.textContent = v;
+    row.append(copy, meta);
+    container.appendChild(row);
+  }
 
   function commandItems() {
     return [
@@ -1343,6 +1681,133 @@ function applyFilters() {
       try { _commandReturnFocus.focus(); } catch (_e) {}
     }
     _commandReturnFocus = null;
+  }
+
+  function positionFloatingMenu(el, x, y) {
+    if (!(el instanceof HTMLElement)) return;
+    const pad = 10;
+    const maxLeft = Math.max(pad, window.innerWidth - el.offsetWidth - pad);
+    const maxTop = Math.max(pad, window.innerHeight - el.offsetHeight - pad);
+    el.style.left = `${Math.min(maxLeft, Math.max(pad, x))}px`;
+    el.style.top = `${Math.min(maxTop, Math.max(pad, y))}px`;
+  }
+
+  function openRowMenu(jobId, anchorOrX, maybeY) {
+    if (!jobId || !els.row_menu) return;
+    _rowMenuJobId = jobId;
+    _rowMenuReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.row_menu_label) els.row_menu_label.textContent = `Job ${jobId}`;
+    if (els.row_menu_zip) els.row_menu_zip.href = apiUrl(`result/${encodeURIComponent(jobId)}.zip`);
+    els.row_menu.hidden = false;
+    let x = 16;
+    let y = 16;
+    if (anchorOrX instanceof HTMLElement) {
+      const rect = anchorOrX.getBoundingClientRect();
+      x = rect.right - 180;
+      y = rect.bottom + 6;
+    } else {
+      x = Number(anchorOrX) || x;
+      y = Number(maybeY) || y;
+    }
+    positionFloatingMenu(els.row_menu, x, y);
+  }
+
+  function closeRowMenu() {
+    if (!els.row_menu) return;
+    els.row_menu.hidden = true;
+    _rowMenuJobId = null;
+    if (_rowMenuReturnFocus && document.contains(_rowMenuReturnFocus)) {
+      try { _rowMenuReturnFocus.focus(); } catch (_e) {}
+    }
+    _rowMenuReturnFocus = null;
+  }
+
+  async function runRowMenuAction(action) {
+    const jobId = _rowMenuJobId;
+    closeRowMenu();
+    if (!jobId) return;
+    if (action === "view") {
+      await selectJob(jobId);
+      return;
+    }
+    if (action === "copy-id") {
+      await copyTextToClipboard(jobId);
+      toast("ok", "Copied", "Job id copied");
+      return;
+    }
+    if (action === "stdout" || action === "stderr" || action === "curl") {
+      if (currentJob !== jobId) await selectJob(jobId);
+      if (action === "stdout") downloadText("stdout");
+      else if (action === "stderr") downloadText("stderr");
+      else await copyCurl();
+      return;
+    }
+  }
+
+
+  function openRowPopover(jobId, anchorOrX, maybeY, mode) {
+    if (!jobId || !els.row_popover) return;
+    const job = _jobById(jobId);
+    if (!job) return;
+    rowPopoverMode = mode || "manual";
+    _rowPopoverJobId = jobId;
+    _rowPopoverReturnFocus = rowPopoverMode === "manual" && (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.row_popover_label) els.row_popover_label.textContent = rowPopoverMode === "hover" ? `Preview ${jobId}` : `Job ${jobId}`;
+    els.row_popover.dataset.mode = rowPopoverMode;
+    const summary = _popoverSummaryForJob(job);
+    if (els.row_popover_summary && els.row_popover_summary_title && els.row_popover_summary_body) {
+      els.row_popover_summary.hidden = false;
+      els.row_popover_summary_title.textContent = summary.title;
+      els.row_popover_summary_body.textContent = summary.body;
+    }
+    if (els.row_popover_list) {
+      els.row_popover_list.textContent = "";
+      _renderPopoverMeta(els.row_popover_list, "State", String(job.state || "queued"));
+      _renderPopoverMeta(els.row_popover_list, "Age", fmtAge(job.created_utc) || "Just now");
+      const user = (job.submitted_by && (job.submitted_by.display_name || job.submitted_by.name)) || "";
+      _renderPopoverMeta(els.row_popover_list, "User", user || "Unknown");
+      for (const [label, value] of summary.extra || []) _renderPopoverMeta(els.row_popover_list, label, value);
+      if (job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") _renderPopoverMeta(els.row_popover_list, "Exit", String(job.exit_code));
+    }
+    if (els.row_popover_progress_shell) {
+      const showProgress = ["running", "queued", "done", "error"].includes(String(job.state || "queued"));
+      els.row_popover_progress_shell.hidden = !showProgress;
+      if (showProgress) _applyProgressUi(els.row_popover_progress, els.row_popover_progress_bar, els.row_popover_progress_copy, job.state);
+    }
+    els.row_popover.hidden = false;
+    let x = 16;
+    let y = 16;
+    if (anchorOrX instanceof HTMLElement) {
+      const rect = anchorOrX.getBoundingClientRect();
+      x = rect.left;
+      y = rect.bottom + 8;
+    } else {
+      x = Number(anchorOrX) || x;
+      y = Number(maybeY) || y;
+    }
+    positionFloatingMenu(els.row_popover, x, y);
+  }
+
+  function closeRowPopover(silent) {
+    if (!els.row_popover) return;
+    els.row_popover.hidden = true;
+    _rowPopoverJobId = null;
+    if (!silent && _rowPopoverReturnFocus && document.contains(_rowPopoverReturnFocus)) {
+      try { _rowPopoverReturnFocus.focus(); } catch (_e) {}
+    }
+    _rowPopoverReturnFocus = null;
+  }
+
+  async function runRowPopoverAction(action) {
+    const jobId = _rowPopoverJobId;
+    closeRowPopover();
+    if (!jobId) return;
+    if (action === "view") await selectJob(jobId);
+  }
+
+  function goToNextPage(step) {
+    currentPage = Math.max(1, currentPage + step);
+    applyFilters();
   }
 
   function openConfirm(opts) {
@@ -1452,6 +1917,7 @@ function applyFilters() {
     if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
     if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
     if (els.settings_density) els.settings_density.value = uiDensity;
+    if (els.settings_direction) els.settings_direction.value = uiDirection;
   }
 
   function closeSettings() {
@@ -1663,6 +2129,17 @@ function closeAbout() {
     if (els.state_description) els.state_description.textContent = desc;
   }
 
+
+
+  function _renderDetailProgress(st) {
+    if (!els.detail_progress_shell || !els.detail_progress || !els.detail_progress_bar) return;
+    const state = String((st && st.state) || "queued");
+    const show = ["running", "queued", "done", "error"].includes(state);
+    els.detail_progress_shell.hidden = !show;
+    if (!show) return;
+    _applyProgressUi(els.detail_progress, els.detail_progress_bar, els.detail_progress_copy, state);
+  }
+
   function _renderTimeline(st) {
     if (!els.detail_timeline) return;
 
@@ -1694,34 +2171,82 @@ function closeAbout() {
   function _renderInsights(st) {
     if (!st) return;
     const limits = st.limits || {};
+    const state = String(st.state || "queued");
+    const cpu = (limits.cpu_percent === null || limits.cpu_percent === undefined) ? "?" : String(limits.cpu_percent);
+    const mem = (limits.mem_mb === null || limits.mem_mb === undefined) ? "?" : String(limits.mem_mb);
+    const threads = (limits.threads === null || limits.threads === undefined) ? "?" : String(limits.threads);
+    const filename = st.result_filename ? String(st.result_filename) : "result archive";
+    const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : `Exit ${st.exit_code}`;
+    const err = st.error ? String(st.error) : "Unknown error";
+
+    if (els.detail_subtitle) {
+      if (state === "running") els.detail_subtitle.textContent = "Follow progress, outputs, and the latest status in one place.";
+      else if (state === "queued") els.detail_subtitle.textContent = "Queued work, expected limits, and the next useful checks.";
+      else if (state === "done") els.detail_subtitle.textContent = "Result, completion details, and downloads in one place.";
+      else if (state === "error") els.detail_subtitle.textContent = "Failure summary, next checks, and recovery actions in one place.";
+      else els.detail_subtitle.textContent = "Lifecycle, outputs, and logs in one place.";
+    }
 
     if (els.detail_limits_summary) {
-      const cpu = (limits.cpu_percent === null || limits.cpu_percent === undefined) ? "?" : String(limits.cpu_percent);
-      const mem = (limits.mem_mb === null || limits.mem_mb === undefined) ? "?" : String(limits.mem_mb);
-      const threads = (limits.threads === null || limits.threads === undefined) ? "?" : String(limits.threads);
       els.detail_limits_summary.textContent = `CPU ${cpu}% · Memory ${mem} MB · Threads ${threads}`;
     }
 
+    if (els.detail_result_label) els.detail_result_label.textContent = (state === "queued") ? "Next step" : (state === "running" ? "Progress" : (state === "error" ? "Failure" : "Result"));
+    if (els.detail_failure_label) els.detail_failure_label.textContent = (state === "queued") ? "What to expect" : (state === "running" ? "Watch for" : (state === "error" ? "Next step" : "Completion"));
+    if (els.detail_limits_label) els.detail_limits_label.textContent = (state === "done" || state === "error") ? "Execution profile" : "Execution limits";
+
     if (els.detail_result_summary) {
-      const filename = st.result_filename ? String(st.result_filename) : "result archive";
-      if (st.state === "done") {
-        els.detail_result_summary.textContent = `${filename} is expected to be ready. Use Download zip to inspect outputs and status.json.`;
-      } else if (st.state === "error") {
-        els.detail_result_summary.textContent = `Job failed before final results were guaranteed. Check stderr and status details.`;
+      if (state === "queued") {
+        els.detail_result_summary.textContent = "Waiting for a worker slot. Refresh or leave this open to see when execution begins.";
+      } else if (state === "running") {
+        els.detail_result_summary.textContent = "Execution is in progress. Open stdout for live output and check the state banner for changes.";
+      } else if (state === "done") {
+        els.detail_result_summary.textContent = `${filename} is ready or expected to be ready. Use Download zip to inspect outputs and status.json.`;
+      } else if (state === "error") {
+        els.detail_result_summary.textContent = `${err}. Open stderr and the request details to diagnose the failure.`;
       } else {
-        els.detail_result_summary.textContent = `Result archive not ready yet. Current state: ${String(st.state || "queued")}.`;
+        els.detail_result_summary.textContent = `Current state: ${state}.`;
       }
     }
 
     if (els.detail_failure_summary) {
-      if (st.state === "error") {
-        const err = st.error ? String(st.error) : "Unknown error";
-        const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : ` (exit ${st.exit_code})`;
-        els.detail_failure_summary.textContent = `${err}${exit}`;
-      } else if (st.state === "done") {
-        els.detail_failure_summary.textContent = "No failure detected. Inspect stdout/stderr for warnings if needed.";
+      if (state === "queued") {
+        els.detail_failure_summary.textContent = "Logs, duration, and result details appear after the worker starts this job.";
+      } else if (state === "running") {
+        els.detail_failure_summary.textContent = "If execution stalls or fails, stderr and the state banner will show the clearest signal first.";
+      } else if (state === "error") {
+        els.detail_failure_summary.textContent = exit ? `${exit}. Check stderr first, then request and metadata for context.` : "Check stderr first, then request and metadata for context.";
+      } else if (state === "done") {
+        els.detail_failure_summary.textContent = exit ? `${exit}. Inspect stdout and stderr if you need extra confirmation.` : "No failure detected. Inspect stdout and stderr only if you need extra confirmation.";
       } else {
         els.detail_failure_summary.textContent = "Failure diagnosis becomes available when the job finishes.";
+      }
+    }
+
+    const priorityState = state || "queued";
+    [els.detail_result_summary, els.detail_failure_summary, els.detail_limits_summary].forEach((node) => {
+      const shell = node && node.closest ? node.closest(".detail-priority-item") : null;
+      if (shell) {
+        shell.dataset.state = priorityState;
+        shell.dataset.emphasis = (node === els.detail_result_summary || (state === "error" && node === els.detail_failure_summary)) ? "strong" : "normal";
+      }
+    });
+
+    if (els.detail_timeline_title) {
+      els.detail_timeline_title.textContent = (state === "queued") ? "Queue and timing" : (state === "running" ? "Live timing" : "Lifecycle");
+    }
+    if (els.detail_overview_title) {
+      els.detail_overview_title.textContent = (state === "error") ? "Failure focus" : (state === "running" ? "Live summary" : "Quick facts");
+    }
+    if (els.overview_text) {
+      if (state === "queued") {
+        els.overview_text.textContent = "This job is waiting for a worker slot. The Summary tab shows the next useful state checks first.";
+      } else if (state === "running") {
+        els.overview_text.textContent = "This job is actively running. The most useful next steps are live stdout and the state banner above.";
+      } else if (state === "error") {
+        els.overview_text.textContent = `Failure details are prioritised above. ${exit ? `${exit}. ` : ""}Use stderr first, then request details if you need deeper context.`;
+      } else if (state === "done") {
+        els.overview_text.textContent = "This job finished. Download the result archive first, then inspect stdout or stderr only if you need more detail.";
       }
     }
   }
@@ -1774,6 +2299,7 @@ function closeAbout() {
     }
 
     _setStateBanner(s);
+    _renderDetailProgress(s);
     _renderTimeline(s);
     _renderInsights(s);
   }
@@ -1785,6 +2311,7 @@ function closeAbout() {
     els.detail_empty.hidden = true;
     els.detail.hidden = false;
     els.jobid.textContent = jobId;
+    if (els.detail_breadcrumb_current) els.detail_breadcrumb_current.textContent = jobId;
     if (isNarrow()) setPane("detail");
 
     // Update URL (Ingress-safe: keep relative)
@@ -2065,11 +2592,22 @@ function toggleAuto() {
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
+        if (action === "clear-user-filter") {
+          filterUser = "";
+          currentPage = 1;
+          if (els.filter_user) els.filter_user.value = "";
+          storageSet("pjr_filter_user", "");
+          applyFilters();
+          updateClearButtonVisibility();
+        }
         if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
+        if (action === "set-date-preset") setDatePreset(btn.getAttribute("data-preset") || "clear");
+        if (action === "page-prev") goToNextPage(-1);
+        if (action === "page-next") goToNextPage(1);
         if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
         if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
         if (action === "find-next") findNext();
@@ -2086,6 +2624,12 @@ function toggleAuto() {
         if (action === "close-about") closeAbout();
         if (action === "close-confirm") closeConfirm();
         if (action === "confirm-accept") await acceptConfirm();
+        if (action === "row-popover-view") await runRowPopoverAction("view");
+        if (action === "row-menu-view") await runRowMenuAction("view");
+        if (action === "row-menu-copy-id") await runRowMenuAction("copy-id");
+        if (action === "row-menu-stdout") await runRowMenuAction("stdout");
+        if (action === "row-menu-stderr") await runRowMenuAction("stderr");
+        if (action === "row-menu-curl") await runRowMenuAction("curl");
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
@@ -2132,6 +2676,31 @@ function toggleAuto() {
     if (els.confirm_overlay) {
       els.confirm_overlay.addEventListener("click", (ev) => {
         if (ev.target === els.confirm_overlay) closeConfirm();
+      });
+    }
+
+    document.addEventListener("click", (ev) => {
+      if (!els.row_menu || els.row_menu.hidden) return;
+      const target = ev.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#row_menu") || target.closest(".row-overflow")) return;
+      closeRowMenu();
+    });
+
+    document.addEventListener("click", (ev) => {
+      if (!els.row_popover || els.row_popover.hidden) return;
+      const target = ev.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#row_popover") || target.closest(".state-badge-trigger") || target.closest(".hover-preview-trigger") || target.closest(".jobbtn")) return;
+      closeRowPopover();
+    });
+
+    if (els.row_popover) {
+      els.row_popover.addEventListener("mouseenter", () => {
+        window.clearTimeout(hoverPopoverCloseTimer);
+      });
+      els.row_popover.addEventListener("mouseleave", () => {
+        if (rowPopoverMode === "hover") closeRowPopover(true);
       });
     }
 
@@ -2191,6 +2760,8 @@ function toggleAuto() {
       if (ev.key === "Escape") {
         if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
         if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
+        if (els.row_menu && !els.row_menu.hidden) closeRowMenu();
+        if (els.row_popover && !els.row_popover.hidden) closeRowPopover();
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
@@ -2210,6 +2781,7 @@ function toggleAuto() {
       storageSet("pjr_pollms", String(pollMs));
     });
     els.search.addEventListener("input", () => {
+      currentPage = 1;
       storageSet("pjr_search", String(els.search.value || ""));
       applyFilters();
       updateClearButtonVisibility();
@@ -2217,7 +2789,28 @@ function toggleAuto() {
     if (els.filter_has_result) {
       els.filter_has_result.addEventListener("change", () => {
         filterHasResult = !!els.filter_has_result.checked;
+        currentPage = 1;
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.filter_user) {
+      els.filter_user.addEventListener("input", () => {
+        filterUser = String(els.filter_user.value || "").trim();
+        currentPage = 1;
+        storageSet("pjr_filter_user", filterUser);
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.filter_since) {
+      els.filter_since.addEventListener("change", () => {
+        filterSince = String(els.filter_since.value || "").trim();
+        currentPage = 1;
+        storageSet("pjr_filter_since", filterSince);
         applyFilters();
         updateClearButtonVisibility();
       });
@@ -2232,6 +2825,7 @@ function toggleAuto() {
     if (els.settings_default_sort) {
       els.settings_default_sort.addEventListener("change", () => {
         sortMode = els.settings_default_sort.value || "newest";
+        currentPage = 1;
         storageSet("pjr_sort", sortMode);
         applyFilters();
         updateClearButtonVisibility();
@@ -2250,6 +2844,14 @@ function toggleAuto() {
         uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
         storageSet("pjr_density", uiDensity);
         updateDensityUi();
+      });
+    }
+
+    if (els.settings_direction) {
+      els.settings_direction.addEventListener("change", () => {
+        uiDirection = ["auto", "ltr", "rtl"].includes(els.settings_direction.value) ? els.settings_direction.value : "auto";
+        storageSet("pjr_dir", uiDirection);
+        updateDirectionUi();
       });
     }
 
@@ -2333,6 +2935,32 @@ function toggleAuto() {
       ev.preventDefault();
       els.search.focus();
     });
+
+    if (els.desktop_splitter) {
+      els.desktop_splitter.addEventListener("pointerdown", (ev) => {
+        if (window.innerWidth < 1100) return;
+        ev.preventDefault();
+        const startX = ev.clientX;
+        const startWidth = jobsPaneWidth;
+        document.body.classList.add("splitter-dragging");
+        const onMove = (moveEv) => {
+          const dir = document.documentElement.getAttribute("dir") === "rtl" ? -1 : 1;
+          jobsPaneWidth = startWidth + ((moveEv.clientX - startX) * dir);
+          updateSplitUi();
+        };
+        const onUp = () => {
+          document.body.classList.remove("splitter-dragging");
+          storageSet("pjr_jobs_pane_width", String(Math.round(jobsPaneWidth)));
+          window.removeEventListener("pointermove", onMove);
+        };
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp, { once: true });
+      });
+    }
+
+    window.addEventListener("resize", () => {
+      updateSplitUi();
+    });
   }
 
   function cacheEls() {
@@ -2362,9 +2990,18 @@ function toggleAuto() {
     els.search = document.getElementById("search");
     els.job_sort = document.getElementById("job_sort");
     els.filter_has_result = document.getElementById("filter_has_result");
+    els.filter_user = document.getElementById("filter_user");
+    els.filter_user_list = document.getElementById("filter_user_list");
+    els.clear_user_filter = document.querySelector('[data-action="clear-user-filter"]');
+    els.filter_since = document.getElementById("filter_since");
     els.clear_filters = document.getElementById("clear_filters");
     els.jobs_count = document.getElementById("jobs_count");
+    els.jobs_pagination = document.getElementById("jobs_pagination");
+    els.page_prev = document.getElementById("page_prev");
+    els.page_next = document.getElementById("page_next");
+    els.page_summary = document.getElementById("page_summary");
     els.main_header = document.getElementById("main_header");
+    els.desktop_splitter = document.getElementById("desktop_splitter");
 
     els.detail = document.getElementById("detail");
     els.detail_empty = document.getElementById("detail_empty");
@@ -2379,6 +3016,11 @@ function toggleAuto() {
     els.detail_limits_summary = document.getElementById("detail_limits_summary");
     els.detail_failure_summary = document.getElementById("detail_failure_summary");
     els.detail_inline_state = document.getElementById("detail_inline_state");
+    els.detail_progress_shell = document.getElementById("detail_progress_shell");
+    els.detail_progress = document.getElementById("detail_progress");
+    els.detail_progress_bar = document.getElementById("detail_progress_bar");
+    els.detail_progress_copy = document.getElementById("detail_progress_copy");
+    els.detail_breadcrumb_current = document.getElementById("detail_breadcrumb_current");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");
@@ -2420,6 +3062,16 @@ function toggleAuto() {
     els.confirm_title = document.getElementById("confirm_title");
     els.confirm_body = document.getElementById("confirm_body");
     els.confirm_accept = document.getElementById("confirm_accept");
+    els.row_popover = document.getElementById("row_popover");
+    els.row_popover_label = document.getElementById("row_popover_label");
+    els.row_popover_list = document.getElementById("row_popover_list");
+    els.row_popover_progress_shell = document.getElementById("row_popover_progress_shell");
+    els.row_popover_progress = document.getElementById("row_popover_progress");
+    els.row_popover_progress_bar = document.getElementById("row_popover_progress_bar");
+    els.row_popover_progress_copy = document.getElementById("row_popover_progress_copy");
+    els.row_menu = document.getElementById("row_menu");
+    els.row_menu_label = document.getElementById("row_menu_label");
+    els.row_menu_zip = document.getElementById("row_menu_zip");
 
     els.about_overlay = document.getElementById("about_overlay");
     els.about_modal = document.getElementById("about_modal");
@@ -2435,6 +3087,7 @@ function toggleAuto() {
     els.settings_default_sort = document.getElementById("settings_default_sort");
     els.settings_keep_secondary = document.getElementById("settings_keep_secondary");
     els.settings_density = document.getElementById("settings_density");
+    els.settings_direction = document.getElementById("settings_direction");
 
     els.adv_overlay = document.getElementById("adv_overlay");
     els.adv_modal = document.getElementById("adv_modal");
@@ -2489,10 +3142,23 @@ function toggleAuto() {
     if (savedHasResult !== null && keepSecondaryFilters) filterHasResult = (savedHasResult === "1");
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
 
+    const savedUserFilter = storageGet("pjr_filter_user");
+    if (savedUserFilter !== null) filterUser = savedUserFilter;
+    if (els.filter_user) els.filter_user.value = filterUser;
+
+    const savedSinceFilter = storageGet("pjr_filter_since");
+    if (savedSinceFilter !== null) filterSince = savedSinceFilter;
+    if (els.filter_since) els.filter_since.value = filterSince;
+
     const savedDensity = storageGet("pjr_density");
     if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";
     if (els.settings_density) els.settings_density.value = uiDensity;
     updateDensityUi();
+
+    const savedDirection = storageGet("pjr_dir");
+    if (savedDirection && ["auto", "ltr", "rtl"].includes(savedDirection)) uiDirection = savedDirection;
+    if (els.settings_direction) els.settings_direction.value = uiDirection;
+    updateDirectionUi();
 
     const savedFollow = storageGet("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
@@ -2519,6 +3185,10 @@ function toggleAuto() {
     updateHighlightUi();
 
     if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+
+    const savedPaneWidth = storageGet("pjr_jobs_pane_width");
+    if (savedPaneWidth) jobsPaneWidth = clampInt(savedPaneWidth, 360, 900, jobsPaneWidth);
+    updateSplitUi();
 
     const savedPane = storageGet("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";

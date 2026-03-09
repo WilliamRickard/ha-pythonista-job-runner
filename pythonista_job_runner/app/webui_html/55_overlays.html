@@ -20,6 +20,37 @@
     </div>
   </div>
 
+
+  <div id="row_popover" class="floating-popover" hidden role="dialog" aria-label="Job quick peek">
+    <div class="floating-popover-label" id="row_popover_label">Job quick peek</div>
+    <div id="row_popover_summary" class="floating-popover-summary" hidden>
+      <div id="row_popover_summary_title" class="floating-popover-summary-title">At a glance</div>
+      <div id="row_popover_summary_body" class="floating-popover-summary-body">Quick job summary</div>
+    </div>
+    <div id="row_popover_progress_shell" class="row-popover-progress-shell" hidden>
+      <div id="row_popover_progress" class="progress popover-progress" role="progressbar" aria-label="Job progress">
+        <div id="row_popover_progress_bar" class="progress-bar"></div>
+      </div>
+      <div id="row_popover_progress_copy" class="row-popover-progress-copy">In progress</div>
+    </div>
+    <div id="row_popover_list" class="item-list popover-item-list"></div>
+    <div class="separator" role="separator" aria-hidden="true"></div>
+    <div class="floating-popover-actions">
+      <button type="button" class="small primary" data-action="row-popover-view">Open details</button>
+    </div>
+  </div>
+
+  <div id="row_menu" class="floating-menu" hidden role="menu" aria-label="Job row actions">
+    <div class="floating-menu-section-label" id="row_menu_label">Job actions</div>
+    <button type="button" class="small tertiary menu-item" data-action="row-menu-view" role="menuitem">View details</button>
+    <a id="row_menu_zip" class="small tertiary menu-item floating-link" href="#" target="_blank" rel="noopener noreferrer" role="menuitem">Download zip</a>
+    <div class="separator" role="separator" aria-hidden="true"></div>
+    <button type="button" class="small tertiary menu-item" data-action="row-menu-copy-id" role="menuitem">Copy job id</button>
+    <button type="button" class="small tertiary menu-item" data-action="row-menu-stdout" role="menuitem">Download stdout</button>
+    <button type="button" class="small tertiary menu-item" data-action="row-menu-stderr" role="menuitem">Download stderr</button>
+    <button type="button" class="small tertiary menu-item" data-action="row-menu-curl" role="menuitem">Copy curl</button>
+  </div>
+
   <div id="confirm_overlay" class="overlay" hidden aria-hidden="true">
     <div class="modal alert-modal" id="confirm_modal" role="alertdialog" aria-modal="true" tabindex="-1" aria-labelledby="confirm_title" aria-describedby="confirm_body">
       <div class="modal-header compact-header">

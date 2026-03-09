@@ -47,8 +47,30 @@
                 </details>
                 <details class="secondary-panel filters-sheet-trigger">
                   <summary>Filters</summary>
-                  <div class="secondary-panel-body">
-                    <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                  <div class="secondary-panel-body filters-sheet-body">
+                    <div class="field-shell filters-field-group">
+                      <div class="field adv-field combobox-field">
+                        <label for="filter_user" class="field-label">User</label>
+                        <div class="combobox-shell">
+                          <input id="filter_user" type="search" list="filter_user_list" placeholder="Any user" autocomplete="off" aria-label="Filter by user"/>
+                          <button type="button" class="small tertiary combobox-clear" data-action="clear-user-filter" aria-label="Clear user filter" hidden>Clear</button>
+                        </div>
+                        <datalist id="filter_user_list"></datalist>
+                        <div class="field-hint">Filter jobs by submitted user with quick suggestions from recent jobs.</div>
+                      </div>
+                      <div class="separator" role="separator" aria-hidden="true"></div>
+                      <div class="field adv-field calendar-field">
+                        <label for="filter_since" class="field-label">From date</label>
+                        <input id="filter_since" type="date" aria-label="Show jobs created on or after date"/>
+                        <div class="filter-presets" role="group" aria-label="Date filter presets">
+                          <button type="button" class="small tertiary" data-action="set-date-preset" data-preset="today">Today</button>
+                          <button type="button" class="small tertiary" data-action="set-date-preset" data-preset="7d">Last 7 days</button>
+                          <button type="button" class="small tertiary" data-action="set-date-preset" data-preset="clear">Clear date</button>
+                        </div>
+                      </div>
+                      <div class="separator" role="separator" aria-hidden="true"></div>
+                      <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                    </div>
                   </div>
                 </details>
               </div>
@@ -71,6 +93,12 @@
                 </thead>
                 <tbody></tbody>
               </table>
+            </div>
+
+            <div id="jobs_pagination" class="pagination-shell" aria-label="Jobs pagination" hidden>
+              <button type="button" class="small tertiary" data-action="page-prev" id="page_prev">Previous</button>
+              <div id="page_summary" class="pagination-summary" role="status" aria-live="polite">Page 1 of 1</div>
+              <button type="button" class="small tertiary" data-action="page-next" id="page_next">Next</button>
             </div>
 
             <div id="empty" class="empty empty-pattern" role="status" aria-live="polite" hidden>

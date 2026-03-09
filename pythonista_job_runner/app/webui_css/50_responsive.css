@@ -5,7 +5,7 @@
 
 @media (max-width: 980px){
   .kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .detail-insights{ grid-template-columns: 1fr 1fr; }
+  .detail-priority-strip{ grid-template-columns: 1fr 1fr; }
   .timeline{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   table{ min-width: 620px; }
 }
@@ -24,7 +24,7 @@
   .jobs-secondary-row{width:100%;justify-content:flex-start;}
   .sort-menu{width:auto;}
   .toggle-group{width:100%;}
-  .detail-insights{ grid-template-columns: 1fr; }
+  .detail-priority-strip{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
   .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
   .detail-primary-actions button,.detail-primary-actions details{flex:0 0 auto;}
@@ -44,6 +44,7 @@
   #jobtable td:nth-child(5){display:none;}
   .tablewrap{border:0;background:transparent;overflow:visible;}
   .jobmeta{display:flex;}
+  .row-progress-shell{display:grid;margin-top:8px;}
   .state-badge-inline{display:inline-flex;}
   #jobtable td.actions{padding-top:2px;}
   #jobtable td.actions::before{display:none;}
@@ -73,4 +74,46 @@
   .jobs-secondary-row{width:100%;}
   .sort-menu, .filters-sheet-trigger{width:100%;}
   .sort-menu summary, .filters-sheet-trigger summary{width:100%;justify-content:space-between;}
+}
+
+[dir="rtl"] .header-more-panel{left:0;right:auto;}
+
+
+@media (min-width: 1100px){
+  #main_content{
+    display:grid;
+    grid-template-columns:minmax(360px,var(--jobs-pane-width,460px)) 10px minmax(360px,1fr);
+    column-gap:16px;
+    align-items:start;
+  }
+  #pane_jobs{grid-column:1;grid-row:1;}
+  #stats{grid-column:1;grid-row:2;margin-top:12px;}
+  #header_meta{grid-column:1;grid-row:3;margin-top:10px;}
+  #desktop_splitter{
+    display:block;
+    grid-column:2;
+    grid-row:1 / span 3;
+    align-self:stretch;
+    cursor:col-resize;
+    position:relative;
+  }
+  #desktop_splitter::before{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:50%;
+    width:4px;
+    transform:translateX(-50%);
+    border-radius:999px;
+    background:color-mix(in srgb, var(--line) 72%, transparent);
+  }
+  #pane_detail{grid-column:3;grid-row:1 / span 3;margin-top:0 !important;position:sticky;top:12px;}
+}
+
+@media (max-width: 720px){
+  .combobox-shell{flex-wrap:wrap;}
+  .combobox-clear{margin-left:auto;}
+  .pagination-shell{padding-top:6px;}
+  .pagination-shell .small{flex:0 0 auto;}
 }

@@ -89,6 +89,17 @@
     if (els.state_description) els.state_description.textContent = desc;
   }
 
+
+
+  function _renderDetailProgress(st) {
+    if (!els.detail_progress_shell || !els.detail_progress || !els.detail_progress_bar) return;
+    const state = String((st && st.state) || "queued");
+    const show = ["running", "queued", "done", "error"].includes(state);
+    els.detail_progress_shell.hidden = !show;
+    if (!show) return;
+    _applyProgressUi(els.detail_progress, els.detail_progress_bar, els.detail_progress_copy, state);
+  }
+
   function _renderTimeline(st) {
     if (!els.detail_timeline) return;
 
@@ -120,34 +131,82 @@
   function _renderInsights(st) {
     if (!st) return;
     const limits = st.limits || {};
+    const state = String(st.state || "queued");
+    const cpu = (limits.cpu_percent === null || limits.cpu_percent === undefined) ? "?" : String(limits.cpu_percent);
+    const mem = (limits.mem_mb === null || limits.mem_mb === undefined) ? "?" : String(limits.mem_mb);
+    const threads = (limits.threads === null || limits.threads === undefined) ? "?" : String(limits.threads);
+    const filename = st.result_filename ? String(st.result_filename) : "result archive";
+    const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : `Exit ${st.exit_code}`;
+    const err = st.error ? String(st.error) : "Unknown error";
+
+    if (els.detail_subtitle) {
+      if (state === "running") els.detail_subtitle.textContent = "Follow progress, outputs, and the latest status in one place.";
+      else if (state === "queued") els.detail_subtitle.textContent = "Queued work, expected limits, and the next useful checks.";
+      else if (state === "done") els.detail_subtitle.textContent = "Result, completion details, and downloads in one place.";
+      else if (state === "error") els.detail_subtitle.textContent = "Failure summary, next checks, and recovery actions in one place.";
+      else els.detail_subtitle.textContent = "Lifecycle, outputs, and logs in one place.";
+    }
 
     if (els.detail_limits_summary) {
-      const cpu = (limits.cpu_percent === null || limits.cpu_percent === undefined) ? "?" : String(limits.cpu_percent);
-      const mem = (limits.mem_mb === null || limits.mem_mb === undefined) ? "?" : String(limits.mem_mb);
-      const threads = (limits.threads === null || limits.threads === undefined) ? "?" : String(limits.threads);
       els.detail_limits_summary.textContent = `CPU ${cpu}% · Memory ${mem} MB · Threads ${threads}`;
     }
 
+    if (els.detail_result_label) els.detail_result_label.textContent = (state === "queued") ? "Next step" : (state === "running" ? "Progress" : (state === "error" ? "Failure" : "Result"));
+    if (els.detail_failure_label) els.detail_failure_label.textContent = (state === "queued") ? "What to expect" : (state === "running" ? "Watch for" : (state === "error" ? "Next step" : "Completion"));
+    if (els.detail_limits_label) els.detail_limits_label.textContent = (state === "done" || state === "error") ? "Execution profile" : "Execution limits";
+
     if (els.detail_result_summary) {
-      const filename = st.result_filename ? String(st.result_filename) : "result archive";
-      if (st.state === "done") {
-        els.detail_result_summary.textContent = `${filename} is expected to be ready. Use Download zip to inspect outputs and status.json.`;
-      } else if (st.state === "error") {
-        els.detail_result_summary.textContent = `Job failed before final results were guaranteed. Check stderr and status details.`;
+      if (state === "queued") {
+        els.detail_result_summary.textContent = "Waiting for a worker slot. Refresh or leave this open to see when execution begins.";
+      } else if (state === "running") {
+        els.detail_result_summary.textContent = "Execution is in progress. Open stdout for live output and check the state banner for changes.";
+      } else if (state === "done") {
+        els.detail_result_summary.textContent = `${filename} is ready or expected to be ready. Use Download zip to inspect outputs and status.json.`;
+      } else if (state === "error") {
+        els.detail_result_summary.textContent = `${err}. Open stderr and the request details to diagnose the failure.`;
       } else {
-        els.detail_result_summary.textContent = `Result archive not ready yet. Current state: ${String(st.state || "queued")}.`;
+        els.detail_result_summary.textContent = `Current state: ${state}.`;
       }
     }
 
     if (els.detail_failure_summary) {
-      if (st.state === "error") {
-        const err = st.error ? String(st.error) : "Unknown error";
-        const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : ` (exit ${st.exit_code})`;
-        els.detail_failure_summary.textContent = `${err}${exit}`;
-      } else if (st.state === "done") {
-        els.detail_failure_summary.textContent = "No failure detected. Inspect stdout/stderr for warnings if needed.";
+      if (state === "queued") {
+        els.detail_failure_summary.textContent = "Logs, duration, and result details appear after the worker starts this job.";
+      } else if (state === "running") {
+        els.detail_failure_summary.textContent = "If execution stalls or fails, stderr and the state banner will show the clearest signal first.";
+      } else if (state === "error") {
+        els.detail_failure_summary.textContent = exit ? `${exit}. Check stderr first, then request and metadata for context.` : "Check stderr first, then request and metadata for context.";
+      } else if (state === "done") {
+        els.detail_failure_summary.textContent = exit ? `${exit}. Inspect stdout and stderr if you need extra confirmation.` : "No failure detected. Inspect stdout and stderr only if you need extra confirmation.";
       } else {
         els.detail_failure_summary.textContent = "Failure diagnosis becomes available when the job finishes.";
+      }
+    }
+
+    const priorityState = state || "queued";
+    [els.detail_result_summary, els.detail_failure_summary, els.detail_limits_summary].forEach((node) => {
+      const shell = node && node.closest ? node.closest(".detail-priority-item") : null;
+      if (shell) {
+        shell.dataset.state = priorityState;
+        shell.dataset.emphasis = (node === els.detail_result_summary || (state === "error" && node === els.detail_failure_summary)) ? "strong" : "normal";
+      }
+    });
+
+    if (els.detail_timeline_title) {
+      els.detail_timeline_title.textContent = (state === "queued") ? "Queue and timing" : (state === "running" ? "Live timing" : "Lifecycle");
+    }
+    if (els.detail_overview_title) {
+      els.detail_overview_title.textContent = (state === "error") ? "Failure focus" : (state === "running" ? "Live summary" : "Quick facts");
+    }
+    if (els.overview_text) {
+      if (state === "queued") {
+        els.overview_text.textContent = "This job is waiting for a worker slot. The Summary tab shows the next useful state checks first.";
+      } else if (state === "running") {
+        els.overview_text.textContent = "This job is actively running. The most useful next steps are live stdout and the state banner above.";
+      } else if (state === "error") {
+        els.overview_text.textContent = `Failure details are prioritised above. ${exit ? `${exit}. ` : ""}Use stderr first, then request details if you need deeper context.`;
+      } else if (state === "done") {
+        els.overview_text.textContent = "This job finished. Download the result archive first, then inspect stdout or stderr only if you need more detail.";
       }
     }
   }
@@ -200,6 +259,7 @@
     }
 
     _setStateBanner(s);
+    _renderDetailProgress(s);
     _renderTimeline(s);
     _renderInsights(s);
   }
@@ -211,6 +271,7 @@
     els.detail_empty.hidden = true;
     els.detail.hidden = false;
     els.jobid.textContent = jobId;
+    if (els.detail_breadcrumb_current) els.detail_breadcrumb_current.textContent = jobId;
     if (isNarrow()) setPane("detail");
 
     // Update URL (Ingress-safe: keep relative)

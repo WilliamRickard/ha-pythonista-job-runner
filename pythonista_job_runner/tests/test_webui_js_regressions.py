@@ -86,11 +86,14 @@ def test_jobs_controls_use_clear_visibility_instead_of_sticky_summary() -> None:
     assert "function updateStickySummary()" not in core
 
 
-def test_row_overflow_actions_used_instead_of_many_inline_buttons() -> None:
+def test_row_menu_and_context_menu_actions_exist() -> None:
     render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+    overlays = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "55_overlays.html")
 
     assert 'row-overflow' in render
-    assert 'Copy id' in render
+    assert 'openRowMenu(' in render
+    assert 'contextmenu' in render
+    assert 'data-action="row-menu-copy-id"' in overlays
 
 
 def test_jobs_command_row_removes_duplicate_refresh_controls() -> None:
@@ -122,3 +125,32 @@ def test_localstorage_access_uses_safe_wrappers() -> None:
     assert "localStorage.removeItem(" not in init
     assert "storageGet(" in init
     assert "storageSet(" in init
+
+
+def test_direction_setting_and_breadcrumb_exist() -> None:
+    settings = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "45_settings.html")
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "30_detail.html")
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+
+    assert "settings_direction" in settings
+    assert "detail_breadcrumb_current" in detail
+    assert "function updateDirectionUi()" in core
+    assert 'window["localStorage"]' in core
+
+
+def test_row_popover_and_progress_helpers_exist() -> None:
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "20_detail_meta.js")
+
+    assert 'function openRowPopover(' in render
+    assert '_applyProgressUi(' in render
+    assert 'row-progress-shell' in render
+    assert 'function _renderDetailProgress(' in detail
+
+
+def test_tooltip_and_popover_markup_exist() -> None:
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    overlays = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "55_overlays.html")
+
+    assert 'data-tooltip="Reload stats and jobs"' in shell
+    assert 'data-action="row-popover-view"' in overlays

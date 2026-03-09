@@ -25,6 +25,136 @@ function escapeHtml(s) {
     });
   }
 
+  function updateUserFilterOptions(sourceJobs) {
+    if (!els.filter_user_list) return;
+    const jobs = Array.isArray(sourceJobs) ? sourceJobs : jobsCache;
+    const seen = new Set();
+    const frag = document.createDocumentFragment();
+    for (const j of jobs) {
+      const user = String((j && j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name)) || "").trim();
+      if (!user) continue;
+      const key = user.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const opt = document.createElement("option");
+      opt.value = user;
+      frag.appendChild(opt);
+    }
+    els.filter_user_list.textContent = "";
+    els.filter_user_list.appendChild(frag);
+  }
+
+  function updatePaginationUi(totalJobs, pageCount) {
+    if (!els.jobs_pagination || !els.page_prev || !els.page_next || !els.page_summary) return;
+    const pages = Math.max(1, pageCount || 1);
+    const total = Math.max(0, totalJobs || 0);
+    els.jobs_pagination.hidden = !(total > PAGE_SIZE);
+    els.page_prev.disabled = currentPage <= 1;
+    els.page_next.disabled = currentPage >= pages;
+    els.page_summary.textContent = `Page ${currentPage} of ${pages} · ${total} jobs`;
+  }
+
+  function _stateSpecificRowSummary(job) {
+    const state = String((job && job.state) || "queued");
+    const age = fmtAge(job && job.created_utc) || "Just now";
+    const dur = fmtDuration(job && job.duration_seconds) || "Not yet";
+    const user = String((job && job.submitted_by && (job.submitted_by.display_name || job.submitted_by.name)) || "").trim();
+    const exitText = (job && job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") ? `Exit ${job.exit_code}` : "";
+    const errorText = String((job && job.error) || "").trim();
+    const resultReady = !!(job && job.result_ready);
+
+    if (state === "running") {
+      return {
+        lead: "Running now",
+        pieces: [
+          { text: `Duration ${dur}`, cls: "meta-state" },
+          user ? { text: user } : null,
+          { text: "Live logs available" },
+        ].filter(Boolean),
+      };
+    }
+    if (state === "done") {
+      return {
+        lead: resultReady ? "Archive ready" : "Completed",
+        pieces: [
+          { text: `Duration ${dur}`, cls: "meta-state" },
+          user ? { text: user } : null,
+          exitText ? { text: exitText } : { text: "Ready to download" },
+        ].filter(Boolean),
+      };
+    }
+    if (state === "error") {
+      return {
+        lead: errorText ? errorText : "Failed",
+        pieces: [
+          exitText ? { text: exitText, cls: "meta-state" } : { text: `Duration ${dur}`, cls: "meta-state" },
+          user ? { text: user } : null,
+          { text: "Open details for stderr" },
+        ].filter(Boolean),
+      };
+    }
+    return {
+      lead: "Waiting to start",
+      pieces: [
+        { text: `Queued ${age}`, cls: "meta-state" },
+        user ? { text: user } : null,
+        { text: "Will run when a worker is free" },
+      ].filter(Boolean),
+    };
+  }
+
+  function _popoverSummaryForJob(job) {
+    const state = String((job && job.state) || "queued");
+    const user = String((job && job.submitted_by && (job.submitted_by.display_name || job.submitted_by.name)) || "").trim();
+    const dur = fmtDuration(job && job.duration_seconds) || "Not yet";
+    const exitText = (job && job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") ? `Exit ${job.exit_code}` : "";
+    const errorText = String((job && job.error) || "").trim();
+    const resultReady = !!(job && job.result_ready);
+
+    if (state === "running") {
+      return {
+        title: "Running",
+        body: user ? `${user} started this job. Live output is available now.` : "This job is running and live output is available now.",
+        extra: [["Duration", dur], ["Focus", "Watch stdout for progress"]],
+      };
+    }
+    if (state === "done") {
+      return {
+        title: resultReady ? "Archive ready" : "Completed",
+        body: resultReady ? "The result archive is ready to download." : "The job has finished. Open details to inspect outputs and status.",
+        extra: [["Duration", dur], ["Outcome", exitText || "Finished"]],
+      };
+    }
+    if (state === "error") {
+      return {
+        title: "Needs attention",
+        body: errorText || "The job failed. Open details to inspect stderr and status.",
+        extra: [["Duration", dur], ["Outcome", exitText || "Failed"]],
+      };
+    }
+    return {
+      title: "Queued",
+      body: user ? `${user} submitted this job. It will start when a worker slot is free.` : "This job is queued and waiting for a worker slot.",
+      extra: [["Age", fmtAge(job && job.created_utc) || "Just now"], ["Next step", "Wait for worker availability"]],
+    };
+  }
+
+  function setDatePreset(preset) {
+    const today = new Date();
+    const format = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (preset === "today") filterSince = format(today);
+    else if (preset === "7d") {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 6);
+      filterSince = format(d);
+    } else filterSince = "";
+    if (els.filter_since) els.filter_since.value = filterSince;
+    storageSet("pjr_filter_since", filterSince);
+    currentPage = 1;
+    applyFilters();
+    updateClearButtonVisibility();
+  }
+
   function renderLog(kind) {
     if (kind === "overview") return;
     const txt = buffers[kind] || "";
@@ -129,6 +259,8 @@ function escapeHtml(s) {
 
 function applyFilters() {
     const q = (els.search.value || "").trim().toLowerCase();
+    const userQ = String(filterUser || "").trim().toLowerCase();
+    const sinceTs = filterSince ? Math.floor(Date.parse(`${filterSince}T00:00:00`) / 1000) : 0;
     let jobs = jobsCache.slice(0);
 
     if (view !== "all") {
@@ -137,6 +269,17 @@ function applyFilters() {
 
     if (filterHasResult) {
       jobs = jobs.filter((j) => !!j.result_ready);
+    }
+
+    if (userQ) {
+      jobs = jobs.filter((j) => {
+        const user = (j.submitted_by && (j.submitted_by.display_name || j.submitted_by.name) || "").toLowerCase();
+        return user.includes(userQ);
+      });
+    }
+
+    if (sinceTs) {
+      jobs = jobs.filter((j) => parseUtcSeconds(j.created_utc) >= sinceTs);
     }
 
     if (q) {
@@ -166,8 +309,16 @@ function applyFilters() {
       return tb - ta;
     });
 
-    renderJobs(jobs, q);
+    const totalJobs = jobs.length;
+    const pageCount = Math.max(1, Math.ceil(totalJobs / PAGE_SIZE));
+    if (currentPage > pageCount) currentPage = pageCount;
+    if (currentPage < 1) currentPage = 1;
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const pagedJobs = jobs.slice(startIdx, startIdx + PAGE_SIZE);
+
+    renderJobs(pagedJobs, q, totalJobs, pageCount);
     updateSortUi();
+    updatePaginationUi(totalJobs, pageCount);
     updateClearButtonVisibility();
   }
 
@@ -184,6 +335,64 @@ function applyFilters() {
 
     tr = document.createElement("tr");
     tr.dataset.jobId = jobId;
+    tr.tabIndex = 0;
+    tr.className = "job-row";
+    tr.addEventListener("click", (ev) => {
+      const target = ev.target;
+      if (target instanceof Element && target.closest("button,a,summary,details,input,select,textarea,label")) return;
+      selectJob(tr.dataset.jobId || "");
+    });
+    tr.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        selectJob(tr.dataset.jobId || "");
+      }
+      if (ev.key === "ContextMenu" || (ev.shiftKey && ev.key === "F10")) {
+        ev.preventDefault();
+        const rect = tr.getBoundingClientRect();
+        openRowMenu(tr.dataset.jobId || "", rect.left + 20, rect.top + 16);
+      }
+    });
+    tr.addEventListener("contextmenu", (ev) => {
+      ev.preventDefault();
+      openRowMenu(tr.dataset.jobId || "", ev.clientX, ev.clientY);
+    });
+
+    const scheduleHoverOpen = (anchor) => {
+      if (!hasFinePointer()) return;
+      window.clearTimeout(hoverPopoverCloseTimer);
+      window.clearTimeout(hoverPopoverTimer);
+      hoverPopoverTimer = window.setTimeout(() => {
+        openRowPopover(tr.dataset.jobId || "", anchor, undefined, "hover");
+      }, 320);
+    };
+    const scheduleHoverClose = () => {
+      if (!hasFinePointer()) return;
+      window.clearTimeout(hoverPopoverTimer);
+      hoverPopoverCloseTimer = window.setTimeout(() => {
+        if (rowPopoverMode === "hover") closeRowPopover(true);
+      }, 160);
+    };
+
+    tr.addEventListener("touchstart", (ev) => {
+      const target = ev.target;
+      if (target instanceof Element && target.closest("button,a,summary,details,input,select,textarea,label")) return;
+      const touch = ev.touches && ev.touches[0];
+      if (!touch) return;
+      window.clearTimeout(_rowMenuTouchTimer);
+      _rowMenuTouchTimer = window.setTimeout(() => {
+        openRowMenu(tr.dataset.jobId || "", touch.clientX, touch.clientY);
+      }, 450);
+    }, { passive: true });
+    const clearTouchMenu = () => {
+      if (_rowMenuTouchTimer) {
+        window.clearTimeout(_rowMenuTouchTimer);
+        _rowMenuTouchTimer = null;
+      }
+    };
+    tr.addEventListener("touchend", clearTouchMenu, { passive: true });
+    tr.addEventListener("touchcancel", clearTouchMenu, { passive: true });
+    tr.addEventListener("touchmove", clearTouchMenu, { passive: true });
 
     const tdJob = document.createElement("td");
     tdJob.setAttribute("data-label", "Job");
@@ -194,32 +403,69 @@ function applyFilters() {
 
     const btnJob = document.createElement("button");
     btnJob.type = "button";
-    btnJob.className = "small jobbtn";
+    btnJob.className = "small jobbtn tooltip-target hover-preview-trigger";
+    btnJob.setAttribute("data-tooltip", "Open details");
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
+    btnJob.addEventListener("mouseenter", () => scheduleHoverOpen(btnJob));
+    btnJob.addEventListener("mouseleave", scheduleHoverClose);
 
-    const inlineState = document.createElement("span");
-    inlineState.className = "state-badge-inline";
+    const inlineState = document.createElement("button");
+    inlineState.type = "button";
+    inlineState.className = "state-badge-inline state-badge-trigger tooltip-target hover-preview-trigger";
+    inlineState.setAttribute("aria-label", "Quick peek");
+    inlineState.setAttribute("data-tooltip", "Quick peek");
+    inlineState.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openRowPopover(tr.dataset.jobId || "", inlineState, undefined, "manual");
+    });
+    inlineState.addEventListener("mouseenter", () => scheduleHoverOpen(inlineState));
+    inlineState.addEventListener("mouseleave", scheduleHoverClose);
 
     line.append(btnJob, inlineState);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
 
-    wrap.append(line, meta);
+    const progressShell = document.createElement("div");
+    progressShell.className = "row-progress-shell";
+    progressShell.hidden = true;
+    const progress = document.createElement("div");
+    progress.className = "progress row-progress";
+    progress.setAttribute("role", "progressbar");
+    progress.setAttribute("aria-label", "Job progress");
+    const progressBar = document.createElement("div");
+    progressBar.className = "progress-bar";
+    progress.appendChild(progressBar);
+    const progressCopy = document.createElement("div");
+    progressCopy.className = "row-progress-copy";
+    progressShell.append(progress, progressCopy);
+
+    wrap.append(line, meta, progressShell);
     tdJob.appendChild(wrap);
 
     const tdState = document.createElement("td");
     tdState.setAttribute("data-label", "State");
+    const stateBtn = document.createElement("button");
+    stateBtn.type = "button";
+    stateBtn.className = "state-badge-trigger tooltip-target hover-preview-trigger";
+    stateBtn.setAttribute("aria-label", "Quick peek");
+    stateBtn.setAttribute("data-tooltip", "Quick peek");
+    stateBtn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      openRowPopover(tr.dataset.jobId || "", stateBtn, undefined, "manual");
+    });
+    stateBtn.addEventListener("mouseenter", () => scheduleHoverOpen(stateBtn));
+    stateBtn.addEventListener("mouseleave", scheduleHoverClose);
+    tdState.appendChild(stateBtn);
 
     const tdAge = document.createElement("td");
     tdAge.setAttribute("data-label", "Age");
-
     const tdDur = document.createElement("td");
     tdDur.setAttribute("data-label", "Duration");
-
     const tdUser = document.createElement("td");
     tdUser.setAttribute("data-label", "User");
-
     const tdActions = document.createElement("td");
     tdActions.className = "actions";
     tdActions.setAttribute("data-label", "Actions");
@@ -230,40 +476,18 @@ function applyFilters() {
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    const overflow = document.createElement("details");
-    overflow.className = "row-overflow";
-    const summary = document.createElement("summary");
-    summary.setAttribute("aria-label", "More actions");
-    summary.textContent = "More";
-
-    const menu = document.createElement("div");
-    menu.className = "row-overflow-menu";
-
-    const zip = document.createElement("a");
-    zip.className = "linkbtn secondary";
-    zip.textContent = "Zip";
-    zip.target = "_blank";
-    zip.rel = "noopener noreferrer";
-
-    const copyId = document.createElement("button");
-    copyId.type = "button";
-    copyId.className = "small secondary";
-    copyId.textContent = "Copy id";
-    copyId.addEventListener("click", async (ev) => {
+    const overflow = document.createElement("button");
+    overflow.type = "button";
+    overflow.className = "small tertiary row-overflow tooltip-target";
+    overflow.setAttribute("aria-label", "More row actions");
+    overflow.setAttribute("data-tooltip", "More actions");
+    overflow.textContent = "⋯";
+    overflow.addEventListener("click", (ev) => {
       ev.preventDefault();
-      const id = tr.dataset.jobId || "";
-      if (!id) return;
-      try {
-        await copyTextToClipboard(id);
-        toast("ok", "Copied", "Job id copied");
-        overflow.open = false;
-      } catch (err) {
-        toast("err", "Copy failed", (err && err.message) ? err.message : "Could not copy job id to clipboard");
-      }
+      ev.stopPropagation();
+      openRowMenu(tr.dataset.jobId || "", overflow);
     });
 
-    menu.append(zip, copyId);
-    overflow.append(summary, menu);
     tdActions.append(btnView, overflow);
     tr.append(tdJob, tdState, tdAge, tdDur, tdUser, tdActions);
     return tr;
@@ -277,6 +501,7 @@ function applyFilters() {
     const dur = fmtDuration(j.duration_seconds);
 
     tr.dataset.jobId = jobId;
+    tr.dataset.state = state;
     const isSelected = !!(currentJob && jobId === currentJob);
     tr.classList.toggle("selected", isSelected);
     tr.setAttribute("aria-selected", isSelected ? "true" : "false");
@@ -287,23 +512,23 @@ function applyFilters() {
       btnJob.textContent = jobId;
       btnJob.title = jobId;
     }
+    tr.setAttribute("aria-label", `Job ${jobId}, ${state}`);
 
     const meta = tdJob.querySelector(".jobmeta");
     if (meta) {
       meta.textContent = "";
-      const addMeta = (label, value) => {
-        const v = String(value || "");
+      const summary = _stateSpecificRowSummary(j);
+      const addMeta = (value, extraCls) => {
+        const v = String(value || "").trim();
         if (!v) return;
         const span = document.createElement("span");
-        span.className = "meta";
-        span.textContent = `${label}: ${v}`;
+        span.className = `meta${extraCls ? ` ${extraCls}` : ""}`;
+        span.textContent = v;
         meta.appendChild(span);
       };
 
-      addMeta("Age", age);
-      addMeta("Duration", dur);
-      addMeta("User", user);
-      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") addMeta("Exit", String(j.exit_code));
+      addMeta(summary.lead, "meta-primary");
+      for (const piece of summary.pieces) addMeta(piece.text, piece.cls || "");
     }
 
     const inlineState = tdJob.querySelector(".state-badge-inline");
@@ -312,10 +537,22 @@ function applyFilters() {
       inlineState.appendChild(badgeEl(state));
     }
 
+    const progressShell = tdJob.querySelector(".row-progress-shell");
+    if (progressShell) {
+      const showProgress = state === "running" || state === "queued" || state === "error" || state === "done";
+      progressShell.hidden = !showProgress;
+      if (showProgress) {
+        _applyProgressUi(progressShell.querySelector(".row-progress"), progressShell.querySelector(".progress-bar"), progressShell.querySelector(".row-progress-copy"), state);
+      }
+    }
+
     const tdState = tr.children[1];
     if (!tdState) return;
-    tdState.textContent = "";
-    tdState.appendChild(badgeEl(state));
+    const stateBtn = tdState.querySelector(".state-badge-trigger");
+    if (stateBtn) {
+      stateBtn.textContent = "";
+      stateBtn.appendChild(badgeEl(state));
+    }
 
     tr.children[2].textContent = age;
     tr.children[3].textContent = dur;
@@ -333,7 +570,7 @@ function applyFilters() {
    * @param {Array<Object>} jobs - Array of job objects to display; each should include a `job_id` property.
    * @param {string} [query] - Current search/filter query used to choose appropriate empty-state messaging.
    */
-  function renderJobs(jobs, query) {
+  function renderJobs(jobs, query, totalJobs, pageCount) {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
@@ -341,7 +578,8 @@ function applyFilters() {
     const tableRegion = document.querySelector(".table-region");
     if (tableWrap) tableWrap.hidden = !hasJobs;
     if (tableRegion) tableRegion.classList.toggle("has-jobs", hasJobs);
-    if (els.jobs_count) els.jobs_count.textContent = String(jobs.length);
+    if (els.jobs_count) els.jobs_count.textContent = String(totalJobs || jobs.length);
+    if (els.jobs_pagination) els.jobs_pagination.hidden = !(hasJobs && (totalJobs || 0) > PAGE_SIZE);
 
     if (!hasJobs) {
       const emptyTitle = document.getElementById("empty_title");
@@ -353,7 +591,7 @@ function applyFilters() {
         } else if (jobsViewState === "disconnected") {
           emptyTitle.textContent = "Cannot connect";
           emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
-        } else if (view !== "all" || (query && String(query).trim())) {
+        } else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) {
           emptyTitle.textContent = "No matching jobs";
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
@@ -365,7 +603,7 @@ function applyFilters() {
         if (emptyAction) {
           if (jobsViewState === "disconnected") {
             emptyAction.textContent = "Use header Refresh. If it persists, open Help for troubleshooting steps.";
-          } else if (view !== "all" || (query && String(query).trim())) {
+          } else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
             emptyAction.textContent = "Quick start has the step-by-step path if you want a guided first run.";
@@ -380,7 +618,7 @@ function applyFilters() {
     for (const j of jobs) {
       const jobId = j.job_id || "";
       if (!jobId) continue;
-      let tr = _ensureRow(jobId);
+      const tr = _ensureRow(jobId);
       if (!tr) continue;
       _patchRow(tr, j);
       seen.add(jobId);
@@ -393,7 +631,6 @@ function applyFilters() {
 
     tbody.appendChild(frag);
   }
-
 
   function renderStats(stats) {
     const s = stats || {};
@@ -434,6 +671,7 @@ function applyFilters() {
     try {
       const data = await api("jobs.json");
       jobsCache = (data && Array.isArray(data.jobs)) ? data.jobs : [];
+      updateUserFilterOptions(jobsCache);
       applyFilters();
     } finally {
       if (els.jobs_loading && !silent) {
@@ -604,6 +842,59 @@ function applyFilters() {
   let _commandReturnFocus = null;
   let _confirmReturnFocus = null;
   let confirmActionHandler = null;
+  let _rowMenuJobId = null;
+  let _rowMenuReturnFocus = null;
+  let _rowMenuTouchTimer = null;
+  let _rowPopoverJobId = null;
+  let _rowPopoverReturnFocus = null;
+
+
+
+  function _jobById(jobId) {
+    return jobsCache.find((j) => (j.job_id || "") === String(jobId || "")) || null;
+  }
+
+  function _progressModelForState(state) {
+    const st = String(state || "queued");
+    if (st === "running") return { cls: "running", label: "Running now", detail: "Work is in progress." };
+    if (st === "queued") return { cls: "queued", label: "Queued", detail: "Waiting for an execution slot." };
+    if (st === "done") return { cls: "done", label: "Completed", detail: "Finished successfully." };
+    if (st === "error") return { cls: "error", label: "Failed", detail: "Finished with an error." };
+    return { cls: "queued", label: st || "Queued", detail: "Lifecycle information." };
+  }
+
+  function _applyProgressUi(progressEl, barEl, copyEl, state) {
+    if (!(progressEl instanceof HTMLElement) || !(barEl instanceof HTMLElement)) return;
+    const model = _progressModelForState(state);
+    progressEl.className = `progress ${model.cls}`;
+    if (copyEl instanceof HTMLElement) copyEl.textContent = model.detail;
+    progressEl.setAttribute("aria-valuetext", model.label);
+    if (model.cls === "done") {
+      progressEl.setAttribute("aria-valuenow", "100");
+    } else if (model.cls === "error") {
+      progressEl.setAttribute("aria-valuenow", "100");
+    } else {
+      progressEl.removeAttribute("aria-valuenow");
+    }
+  }
+
+  function _renderPopoverMeta(container, label, value) {
+    const v = String(value || "").trim();
+    if (!v || !(container instanceof HTMLElement)) return;
+    const row = document.createElement("div");
+    row.className = "item-slab";
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = label;
+    copy.appendChild(title);
+    const meta = document.createElement("div");
+    meta.className = "item-meta";
+    meta.textContent = v;
+    row.append(copy, meta);
+    container.appendChild(row);
+  }
 
   function commandItems() {
     return [
@@ -690,6 +981,133 @@ function applyFilters() {
       try { _commandReturnFocus.focus(); } catch (_e) {}
     }
     _commandReturnFocus = null;
+  }
+
+  function positionFloatingMenu(el, x, y) {
+    if (!(el instanceof HTMLElement)) return;
+    const pad = 10;
+    const maxLeft = Math.max(pad, window.innerWidth - el.offsetWidth - pad);
+    const maxTop = Math.max(pad, window.innerHeight - el.offsetHeight - pad);
+    el.style.left = `${Math.min(maxLeft, Math.max(pad, x))}px`;
+    el.style.top = `${Math.min(maxTop, Math.max(pad, y))}px`;
+  }
+
+  function openRowMenu(jobId, anchorOrX, maybeY) {
+    if (!jobId || !els.row_menu) return;
+    _rowMenuJobId = jobId;
+    _rowMenuReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.row_menu_label) els.row_menu_label.textContent = `Job ${jobId}`;
+    if (els.row_menu_zip) els.row_menu_zip.href = apiUrl(`result/${encodeURIComponent(jobId)}.zip`);
+    els.row_menu.hidden = false;
+    let x = 16;
+    let y = 16;
+    if (anchorOrX instanceof HTMLElement) {
+      const rect = anchorOrX.getBoundingClientRect();
+      x = rect.right - 180;
+      y = rect.bottom + 6;
+    } else {
+      x = Number(anchorOrX) || x;
+      y = Number(maybeY) || y;
+    }
+    positionFloatingMenu(els.row_menu, x, y);
+  }
+
+  function closeRowMenu() {
+    if (!els.row_menu) return;
+    els.row_menu.hidden = true;
+    _rowMenuJobId = null;
+    if (_rowMenuReturnFocus && document.contains(_rowMenuReturnFocus)) {
+      try { _rowMenuReturnFocus.focus(); } catch (_e) {}
+    }
+    _rowMenuReturnFocus = null;
+  }
+
+  async function runRowMenuAction(action) {
+    const jobId = _rowMenuJobId;
+    closeRowMenu();
+    if (!jobId) return;
+    if (action === "view") {
+      await selectJob(jobId);
+      return;
+    }
+    if (action === "copy-id") {
+      await copyTextToClipboard(jobId);
+      toast("ok", "Copied", "Job id copied");
+      return;
+    }
+    if (action === "stdout" || action === "stderr" || action === "curl") {
+      if (currentJob !== jobId) await selectJob(jobId);
+      if (action === "stdout") downloadText("stdout");
+      else if (action === "stderr") downloadText("stderr");
+      else await copyCurl();
+      return;
+    }
+  }
+
+
+  function openRowPopover(jobId, anchorOrX, maybeY, mode) {
+    if (!jobId || !els.row_popover) return;
+    const job = _jobById(jobId);
+    if (!job) return;
+    rowPopoverMode = mode || "manual";
+    _rowPopoverJobId = jobId;
+    _rowPopoverReturnFocus = rowPopoverMode === "manual" && (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.row_popover_label) els.row_popover_label.textContent = rowPopoverMode === "hover" ? `Preview ${jobId}` : `Job ${jobId}`;
+    els.row_popover.dataset.mode = rowPopoverMode;
+    const summary = _popoverSummaryForJob(job);
+    if (els.row_popover_summary && els.row_popover_summary_title && els.row_popover_summary_body) {
+      els.row_popover_summary.hidden = false;
+      els.row_popover_summary_title.textContent = summary.title;
+      els.row_popover_summary_body.textContent = summary.body;
+    }
+    if (els.row_popover_list) {
+      els.row_popover_list.textContent = "";
+      _renderPopoverMeta(els.row_popover_list, "State", String(job.state || "queued"));
+      _renderPopoverMeta(els.row_popover_list, "Age", fmtAge(job.created_utc) || "Just now");
+      const user = (job.submitted_by && (job.submitted_by.display_name || job.submitted_by.name)) || "";
+      _renderPopoverMeta(els.row_popover_list, "User", user || "Unknown");
+      for (const [label, value] of summary.extra || []) _renderPopoverMeta(els.row_popover_list, label, value);
+      if (job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") _renderPopoverMeta(els.row_popover_list, "Exit", String(job.exit_code));
+    }
+    if (els.row_popover_progress_shell) {
+      const showProgress = ["running", "queued", "done", "error"].includes(String(job.state || "queued"));
+      els.row_popover_progress_shell.hidden = !showProgress;
+      if (showProgress) _applyProgressUi(els.row_popover_progress, els.row_popover_progress_bar, els.row_popover_progress_copy, job.state);
+    }
+    els.row_popover.hidden = false;
+    let x = 16;
+    let y = 16;
+    if (anchorOrX instanceof HTMLElement) {
+      const rect = anchorOrX.getBoundingClientRect();
+      x = rect.left;
+      y = rect.bottom + 8;
+    } else {
+      x = Number(anchorOrX) || x;
+      y = Number(maybeY) || y;
+    }
+    positionFloatingMenu(els.row_popover, x, y);
+  }
+
+  function closeRowPopover(silent) {
+    if (!els.row_popover) return;
+    els.row_popover.hidden = true;
+    _rowPopoverJobId = null;
+    if (!silent && _rowPopoverReturnFocus && document.contains(_rowPopoverReturnFocus)) {
+      try { _rowPopoverReturnFocus.focus(); } catch (_e) {}
+    }
+    _rowPopoverReturnFocus = null;
+  }
+
+  async function runRowPopoverAction(action) {
+    const jobId = _rowPopoverJobId;
+    closeRowPopover();
+    if (!jobId) return;
+    if (action === "view") await selectJob(jobId);
+  }
+
+  function goToNextPage(step) {
+    currentPage = Math.max(1, currentPage + step);
+    applyFilters();
   }
 
   function openConfirm(opts) {
@@ -799,6 +1217,7 @@ function applyFilters() {
     if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
     if (els.settings_keep_secondary) els.settings_keep_secondary.checked = keepSecondaryFilters;
     if (els.settings_density) els.settings_density.value = uiDensity;
+    if (els.settings_direction) els.settings_direction.value = uiDirection;
   }
 
   function closeSettings() {
