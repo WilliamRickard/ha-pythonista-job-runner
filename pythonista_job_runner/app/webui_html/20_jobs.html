@@ -17,31 +17,36 @@
 
           <div class="jobs-toolbar" aria-label="Jobs controls">
             <div class="searchbar-row">
-              <label for="search" class="sr-only">Search jobs</label>
-              <input id="search" type="search" placeholder="Search job id, user, state…" autocomplete="off"/>
-              <button type="button" class="small tertiary clear-inline" data-action="clear-filters" id="clear_filters" aria-label="Clear search and filters" hidden>Clear</button>
+              <div class="input-group search-group">
+                <span class="input-group-icon" aria-hidden="true">⌕</span>
+                <label for="search" class="sr-only">Search jobs</label>
+                <input id="search" type="search" placeholder="Search jobs" autocomplete="off"/>
+                <button type="button" class="small tertiary clear-inline input-group-action" data-action="clear-filters" id="clear_filters" aria-label="Clear search and filters" hidden>Clear</button>
+              </div>
             </div>
 
             <div class="jobs-primary-row" aria-label="Primary jobs controls">
               <div class="state-filters" role="group" aria-label="Primary job state filters">
-                <button type="button" class="chip small" data-action="set-view" data-view="all" id="view_all">All</button>
-                <button type="button" class="chip small" data-action="set-view" data-view="running" id="view_running">Running</button>
-                <button type="button" class="chip small" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
-                <button type="button" class="chip small" data-action="set-view" data-view="error" id="view_error">Errors</button>
-                <button type="button" class="chip small" data-action="set-view" data-view="done" id="view_done">Done</button>
+                <div class="toggle-group">
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="all" id="view_all">All</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="running" id="view_running">Running</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="error" id="view_error">Errors</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="done" id="view_done">Done</button>
+              </div>
               </div>
               <div class="jobs-secondary-row">
-                <label class="sort-inline" for="job_sort">
-                  <span>Sort</span>
-                  <select id="job_sort" aria-label="Sort jobs">
-                    <option value="newest">Newest first</option>
-                    <option value="oldest">Oldest first</option>
-                    <option value="active">Active first</option>
-                    <option value="errors">Errors first</option>
-                  </select>
-                </label>
-                <details class="secondary-panel">
-                  <summary>More filters</summary>
+                <details class="secondary-panel sort-menu" id="sort_menu">
+                  <summary><span class="summary-label">Sort</span><span id="sort_summary">Newest first</span></summary>
+                  <div class="secondary-panel-body sort-menu-body" role="menu" aria-label="Sort jobs">
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="newest" role="menuitemradio" aria-checked="true">Newest first</button>
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="oldest" role="menuitemradio" aria-checked="false">Oldest first</button>
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="active" role="menuitemradio" aria-checked="false">Active first</button>
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="errors" role="menuitemradio" aria-checked="false">Errors first</button>
+                  </div>
+                </details>
+                <details class="secondary-panel filters-sheet-trigger">
+                  <summary>Filters</summary>
                   <div class="secondary-panel-body">
                     <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
                   </div>
@@ -68,14 +73,17 @@
               </table>
             </div>
 
-            <div id="empty" class="empty" role="status" aria-live="polite" hidden>
-              <div id="empty_title" class="empty-title">No jobs yet</div>
-              <div id="empty_body" class="empty-body">Run the sample task to confirm setup, then open the new job when it appears.</div>
-              <div class="help-actions-row">
-                <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
-                <button type="button" class="small tertiary" data-action="open-about">Open quick start</button>
+            <div id="empty" class="empty empty-pattern" role="status" aria-live="polite" hidden>
+              <div class="empty-icon" aria-hidden="true">○</div>
+              <div class="empty-content">
+                <div id="empty_title" class="empty-title">No jobs yet</div>
+                <div id="empty_body" class="empty-body">Copy the sample task, run it from Pythonista, then return here to open the first job.</div>
+                <div class="help-actions-row empty-actions">
+                  <button type="button" class="small primary" data-action="copy-sample-task">Copy sample Python task</button>
+                  <button type="button" class="small tertiary text-link" data-action="open-about">Open quick start</button>
+                </div>
+                <div id="empty_action" class="empty-action">A successful run appears here with a View button and a result zip when it finishes.</div>
               </div>
-              <div id="empty_action" class="empty-action">After run, press Refresh or wait for auto refresh and open View.</div>
             </div>
           </div>
         </div>

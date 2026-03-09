@@ -75,6 +75,7 @@ def test_jobs_filters_include_sort_and_secondary_flags() -> None:
     assert 'sortMode === "oldest"' in render
     assert 'sortMode === "active"' in render
     assert 'filterHasResult' in render
+    assert 'function updateSortUi()' in render
 
 
 def test_jobs_controls_use_clear_visibility_instead_of_sticky_summary() -> None:
@@ -100,7 +101,8 @@ def test_jobs_command_row_removes_duplicate_refresh_controls() -> None:
     assert 'Search, filter, sort, then open details.' not in html
     assert 'data-action="refresh" aria-label="Refresh jobs now"' not in html
     assert shell.count('data-action="refresh"') == 1
-    assert 'class="sort-inline" for="job_sort"' in html
+    assert 'id="sort_menu"' in html
+    assert 'data-action="set-sort" data-sort="newest"' in html
 
 
 def test_localstorage_access_uses_safe_wrappers() -> None:

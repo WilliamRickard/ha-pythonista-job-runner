@@ -660,6 +660,24 @@ function escapeHtml(s) {
       .replace(/'/g, "&#39;");
   }
 
+
+  const SORT_LABELS = {
+    newest: "Newest first",
+    oldest: "Oldest first",
+    active: "Active first",
+    errors: "Errors first",
+  };
+
+  function updateSortUi() {
+    const summary = document.getElementById("sort_summary");
+    if (summary) summary.textContent = SORT_LABELS[sortMode] || "Newest first";
+    document.querySelectorAll('[data-action="set-sort"]').forEach((btn) => {
+      const selected = (btn.getAttribute("data-sort") || "") === sortMode;
+      btn.classList.toggle("active", selected);
+      btn.setAttribute("aria-checked", selected ? "true" : "false");
+    });
+  }
+
   function renderLog(kind) {
     if (kind === "overview") return;
     const txt = buffers[kind] || "";
@@ -802,6 +820,7 @@ function applyFilters() {
     });
 
     renderJobs(jobs, q);
+    updateSortUi();
     updateClearButtonVisibility();
   }
 
@@ -831,7 +850,10 @@ function applyFilters() {
     btnJob.className = "small jobbtn";
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
-    line.append(btnJob);
+    const inlineState = document.createElement("span");
+    inlineState.className = "state-badge-inline";
+
+    line.append(btnJob, inlineState);
 
     const meta = document.createElement("div");
     meta.className = "jobmeta";
@@ -857,7 +879,7 @@ function applyFilters() {
 
     const btnView = document.createElement("button");
     btnView.type = "button";
-    btnView.className = "small secondary";
+    btnView.className = "small primary row-view";
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
@@ -931,10 +953,16 @@ function applyFilters() {
         meta.appendChild(span);
       };
 
-      addMeta("age", age);
-      addMeta("dur", dur);
-      addMeta("user", user);
-      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") addMeta("exit", String(j.exit_code));
+      addMeta("Age", age);
+      addMeta("Duration", dur);
+      addMeta("User", user);
+      if (j.exit_code !== undefined && j.exit_code !== null && String(j.exit_code) !== "") addMeta("Exit", String(j.exit_code));
+    }
+
+    const inlineState = tdJob.querySelector(".state-badge-inline");
+    if (inlineState) {
+      inlineState.textContent = "";
+      inlineState.appendChild(badgeEl(state));
     }
 
     const tdState = tr.children[1];
@@ -962,6 +990,10 @@ function applyFilters() {
     const tbody = els.jobtable_tbody;
     const hasJobs = jobs.length !== 0;
     els.empty.hidden = hasJobs;
+    const tableWrap = document.querySelector(".tablewrap");
+    const tableRegion = document.querySelector(".table-region");
+    if (tableWrap) tableWrap.hidden = !hasJobs;
+    if (tableRegion) tableRegion.classList.toggle("has-jobs", hasJobs);
     if (els.jobs_count) els.jobs_count.textContent = String(jobs.length);
 
     if (!hasJobs) {
@@ -979,7 +1011,7 @@ function applyFilters() {
           emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
         } else {
           emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Run a first test task, then open View to inspect details and outputs.";
+          emptyBody.textContent = "Copy the sample task, run it from Pythonista, then return here to open the first job.";
         }
 
         const emptyAction = document.getElementById("empty_action");
@@ -989,7 +1021,7 @@ function applyFilters() {
           } else if (view !== "all" || (query && String(query).trim())) {
             emptyAction.textContent = "Use Clear to reset search and filters quickly.";
           } else {
-            emptyAction.textContent = "Copy the sample task, run it in Pythonista, then open the new job.";
+            emptyAction.textContent = "Quick start has the step-by-step path if you want a guided first run.";
           }
         }
       }
@@ -1029,6 +1061,15 @@ function applyFilters() {
     els.kpi_done.textContent = String(done);
     els.kpi_error.textContent = String(error);
     els.kpi_total.textContent = String(total);
+
+    const queueSummary = document.getElementById("queue_summary_text");
+    if (queueSummary) {
+      const bits = [`${total} total`];
+      if (running) bits.push(`${running} running`);
+      if (queued) bits.push(`${queued} queued`);
+      if (error) bits.push(`${error} errors`);
+      queueSummary.textContent = bits.join(" · ");
+    }
 
     els.stats.hidden = false;
   }
@@ -1812,6 +1853,16 @@ function toggleAuto() {
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
   }
 
+  function setSort(next, sourceBtn) {
+    sortMode = next || "newest";
+    storageSet("pjr_sort", sortMode);
+    const menu = document.getElementById("sort_menu");
+    if (menu) menu.open = false;
+    applyFilters();
+    updateClearButtonVisibility();
+    if (sourceBtn && typeof sourceBtn.focus === "function") sourceBtn.focus();
+  }
+
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
       const t = ev.target;
@@ -1833,6 +1884,7 @@ function toggleAuto() {
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
+        if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
         if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
         if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
         if (action === "find-next") findNext();
@@ -1935,14 +1987,6 @@ function toggleAuto() {
       applyFilters();
       updateClearButtonVisibility();
     });
-    if (els.job_sort) {
-      els.job_sort.addEventListener("change", () => {
-        sortMode = els.job_sort.value || "newest";
-        storageSet("pjr_sort", sortMode);
-        applyFilters();
-        updateClearButtonVisibility();
-      });
-    }
     if (els.filter_has_result) {
       els.filter_has_result.addEventListener("change", () => {
         filterHasResult = !!els.filter_has_result.checked;
@@ -1961,7 +2005,6 @@ function toggleAuto() {
     if (els.settings_default_sort) {
       els.settings_default_sort.addEventListener("change", () => {
         sortMode = els.settings_default_sort.value || "newest";
-        if (els.job_sort) els.job_sort.value = sortMode;
         storageSet("pjr_sort", sortMode);
         applyFilters();
         updateClearButtonVisibility();

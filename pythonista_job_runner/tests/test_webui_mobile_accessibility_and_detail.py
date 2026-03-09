@@ -75,8 +75,8 @@ def test_css_has_mobile_panel_and_filter_scroll_rules() -> None:
 def test_bundle_has_sort_secondary_filters_and_no_sticky_summary_row() -> None:
     html = build_webui()
 
-    assert 'id="job_sort"' in html
-    assert 'class="sort-inline" for="job_sort"' in html
+    assert 'id="sort_menu"' in html
+    assert 'id="sort_summary"' in html
     assert 'id="filter_has_result"' in html
     assert 'id="sticky_command"' not in html
     assert "Search, filter, sort, then open details." not in html
@@ -89,12 +89,21 @@ def test_bundle_has_initial_jobs_skeleton_state() -> None:
     assert 'class="sk sk-lg"' in html
 
 
+def test_bundle_has_collapsible_queue_summary_and_single_primary_empty_action() -> None:
+    html = build_webui()
+
+    assert 'id="queue_details"' in html
+    assert 'id="queue_summary_text"' in html
+    assert html.count('data-action="copy-sample-task"') == 2
+    assert 'Open quick start' in html
+
+
 def test_phone_layout_guardrails_for_search_clear_and_mobile_cards() -> None:
     css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "50_responsive.css").read_text(encoding="utf-8")
 
     assert ".searchbar-row{gap:6px;}" in css
-    assert "#jobtable tr{border:1px solid var(--line);border-radius:12px;" in css
-    assert "#jobtable td:nth-child(3)," in css
+    assert "#jobtable tr{border:1px solid color-mix(in srgb, var(--line) 62%, transparent);border-radius:14px;" in css
+    assert "#jobtable td:nth-child(2)," in css
 
 
 def test_help_surface_has_quick_start_samples_and_wrap_safety() -> None:
@@ -124,7 +133,7 @@ def test_empty_state_copy_distinguishes_disconnected_zero_and_filtered() -> None
 
     assert "Use header Refresh. If it persists, open Help for troubleshooting steps." in js
     assert "Use Clear to reset search and filters quickly." in js
-    assert "Run a first test task" in js
+    assert "Copy the sample task, run it from Pythonista" in js
 
 
 def test_single_primary_refresh_and_secondary_header_actions() -> None:
