@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.12-webui.14 -->
+<!doctype html><!-- VERSION: 0.6.12-webui.15 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -6,7 +6,7 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui_html/*.html, webui_js/*.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.12-webui.14 */
+/* VERSION: 0.6.12-webui.15 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -1845,10 +1845,11 @@ details[open] summary::after{ transform: rotate(0deg); }
 @media (max-width: 720px){
   .overlay{padding:0;align-items:flex-end;}
   .mobile-panel{
+    display:flex;
+    flex-direction:column;
     max-width:none;
     width:100%;
-    min-height:100dvh;
-    max-height:92dvh;
+    height:92dvh;
     min-height:60dvh;
     margin-top:0;
     border-radius:22px 22px 0 0;
@@ -1856,8 +1857,16 @@ details[open] summary::after{ transform: rotate(0deg); }
     border-right:none;
     border-bottom:none;
   }
-  .mobile-panel .modal-header{padding:10px 12px 10px;}
-  .mobile-panel .modal-body{padding:8px 12px 18px;}
+  .mobile-panel .modal-header{padding:10px 12px 10px;flex:0 0 auto;}
+  .mobile-panel .modal-body{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    touch-action:pan-y;
+    padding:8px 12px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .compact-hint{margin-top:8px;}
@@ -2658,7 +2667,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   </div>
 
   <script>
-/* VERSION: 0.6.12-webui.14 */
+/* VERSION: 0.6.12-webui.15 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";

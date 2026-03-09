@@ -1,4 +1,4 @@
-/* VERSION: 0.6.12-webui.14 */
+/* VERSION: 0.6.12-webui.15 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
