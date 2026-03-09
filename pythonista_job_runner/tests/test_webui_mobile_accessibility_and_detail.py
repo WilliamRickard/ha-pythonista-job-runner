@@ -1,3 +1,4 @@
+# Version: 0.6.12-webui.15
 """Regression tests for mobile UX, accessibility, and detail-lifecycle Web UI improvements."""
 
 from __future__ import annotations
@@ -72,7 +73,10 @@ def test_css_has_mobile_panel_and_filter_scroll_rules() -> None:
     layout = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
 
     assert ".mobile-panel" in css
-    assert "min-height:100dvh" in css
+    assert "height:92dvh" in css
+    assert "overflow-y:auto" in css
+    assert "-webkit-overflow-scrolling:touch" in css
+    assert "touch-action:pan-y" in css
     assert "state-filters" in layout
     assert "overflow-x:auto" in layout
 
