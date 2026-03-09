@@ -1,6 +1,7 @@
 <!-- Section: Help panel -->
 <div id="about_overlay" class="overlay" hidden aria-hidden="true">
-    <div class="modal mobile-panel" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
+    <div class="modal mobile-panel sheet-modal" id="about_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="about_title" aria-describedby="about_sub">
+      <div class="sheet-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div>
           <div class="modal-title" id="about_title">Help</div>
@@ -12,22 +13,24 @@
         <details open>
           <summary>Quick start</summary>
           <ol class="steps">
-            <li>Copy the sample Python task and paste in your add-on URL and token if you are not using Ingress.</li>
+            <li>Copy the sample Python task below and update the add-on URL and token only if you are not using Ingress.</li>
             <li>Run it from Pythonista, then return here and open the new job with <strong>View</strong>.</li>
             <li>Success means the job reaches <strong>done</strong> and a result zip link appears.</li>
           </ol>
           <div class="hint compact-hint">Direct access needs an <code>X-Runner-Token</code> header. Ingress sessions usually provide auth automatically.</div>
-          <div class="help-actions-row">
-            <button type="button" class="small secondary" data-action="copy-sample-task">Copy sample Python task</button>
-            <button type="button" class="small tertiary" data-action="copy-about-curl">Copy curl sample</button>
+          <div class="help-actions-row empty-actions">
+            <button type="button" class="small primary" data-action="copy-sample-task">Copy sample Python task</button>
           </div>
-          <details class="sample-panel" open>
-            <summary>Preview Python sample</summary>
-            <textarea id="about_python" rows="8" readonly aria-label="Python quick start sample"></textarea>
-          </details>
+          <div class="sample-block">
+            <div class="sample-title">Sample Python task</div>
+            <textarea id="about_python" rows="7" readonly aria-label="Python quick start sample"></textarea>
+          </div>
           <details class="sample-panel">
             <summary>curl alternative</summary>
-            <textarea id="about_curl" rows="6" readonly aria-label="curl quick start sample"></textarea>
+            <div class="help-actions-row compact-row">
+              <button type="button" class="small tertiary" data-action="copy-about-curl">Copy curl sample</button>
+            </div>
+            <textarea id="about_curl" rows="5" readonly aria-label="curl quick start sample"></textarea>
           </details>
         </details>
 

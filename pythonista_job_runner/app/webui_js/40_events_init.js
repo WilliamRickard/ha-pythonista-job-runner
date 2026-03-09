@@ -4,6 +4,16 @@ function toggleAuto() {
     toast(null, "Auto refresh", auto ? "Enabled" : "Disabled");
   }
 
+  function setSort(next, sourceBtn) {
+    sortMode = next || "newest";
+    storageSet("pjr_sort", sortMode);
+    const menu = document.getElementById("sort_menu");
+    if (menu) menu.open = false;
+    applyFilters();
+    updateClearButtonVisibility();
+    if (sourceBtn && typeof sourceBtn.focus === "function") sourceBtn.focus();
+  }
+
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
       const t = ev.target;
@@ -25,6 +35,7 @@ function toggleAuto() {
         if (action === "reset-ui") resetUi();
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
+        if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
         if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
         if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
         if (action === "find-next") findNext();
@@ -127,14 +138,6 @@ function toggleAuto() {
       applyFilters();
       updateClearButtonVisibility();
     });
-    if (els.job_sort) {
-      els.job_sort.addEventListener("change", () => {
-        sortMode = els.job_sort.value || "newest";
-        storageSet("pjr_sort", sortMode);
-        applyFilters();
-        updateClearButtonVisibility();
-      });
-    }
     if (els.filter_has_result) {
       els.filter_has_result.addEventListener("change", () => {
         filterHasResult = !!els.filter_has_result.checked;
@@ -153,7 +156,6 @@ function toggleAuto() {
     if (els.settings_default_sort) {
       els.settings_default_sort.addEventListener("change", () => {
         sortMode = els.settings_default_sort.value || "newest";
-        if (els.job_sort) els.job_sort.value = sortMode;
         storageSet("pjr_sort", sortMode);
         applyFilters();
         updateClearButtonVisibility();

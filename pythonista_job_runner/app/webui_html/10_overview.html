@@ -1,10 +1,12 @@
 <!-- Section: Overview stats panel -->
-      <section id="stats" class="card card-quiet queue-compact" hidden>
-        <div class="card-header compact-header">
-          <h2>Queue snapshot</h2>
-        </div>
-        <div class="card-body compact">
-          <div class="kpis" id="kpis">
+      <section id="stats" class="card card-quiet queue-compact queue-collapsible" hidden>
+        <details id="queue_details" class="queue-details-shell">
+          <summary>
+            <span class="queue-summary-title">Queue</span>
+            <span class="queue-summary-inline" id="queue_summary_text">0 total</span>
+          </summary>
+          <div class="card-body compact queue-details-body">
+            <div class="kpis" id="kpis">
             <div class="kpi running">
               <button type="button" data-action="set-view" data-view="running" aria-label="Show running jobs">
                 <div class="label">Running</div>
@@ -35,6 +37,7 @@
                 <div class="value" id="kpi_total">0</div>
               </button>
             </div>
+            </div>
           </div>
-        </div>
+        </details>
       </section>
