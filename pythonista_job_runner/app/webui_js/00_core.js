@@ -15,14 +15,20 @@
 
   let currentJob = null;
   let initialTailForJob = null;
-  let currentTab = "stdout";
+  let currentTab = "overview";
   let view = "all";
   let sortMode = "newest";
   let filterHasResult = false;
+  let filterUser = "";
+  let filterSince = "";
+  let currentPage = 1;
+  const PAGE_SIZE = 12;
   let keepSecondaryFilters = true;
   let uiDensity = "comfortable";
+  let uiDirection = "auto";
   let firstJobsLoad = true;
   let jobsViewState = "initial";
+  let jobsPaneWidth = 460;
 
   let jobsCache = [];
   let follow = true;
@@ -42,6 +48,9 @@
   let toastActionHandler = null;
 
   let infoCache = null;
+  let rowPopoverMode = "manual";
+  let hoverPopoverTimer = null;
+  let hoverPopoverCloseTimer = null;
 
   let logSearch = "";
   let matchIdx = -1;
@@ -71,10 +80,15 @@
     return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
   }
 
+  function hasFinePointer() {
+    return !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  }
+
 
   function storageGet(key) {
     try {
-      return storageGet(key);
+      const ls = window["localStorage"];
+      return ls ? ls.getItem(key) : null;
     } catch (_err) {
       return null;
     }
@@ -82,7 +96,8 @@
 
   function storageSet(key, value) {
     try {
-      storageSet(key, value);
+      const ls = window["localStorage"];
+      if (ls) ls.setItem(key, value);
     } catch (_err) {
       // ignore storage write failures in restricted environments
     }
@@ -90,7 +105,8 @@
 
   function storageRemove(key) {
     try {
-      storageRemove(key);
+      const ls = window["localStorage"];
+      if (ls) ls.removeItem(key);
     } catch (_err) {
       // ignore storage remove failures in restricted environments
     }
@@ -100,6 +116,13 @@
     pane = (next === "detail") ? "detail" : "jobs";
     storageSet("pjr_pane", pane);
     ensurePaneForViewport();
+  }
+
+  function updateSplitUi() {
+    if (!document || !document.documentElement) return;
+    const maxWidth = Math.max(360, window.innerWidth - 420);
+    jobsPaneWidth = Math.max(360, Math.min(maxWidth, jobsPaneWidth));
+    document.documentElement.style.setProperty("--jobs-pane-width", `${jobsPaneWidth}px`);
   }
 
   function ensurePaneForViewport() {
@@ -425,6 +448,7 @@ function parseUtcSeconds(v) {
 
   function setView(next) {
     view = next;
+    currentPage = 1;
     storageSet("pjr_view", next);
     applyFilters();
     setActiveButton("view_", `view_${next}`);
@@ -500,13 +524,29 @@ function parseUtcSeconds(v) {
     if (document && document.body) document.body.dataset.density = uiDensity;
   }
 
+  function updateDirectionUi() {
+    if (!document || !document.documentElement) return;
+    const rootEl = document.documentElement;
+    const body = document.body;
+    if (uiDirection === "rtl" || uiDirection === "ltr") {
+      rootEl.setAttribute("dir", uiDirection);
+      if (body) body.setAttribute("dir", uiDirection);
+    } else {
+      rootEl.removeAttribute("dir");
+      if (body) body.removeAttribute("dir");
+    }
+  }
+
   function updateClearButtonVisibility() {
     if (!els.clear_filters || !els.search) return;
     const hasSearch = !!String(els.search.value || "").trim();
     const hasSecondary = !!filterHasResult;
     const hasNonDefaultSort = sortMode !== "newest";
     const hasStateFilter = view !== "all";
-    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter);
+    const hasUserFilter = !!String(filterUser || "").trim();
+    const hasDateFilter = !!String(filterSince || "").trim();
+    els.clear_filters.hidden = !(hasSearch || hasSecondary || hasNonDefaultSort || hasStateFilter || hasUserFilter || hasDateFilter);
+    if (els.clear_user_filter) els.clear_user_filter.hidden = !hasUserFilter;
   }
 
   function clearFilters() {
@@ -514,11 +554,18 @@ function parseUtcSeconds(v) {
     setView("all");
     sortMode = "newest";
     filterHasResult = false;
+    filterUser = "";
+    filterSince = "";
+    currentPage = 1;
+    if (els.filter_user) els.filter_user.value = "";
+    if (els.filter_since) els.filter_since.value = "";
     if (els.job_sort) els.job_sort.value = sortMode;
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
     storageSet("pjr_search", "");
     storageSet("pjr_sort", sortMode);
     storageSet("pjr_has_result", "0");
+    storageSet("pjr_filter_user", "");
+    storageSet("pjr_filter_since", "");
     applyFilters();
     updateClearButtonVisibility();
   }
@@ -526,7 +573,7 @@ function parseUtcSeconds(v) {
   function resetUi() {
     const keys = [
       "pjr_view","pjr_tab","pjr_pollms","pjr_search","pjr_auto","pjr_follow",
-      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary"
+      "pjr_wrap","pjr_font","pjr_pause","pjr_hilite","pjr_hterms","pjr_pane","pjr_sort","pjr_has_result","pjr_density","pjr_keep_secondary","pjr_dir","pjr_filter_user","pjr_filter_since","pjr_jobs_pane_width"
     ];
     for (const k of keys) storageRemove(k);
     toast("ok", "Reset", "UI settings cleared");

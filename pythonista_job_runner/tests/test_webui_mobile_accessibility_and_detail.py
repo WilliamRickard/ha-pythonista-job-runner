@@ -33,6 +33,7 @@ def test_bundle_has_detail_lifecycle_sections() -> None:
     assert 'id="detail_limits_summary"' in html
     assert 'id="detail_failure_summary"' in html
     assert 'detail-more-actions' in html
+    assert 'id="detail_breadcrumb_current"' in html
     assert 'detail-meta-block' in html
     assert 'detail-log-shell' in html
 
@@ -149,12 +150,14 @@ def test_single_primary_refresh_and_secondary_header_actions() -> None:
     assert 'data-action="open-about"' in html
     assert 'data-action="open-advanced"' in html
     assert 'System details' in html
+    assert 'id="settings_direction"' in html
 
 
 def test_bundle_has_command_and_confirm_overlays() -> None:
     html = build_webui()
 
     assert 'id="command_modal" role="dialog"' in html
+    assert 'id="row_menu" class="floating-menu"' in html
     assert 'id="command_input" type="search"' in html
     assert 'id="confirm_modal" role="alertdialog"' in html
     assert 'data-action="confirm-accept"' in html
@@ -171,3 +174,50 @@ def test_js_uses_custom_confirm_overlay_and_command_shortcut() -> None:
     assert 'window.confirm(' not in refresh
     assert 'openCommand();' in events
     assert 'String(ev.key).toLowerCase() === "k"' in events
+
+
+def test_detail_panel_prioritises_summary_before_logs() -> None:
+    html = build_webui()
+    core = _read_js_part("00_core.js")
+
+    assert 'class="detail-priority-strip"' in html
+    assert 'data-tab="overview" id="tab_overview"' in html
+    assert html.index('id="tab_overview"') < html.index('id="tab_stdout"')
+    assert 'let currentTab = "overview";' in core
+    assert '<summary>Log controls</summary>' in html
+
+
+def test_bundle_has_row_popover_progress_and_scroll_areas() -> None:
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert 'id="row_popover" class="floating-popover"' in html
+    assert 'id="row_popover_progress" class="progress popover-progress"' in html
+    assert 'id="detail_progress" class="progress detail-progress"' in html
+    assert 'class="scroll-area scroll-area-log"' in html
+    assert 'class="scroll-area scroll-area-meta"' in html
+    assert '.scroll-area{' in css
+    assert '.tooltip-target' in css
+
+
+def test_bundle_has_combobox_calendar_pagination_and_splitter() -> None:
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "50_responsive.css").read_text(encoding="utf-8")
+
+    assert 'id="filter_user"' in html
+    assert 'id="filter_user_list"' in html
+    assert 'id="filter_since" type="date"' in html
+    assert 'id="jobs_pagination" class="pagination-shell"' in html
+    assert 'id="desktop_splitter" class="desktop-splitter"' in html
+    assert '--jobs-pane-width' in css
+
+
+def test_bundle_hover_preview_and_pagination_helpers_exist() -> None:
+    js = _read_js_part("10_render_search.js")
+
+    assert 'updateUserFilterOptions(' in js
+    assert 'updatePaginationUi(' in js
+    assert 'setDatePreset(' in js
+    assert 'goToNextPage(' in js
+    assert 'rowPopoverMode = mode || "manual"' in js
+    assert 'Preview ${jobId}' in js

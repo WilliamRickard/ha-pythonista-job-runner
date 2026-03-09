@@ -42,11 +42,22 @@ function toggleAuto() {
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
+        if (action === "clear-user-filter") {
+          filterUser = "";
+          currentPage = 1;
+          if (els.filter_user) els.filter_user.value = "";
+          storageSet("pjr_filter_user", "");
+          applyFilters();
+          updateClearButtonVisibility();
+        }
         if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
+        if (action === "set-date-preset") setDatePreset(btn.getAttribute("data-preset") || "clear");
+        if (action === "page-prev") goToNextPage(-1);
+        if (action === "page-next") goToNextPage(1);
         if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
         if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
         if (action === "find-next") findNext();
@@ -63,6 +74,12 @@ function toggleAuto() {
         if (action === "close-about") closeAbout();
         if (action === "close-confirm") closeConfirm();
         if (action === "confirm-accept") await acceptConfirm();
+        if (action === "row-popover-view") await runRowPopoverAction("view");
+        if (action === "row-menu-view") await runRowMenuAction("view");
+        if (action === "row-menu-copy-id") await runRowMenuAction("copy-id");
+        if (action === "row-menu-stdout") await runRowMenuAction("stdout");
+        if (action === "row-menu-stderr") await runRowMenuAction("stderr");
+        if (action === "row-menu-curl") await runRowMenuAction("curl");
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
@@ -109,6 +126,31 @@ function toggleAuto() {
     if (els.confirm_overlay) {
       els.confirm_overlay.addEventListener("click", (ev) => {
         if (ev.target === els.confirm_overlay) closeConfirm();
+      });
+    }
+
+    document.addEventListener("click", (ev) => {
+      if (!els.row_menu || els.row_menu.hidden) return;
+      const target = ev.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#row_menu") || target.closest(".row-overflow")) return;
+      closeRowMenu();
+    });
+
+    document.addEventListener("click", (ev) => {
+      if (!els.row_popover || els.row_popover.hidden) return;
+      const target = ev.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#row_popover") || target.closest(".state-badge-trigger") || target.closest(".hover-preview-trigger") || target.closest(".jobbtn")) return;
+      closeRowPopover();
+    });
+
+    if (els.row_popover) {
+      els.row_popover.addEventListener("mouseenter", () => {
+        window.clearTimeout(hoverPopoverCloseTimer);
+      });
+      els.row_popover.addEventListener("mouseleave", () => {
+        if (rowPopoverMode === "hover") closeRowPopover(true);
       });
     }
 
@@ -168,6 +210,8 @@ function toggleAuto() {
       if (ev.key === "Escape") {
         if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
         if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
+        if (els.row_menu && !els.row_menu.hidden) closeRowMenu();
+        if (els.row_popover && !els.row_popover.hidden) closeRowPopover();
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
@@ -187,6 +231,7 @@ function toggleAuto() {
       storageSet("pjr_pollms", String(pollMs));
     });
     els.search.addEventListener("input", () => {
+      currentPage = 1;
       storageSet("pjr_search", String(els.search.value || ""));
       applyFilters();
       updateClearButtonVisibility();
@@ -194,7 +239,28 @@ function toggleAuto() {
     if (els.filter_has_result) {
       els.filter_has_result.addEventListener("change", () => {
         filterHasResult = !!els.filter_has_result.checked;
+        currentPage = 1;
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.filter_user) {
+      els.filter_user.addEventListener("input", () => {
+        filterUser = String(els.filter_user.value || "").trim();
+        currentPage = 1;
+        storageSet("pjr_filter_user", filterUser);
+        applyFilters();
+        updateClearButtonVisibility();
+      });
+    }
+
+    if (els.filter_since) {
+      els.filter_since.addEventListener("change", () => {
+        filterSince = String(els.filter_since.value || "").trim();
+        currentPage = 1;
+        storageSet("pjr_filter_since", filterSince);
         applyFilters();
         updateClearButtonVisibility();
       });
@@ -209,6 +275,7 @@ function toggleAuto() {
     if (els.settings_default_sort) {
       els.settings_default_sort.addEventListener("change", () => {
         sortMode = els.settings_default_sort.value || "newest";
+        currentPage = 1;
         storageSet("pjr_sort", sortMode);
         applyFilters();
         updateClearButtonVisibility();
@@ -227,6 +294,14 @@ function toggleAuto() {
         uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
         storageSet("pjr_density", uiDensity);
         updateDensityUi();
+      });
+    }
+
+    if (els.settings_direction) {
+      els.settings_direction.addEventListener("change", () => {
+        uiDirection = ["auto", "ltr", "rtl"].includes(els.settings_direction.value) ? els.settings_direction.value : "auto";
+        storageSet("pjr_dir", uiDirection);
+        updateDirectionUi();
       });
     }
 
@@ -310,6 +385,32 @@ function toggleAuto() {
       ev.preventDefault();
       els.search.focus();
     });
+
+    if (els.desktop_splitter) {
+      els.desktop_splitter.addEventListener("pointerdown", (ev) => {
+        if (window.innerWidth < 1100) return;
+        ev.preventDefault();
+        const startX = ev.clientX;
+        const startWidth = jobsPaneWidth;
+        document.body.classList.add("splitter-dragging");
+        const onMove = (moveEv) => {
+          const dir = document.documentElement.getAttribute("dir") === "rtl" ? -1 : 1;
+          jobsPaneWidth = startWidth + ((moveEv.clientX - startX) * dir);
+          updateSplitUi();
+        };
+        const onUp = () => {
+          document.body.classList.remove("splitter-dragging");
+          storageSet("pjr_jobs_pane_width", String(Math.round(jobsPaneWidth)));
+          window.removeEventListener("pointermove", onMove);
+        };
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp, { once: true });
+      });
+    }
+
+    window.addEventListener("resize", () => {
+      updateSplitUi();
+    });
   }
 
   function cacheEls() {
@@ -339,9 +440,18 @@ function toggleAuto() {
     els.search = document.getElementById("search");
     els.job_sort = document.getElementById("job_sort");
     els.filter_has_result = document.getElementById("filter_has_result");
+    els.filter_user = document.getElementById("filter_user");
+    els.filter_user_list = document.getElementById("filter_user_list");
+    els.clear_user_filter = document.querySelector('[data-action="clear-user-filter"]');
+    els.filter_since = document.getElementById("filter_since");
     els.clear_filters = document.getElementById("clear_filters");
     els.jobs_count = document.getElementById("jobs_count");
+    els.jobs_pagination = document.getElementById("jobs_pagination");
+    els.page_prev = document.getElementById("page_prev");
+    els.page_next = document.getElementById("page_next");
+    els.page_summary = document.getElementById("page_summary");
     els.main_header = document.getElementById("main_header");
+    els.desktop_splitter = document.getElementById("desktop_splitter");
 
     els.detail = document.getElementById("detail");
     els.detail_empty = document.getElementById("detail_empty");
@@ -356,6 +466,11 @@ function toggleAuto() {
     els.detail_limits_summary = document.getElementById("detail_limits_summary");
     els.detail_failure_summary = document.getElementById("detail_failure_summary");
     els.detail_inline_state = document.getElementById("detail_inline_state");
+    els.detail_progress_shell = document.getElementById("detail_progress_shell");
+    els.detail_progress = document.getElementById("detail_progress");
+    els.detail_progress_bar = document.getElementById("detail_progress_bar");
+    els.detail_progress_copy = document.getElementById("detail_progress_copy");
+    els.detail_breadcrumb_current = document.getElementById("detail_breadcrumb_current");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");
@@ -397,6 +512,16 @@ function toggleAuto() {
     els.confirm_title = document.getElementById("confirm_title");
     els.confirm_body = document.getElementById("confirm_body");
     els.confirm_accept = document.getElementById("confirm_accept");
+    els.row_popover = document.getElementById("row_popover");
+    els.row_popover_label = document.getElementById("row_popover_label");
+    els.row_popover_list = document.getElementById("row_popover_list");
+    els.row_popover_progress_shell = document.getElementById("row_popover_progress_shell");
+    els.row_popover_progress = document.getElementById("row_popover_progress");
+    els.row_popover_progress_bar = document.getElementById("row_popover_progress_bar");
+    els.row_popover_progress_copy = document.getElementById("row_popover_progress_copy");
+    els.row_menu = document.getElementById("row_menu");
+    els.row_menu_label = document.getElementById("row_menu_label");
+    els.row_menu_zip = document.getElementById("row_menu_zip");
 
     els.about_overlay = document.getElementById("about_overlay");
     els.about_modal = document.getElementById("about_modal");
@@ -412,6 +537,7 @@ function toggleAuto() {
     els.settings_default_sort = document.getElementById("settings_default_sort");
     els.settings_keep_secondary = document.getElementById("settings_keep_secondary");
     els.settings_density = document.getElementById("settings_density");
+    els.settings_direction = document.getElementById("settings_direction");
 
     els.adv_overlay = document.getElementById("adv_overlay");
     els.adv_modal = document.getElementById("adv_modal");
@@ -466,10 +592,23 @@ function toggleAuto() {
     if (savedHasResult !== null && keepSecondaryFilters) filterHasResult = (savedHasResult === "1");
     if (els.filter_has_result) els.filter_has_result.checked = filterHasResult;
 
+    const savedUserFilter = storageGet("pjr_filter_user");
+    if (savedUserFilter !== null) filterUser = savedUserFilter;
+    if (els.filter_user) els.filter_user.value = filterUser;
+
+    const savedSinceFilter = storageGet("pjr_filter_since");
+    if (savedSinceFilter !== null) filterSince = savedSinceFilter;
+    if (els.filter_since) els.filter_since.value = filterSince;
+
     const savedDensity = storageGet("pjr_density");
     if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";
     if (els.settings_density) els.settings_density.value = uiDensity;
     updateDensityUi();
+
+    const savedDirection = storageGet("pjr_dir");
+    if (savedDirection && ["auto", "ltr", "rtl"].includes(savedDirection)) uiDirection = savedDirection;
+    if (els.settings_direction) els.settings_direction.value = uiDirection;
+    updateDirectionUi();
 
     const savedFollow = storageGet("pjr_follow");
     if (savedFollow !== null) follow = (savedFollow === "1");
@@ -496,6 +635,10 @@ function toggleAuto() {
     updateHighlightUi();
 
     if (els.settings_default_sort) els.settings_default_sort.value = sortMode;
+
+    const savedPaneWidth = storageGet("pjr_jobs_pane_width");
+    if (savedPaneWidth) jobsPaneWidth = clampInt(savedPaneWidth, 360, 900, jobsPaneWidth);
+    updateSplitUi();
 
     const savedPane = storageGet("pjr_pane");
     if (savedPane) pane = (savedPane === "detail") ? "detail" : "jobs";

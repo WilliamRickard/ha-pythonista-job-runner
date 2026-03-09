@@ -1,3 +1,5 @@
+<!-- Section: Desktop splitter and selected job detail panel -->
+      <div id="desktop_splitter" class="desktop-splitter" role="separator" aria-orientation="vertical" aria-label="Resize jobs and detail panes"></div>
 <!-- Section: Job detail panel and closes main container -->
       <section id="pane_detail" class="card" style="margin-top:14px;" aria-label="Selected job details">
         <div class="card-header">
@@ -14,6 +16,11 @@
           <section id="detail" hidden aria-label="Job detail">
             <div class="detail-topline">
               <div class="detail-heading">
+                <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+                  <button type="button" class="breadcrumb-link" data-action="back-to-jobs">Jobs</button>
+                  <span class="breadcrumb-sep" aria-hidden="true">/</span>
+                  <span class="breadcrumb-current" id="detail_breadcrumb_current">Selected job</span>
+                </nav>
                 <div class="detail-eyebrow">Selected job</div>
                 <div class="detail-title-row">
                   <div class="detail-title">Job <span id="jobid"></span></div>
@@ -44,46 +51,67 @@
               <div id="state_description" class="state-description"></div>
             </section>
 
-            <section class="lifecycle" aria-label="Lifecycle timeline" style="margin-top:10px;">
-              <h3 class="sr-only">Lifecycle timeline</h3>
-              <ul id="detail_timeline" class="timeline"></ul>
+            <div id="detail_progress_shell" class="detail-progress-shell" hidden>
+              <div id="detail_progress" class="progress detail-progress" role="progressbar" aria-label="Job progress">
+                <div id="detail_progress_bar" class="progress-bar"></div>
+              </div>
+              <div id="detail_progress_copy" class="detail-progress-copy">Running…</div>
+            </div>
+
+            <section class="detail-priority-strip" aria-label="Job summary" style="margin-top:10px;">
+              <article class="detail-priority-item detail-priority-result">
+                <div class="detail-priority-label">Result</div>
+                <div id="detail_result_summary" class="detail-priority-value muted">Result not yet available.</div>
+              </article>
+              <article class="detail-priority-item detail-priority-failure">
+                <div class="detail-priority-label">Failure hints</div>
+                <div id="detail_failure_summary" class="detail-priority-value muted">No failure detected.</div>
+              </article>
+              <article class="detail-priority-item detail-priority-limits">
+                <div class="detail-priority-label">Execution limits</div>
+                <div id="detail_limits_summary" class="detail-priority-value muted">Limits unavailable.</div>
+              </article>
             </section>
 
-            <div class="detail-insights" style="margin-top:12px;">
-              <article class="insight-card">
-                <h3>Result and outputs</h3>
-                <div id="detail_result_summary" class="muted">Result not yet available.</div>
-              </article>
-              <article class="insight-card">
-                <h3>Execution limits</h3>
-                <div id="detail_limits_summary" class="muted">Limits unavailable.</div>
-              </article>
-              <article class="insight-card">
-                <h3>Failure hints</h3>
-                <div id="detail_failure_summary" class="muted">No failure detected.</div>
-              </article>
-            </div>
-
-            <details class="detail-block detail-meta-block" style="margin-top:10px;" open>
-              <summary>Metadata</summary>
-              <div class="item-list meta-items" id="meta"></div>
-            </details>
-
-            <div id="overview" hidden style="margin-top:14px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="true">
-              <div class="hint" id="overview_text"></div>
-              <details class="detail-block detail-api-block" style="margin-top:10px;">
-                <summary>Request and API</summary>
-                <textarea id="curl_snippet" rows="9" readonly></textarea>
-              </details>
-            </div>
-
-            <div class="tabs" style="margin-top:14px;" role="tablist" aria-label="Output tabs">
-              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="true" aria-controls="logpanel" tabindex="0">stdout</button>
+            <div class="tabs detail-tabs" style="margin-top:14px;" role="tablist" aria-label="Detail sections">
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="true" aria-controls="overview" tabindex="0">summary</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stdout</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">summary</button>
             </div>
 
-            <details class="detail-log-shell" style="margin-top:10px;" open>
+            <div id="overview" style="margin-top:12px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="false">
+              <div class="detail-summary-stack">
+                <section class="detail-summary-panel" aria-label="Lifecycle timeline">
+                  <h3>Lifecycle</h3>
+                  <ul id="detail_timeline" class="timeline"></ul>
+                </section>
+
+                <details class="detail-block detail-meta-block">
+                  <summary>Metadata</summary>
+                  <div class="scroll-area scroll-area-meta">
+                    <div class="item-list meta-items" id="meta"></div>
+                  </div>
+                </details>
+
+                <section class="detail-summary-panel detail-overview-note">
+                  <h3>Quick facts</h3>
+                  <div class="hint" id="overview_text"></div>
+                </section>
+
+                <details class="detail-block detail-api-block">
+                  <summary>Request and API</summary>
+                  <textarea id="curl_snippet" class="scroll-area-control" rows="9" readonly></textarea>
+                </details>
+              </div>
+            </div>
+
+            <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="true" style="margin-top:12px;">
+              <div class="scroll-area scroll-area-log">
+                <pre id="logview"></pre>
+              </div>
+            </div>
+
+            <details class="detail-log-shell" style="margin-top:10px;">
               <summary>Log controls</summary>
               <div class="detail-log-tools-body">
             <div class="logtools" id="logtools" style="margin-top:10px;">
@@ -131,10 +159,6 @@
               <button type="button" class="small" data-action="find-next">Next</button>
               <button type="button" class="small" data-action="clear-search">Clear</button>
               <span class="count" id="matchcount" role="status" aria-live="polite"></span>
-            </div>
-
-            <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
-              <pre id="logview"></pre>
             </div>
               </div>
             </details>
