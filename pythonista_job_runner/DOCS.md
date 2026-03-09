@@ -1,111 +1,251 @@
-<!-- Version: 0.6.12-docs.9 -->
+<!-- Version: 0.6.12-docs.10 -->
 # Pythonista Job Runner
 
-Pythonista Job Runner is a Home Assistant add-on that:
+Pythonista Job Runner is a Home Assistant add-on that accepts a job zip, extracts it into an isolated working directory, runs `run.py`, streams logs while it runs, and returns a result zip when it finishes.
 
-1. Accepts a job zip uploaded from Pythonista (iOS).
-2. Extracts it into an isolated working directory.
-3. Runs `run.py`.
-4. Streams logs (stdout and stderr) while it runs.
-5. Builds a result zip you can download back to the phone.
+It supports two access paths:
 
-It also includes a Home Assistant Ingress Web UI for viewing jobs, logs, and downloading results from inside Home Assistant.
+- **Ingress Web UI** inside Home Assistant for people using the built-in interface.
+- **Direct HTTP API** on port `8787` for Pythonista and other clients.
 
-## Who this is for
+## Task index
 
-This add-on is useful when you want your iPhone to be the control surface (Pythonista UI, shortcuts, on-device scripts), but you want the actual work to run somewhere more capable:
+- [Install the repository and add-on](#install-the-repository-and-add-on)
+- [Secure the add-on before you use it](#secure-the-add-on-before-you-use-it)
+- [First run in the Web UI](#first-run-in-the-web-ui)
+- [First run from Pythonista](#first-run-from-pythonista)
+- [Ingress versus direct API access](#ingress-versus-direct-api-access)
+- [Job zip format](#job-zip-format)
+- [Result zip format](#result-zip-format)
+- [Pythonista client examples](#pythonista-client-examples)
+- [HTTP API reference](#http-api-reference)
+- [Troubleshooting](#troubleshooting)
+- [Security and operating notes](#security-and-operating-notes)
+- [Advanced and contributor notes](#advanced-and-contributor-notes)
 
-- CPU-intensive tasks that are slow on iOS
-- Work that needs Linux tooling (git, compilers, system packages)
-- Jobs that need packages that are awkward on iOS
-- Running long tasks without keeping the phone awake
+## Install the repository and add-on
 
-## Install and first run
+### Add the repository
 
-### 1) Add the repository
+1. In Home Assistant, go to **Settings -> Add-ons -> Add-on Store**.
+2. Open the top-right menu and choose **Repositories**.
+3. Add:
+   `https://github.com/WilliamRickard/ha-pythonista-job-runner`
 
-If you have not added this GitHub repository to Home Assistant yet, add it via:
+You can also use the My Home Assistant button in the repository [`README.md`](../README.md).
 
-- Settings -> Add-ons -> Add-on Store -> menu -> Repositories
-- Add: `https://github.com/WilliamRickard/ha-pythonista-job-runner`
-
-Home Assistant also supports a "My Home Assistant" link that opens the repository dialog pre-filled. See the [repository root README](../README.md).
-
-Home Assistant documentation (developer docs):
-- https://developers.home-assistant.io/docs/apps/repository/
-
-### 2) Install the add-on
+### Install the add-on
 
 1. Find **Pythonista Job Runner** in the add-on store.
 2. Install it.
 3. Start it.
+4. Open **Open Web UI** and confirm the jobs list loads.
 
-### 3) Configure security (do this before using the HTTP API)
+## Secure the add-on before you use it
 
-In the add-on Configuration tab:
+Set these options before you start using the direct API:
 
-- Security -> Access token
-  - Direct API clients such as Pythonista must send this value in the `X-Runner-Token` header.
-  - If this value is blank, direct API access is disabled.
-- Security -> Ingress only
-  - This is the `ingress_strict` option in the add-on config.
-  - If enabled, only Home Assistant Ingress can access the add-on.
-  - This is great for the Web UI, but it blocks direct calls from Pythonista.
-- Security -> Allowed client CIDRs
-  - This is the `api_allow_cidrs` option in the add-on config.
-  - If set, direct API requests must come from an allowed network as well as present the correct token.
+- **Access token**: direct API clients such as Pythonista must send this value in the `X-Runner-Token` header.
+- **Ingress only**: when enabled, only Home Assistant Ingress can access the add-on. That blocks direct API calls from Pythonista.
+- **Allowed client CIDRs**: when set, direct API requests must come from an allowed network as well as present the correct token.
 
-Typical setup for Pythonista usage:
+Typical Pythonista setup:
 
-- Set a strong Access token.
-- Leave "Ingress only" OFF so Pythonista can connect directly.
-- Optionally set "Allowed client CIDRs" to your local network range (for example, your Wi-Fi subnet) so the API is not reachable from everywhere.
+1. Set a strong **Access token**.
+2. Leave **Ingress only** off.
+3. Optionally set **Allowed client CIDRs** to your local Wi-Fi subnet.
 
-Remote access tip: do not expose the add-on port directly to the internet. If you need remote access, prefer a VPN or Home Assistant Cloud, and keep your Home Assistant instance secured.
+Do not expose port `8787` directly to the public internet. For remote access, use a virtual private network or another trusted path back to your home network.
 
-## Packaging and architecture notes
+For the full security model, read [`../SECURITY.md`](../SECURITY.md).
 
-This add-on declares support for `amd64`, `aarch64`, and `armv7` in [`config.yaml`](config.yaml). The build matrix in [`build.yaml`](build.yaml) pins Home Assistant base Python images for the same architecture keys, and CI guardrails verify that these declarations remain aligned.
+## First run in the Web UI
 
-Repository truthfulness note: automated runtime tests in this repository execute on `amd64` CI runners. For `aarch64` and `armv7`, repository checks currently verify build metadata and packaging alignment; run a native smoke test on target hardware before production rollout.
+This is the fastest way to prove the add-on is healthy.
 
-Security-oriented configuration reminders:
+1. Open the add-on in Home Assistant.
+2. Click **Open Web UI**.
+3. Confirm the jobs list loads.
+4. Confirm the UI can refresh without errors.
+5. Confirm the settings and help panels open and scroll correctly on your device.
 
-- Keep **Access token** set for direct API usage.
-- Prefer **Ingress only** (`ingress_strict`) when you do not need direct API access.
-- If direct API is required, use **Allowed client CIDRs** (`api_allow_cidrs`) to narrow exposure.
+Once that works, the Ingress path is healthy and you can use the Web UI for day-to-day monitoring even if your actual job submission happens from Pythonista.
 
-## How to reach the API
+## First run from Pythonista
 
-The add-on exposes its HTTP API on port 8787 (by default). The base URL will look like one of these:
+The add-on expects a raw zip request body, not a multipart form upload.
 
-- `http://YOUR_HOME_ASSISTANT_HOST:8787`
-- `http://YOUR_HOME_ASSISTANT_IP:8787`
+Your first job should be tiny. Put `run.py` at the zip root and write a single file under `outputs/`.
 
-Ingress Web UI (inside Home Assistant):
-- Open the add-on and click **Open Web UI**.
-- Ingress is authenticated by Home Assistant. Home Assistant recommends add-ons restrict Ingress traffic to the Supervisor proxy IP `172.30.32.2` and deny others. This add-on treats Ingress traffic as trusted. Home Assistant Ingress requirements are documented here:
-  - https://developers.home-assistant.io/docs/apps/presentation/#ingress
+### Minimal `run.py`
+
+```python
+import os
+
+print("Hello from Pythonista Job Runner")
+
+os.makedirs("outputs", exist_ok=True)
+with open("outputs/hello.txt", "w", encoding="utf-8") as f:
+    f.write("It worked.
+")
+```
+
+### Minimal Pythonista upload example
+
+```python
+import io
+import zipfile
+
+import requests
+
+RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
+TOKEN = "YOUR_RUNNER_TOKEN"
+REQUEST_TIMEOUT_SECONDS = 60
+
+buf = io.BytesIO()
+with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    zf.writestr(
+        "run.py",
+        """import os
+print('Hello from Pythonista Job Runner')
+os.makedirs('outputs', exist_ok=True)
+with open('outputs/hello.txt', 'w', encoding='utf-8') as f:
+    f.write('It worked.\n')
+""",
+    )
+
+response = requests.post(
+    RUNNER_URL + "/run",
+    data=buf.getvalue(),
+    headers={
+        "X-Runner-Token": TOKEN,
+        "Content-Type": "application/zip",
+    },
+    timeout=REQUEST_TIMEOUT_SECONDS,
+)
+response.raise_for_status()
+
+with open("result.zip", "wb") as f:
+    f.write(response.content)
+
+print("Saved result.zip")
+```
+
+A successful first run gives you a result zip that includes `stdout.txt`, `stderr.txt`, `status.json`, and `outputs/hello.txt`.
 
 ## Ingress versus direct API access
 
-Use **Ingress** when you are interacting with the built-in Web UI from inside Home Assistant. Use the **direct API** when Pythonista or another script is uploading jobs over the network.
+Use **Ingress** when you are interacting with the built-in Web UI from inside Home Assistant. Use the **direct API** when Pythonista or another client needs to upload a job zip over the network.
 
 ### Ingress
 
-Ingress is the simplest path for humans using the Web UI:
+Ingress is the simplest path for people using the Web UI:
 
 1. Open the add-on inside Home Assistant.
 2. Click **Open Web UI**.
-3. Browse jobs, logs, and result downloads in the authenticated Home Assistant session.
+3. Browse jobs, logs, and result downloads from the authenticated Home Assistant session.
 
-Ingress requests are authenticated by Home Assistant itself and proxied to the add-on. You do not send `X-Runner-Token` manually in this flow. `GET /health` is separate and intentionally unauthenticated for simple connectivity checks.
+Ingress requests are authenticated by Home Assistant itself. You do not send `X-Runner-Token` manually in this flow.
 
 ### Direct API
 
-The direct API is the path Pythonista uses. This goes to port `8787` on your Home Assistant host and requires `X-Runner-Token`. It only works when an Access token is set, `ingress_strict` is off, and your client IP matches any configured `api_allow_cidrs`.
+The direct API is the path Pythonista uses. It goes to port `8787` on your Home Assistant host and requires `X-Runner-Token`. It only works when an Access token is set, **Ingress only** is off, and the client IP matches any configured CIDR allowlist.
 
-Concrete Pythonista example:
+Rule of thumb:
+
+- Open Web UI inside Home Assistant: use Ingress.
+- Upload from Pythonista on your phone: use the direct API.
+
+## Job zip format
+
+Your upload must be a zip file with `run.py` at the root.
+
+- `run.py` is executed as the job entry point.
+- Any other files in the zip are extracted into the job working directory.
+- Files written under `outputs/` are included in the result zip.
+
+### Optional `requirements.txt`
+
+The add-on can optionally install dependencies listed in `requirements.txt` at the job root into a per-job directory.
+
+This is off by default. To use it:
+
+1. In add-on configuration, enable **Install requirements**.
+2. Include `requirements.txt` in the job zip root.
+
+Only enable this when you trust the code you are running.
+
+## Result zip format
+
+When the job completes, the result zip includes:
+
+- `stdout.txt`
+- `stderr.txt`
+- `status.json`
+- `exit_code.txt`
+- `summary.txt`
+- `result_manifest.json`
+- `job.log`
+- Optional pip install logs when requirement installation was used
+- Your files under `outputs/`, if any
+
+## API contract
+
+The machine-readable direct API contract lives at [`api/openapi.json`](api/openapi.json).
+
+It is intended for client tooling, documentation sync, and regression checks.
+
+## Reusable Pythonista client toolkit
+
+A lightweight client module is provided at [`app/pythonista_client.py`](app/pythonista_client.py).
+
+Key capabilities:
+
+- Upload zip bytes or files
+- Poll for completion
+- Fetch tail logs
+- Cancel or delete jobs
+- Download and extract result zips
+- Run an end-to-end submit, wait, and collect flow
+
+A runnable example script is included at [`examples/pythonista_run_job.py`](examples/pythonista_run_job.py).
+
+## HTTP API reference
+
+All endpoints are served by the add-on.
+
+### Public endpoints
+
+- `GET /health` returns `{"status": "ok", "version": "<add-on version>"}`.
+- `GET /` and `GET /index.html` return JSON info by default. If the client prefers HTML, they return the Web UI and require authentication.
+- `GET /info.json` returns the same JSON info as `/`.
+
+### Authenticated endpoints
+
+Send the token in this header:
+
+- `X-Runner-Token: <access token>`
+
+Endpoints:
+
+- `POST /run`: submit a job zip as raw bytes in the request body.
+- `GET /jobs.json`: list jobs.
+- `GET /job/<job_id>.json`: fetch job status.
+- `GET /tail/<job_id>.json`: fetch status plus stdout and stderr tails.
+- `GET /result/<job_id>.zip`: download the result zip.
+- `GET /stdout/<job_id>.txt`: download full stdout, or use offsets.
+- `GET /stderr/<job_id>.txt`: download full stderr, or use offsets.
+- `POST /cancel/<job_id>`: request cancellation.
+- `DELETE /job/<job_id>`: delete a job and its artefacts.
+- `POST /purge`: purge matching jobs.
+
+The full route contract is in [`api/openapi.json`](api/openapi.json).
+
+## Pythonista client examples
+
+Pythonista includes the `requests` module and a `dialogs` module for picking files.
+
+### Example 1: submit a zip file you already built
 
 ```python
 import requests
@@ -129,437 +269,59 @@ response.raise_for_status()
 print(response.json())
 ```
 
-Rule of thumb:
+### Example 2: use the reusable client helper
 
-- Open Web UI inside Home Assistant: use Ingress.
-- Upload from Pythonista on your phone: use the direct API with `X-Runner-Token`.
-
-## Job zip format
-
-Your upload must be a zip file that contains `run.py` at the root.
-
-- `run.py` is executed as the job entry point.
-- Any other files in the zip are extracted into the job working directory.
-- If your code writes files under `outputs/`, they are included in the result zip.
-
-Example `run.py` that produces an output file:
-
-```python
-import os
-from datetime import datetime
-
-print("Job started")
-
-os.makedirs("outputs", exist_ok=True)
-with open("outputs/when.txt", "w", encoding="utf-8") as f:
-    f.write(datetime.utcnow().isoformat() + "Z\n")
-
-print("Job finished")
-```
-
-### Optional: `requirements.txt`
-
-The add-on can optionally install dependencies listed in `requirements.txt` (at the job root) into a per-job directory.
-
-This is OFF by default. To use it:
-
-1. In add-on Configuration -> Python -> Install requirements: set to true.
-2. Include a `requirements.txt` file in the job zip root.
-
-Security note: installing requirements may execute build hooks. Only enable this if you trust the job code you are running.
-
-## Result zip format
-
-When the job completes (success or failure), the result zip includes:
-
-- `stdout.txt` and `stderr.txt`
-- `status.json` (the final job status)
-- `exit_code.txt`
-- `summary.txt` (includes tail excerpts)
-- `result_manifest.json`
-- `job.log` (metadata about the run)
-- Optional: `pip_install_stdout.txt`, `pip_install_stderr.txt` (only if requirements installation was used)
-- Your files under `outputs/` (if any)
-
-
-## API contract (OpenAPI)
-
-The machine-readable direct API contract lives at [`api/openapi.json`](api/openapi.json).
-
-- Format: OpenAPI 3.0.3 JSON
-- Scope: direct HTTP API routes exposed by the add-on
-- Source of truth: contract entries are derived from [`app/http_api_server.py`](app/http_api_server.py) and validated by tests
-
-This contract is intended for client tooling, documentation sync, and regression detection in contributor workflows.
-
-## Reusable Pythonista client toolkit
-
-A lightweight client module is provided at [`app/pythonista_client.py`](app/pythonista_client.py).
-
-Key capabilities:
-
-- Upload zip bytes or files (`submit_zip_bytes`, `submit_zip_file`)
-- Poll status (`wait_for_completion`)
-- Fetch tails (`get_tail`)
-- Cancel/delete (`cancel_job`, `delete_job`)
-- Download and extract results (`download_result_zip`, `extract_result_zip`)
-- End-to-end helper (`run_zip_and_collect`)
-
-A runnable example script is included at [`examples/pythonista_run_job.py`](examples/pythonista_run_job.py).
-
-## HTTP API reference
-
-All endpoints are served by the add-on.
-
-### Public endpoints (no token required)
-
-- `GET /health`  
-  Returns `{"status": "ok", "version": "<addon version>"}`.
-
-- `GET /` or `GET /index.html`  
-  Returns JSON info by default. If the client sends an `Accept` header that prefers HTML (for example a browser), it returns the Web UI and requires authentication.
-
-- `GET /info.json`  
-  Returns the same JSON info as `/`.
-
-### Authenticated endpoints (token required unless coming through Ingress)
-
-Send the token in this header:
-
-- `X-Runner-Token: <access token>`
-
-Endpoints:
-
-- `POST /run`  
-  Submit a job zip as raw bytes in the request body. Supported media types are `application/zip` and `application/octet-stream` (missing `Content-Type` is accepted for compatibility). Response is HTTP 202 with JSON:
-
-  ```json
-  {
-    "job_id": "…",
-    "tail_url": "/tail/<job_id>.json",
-    "result_url": "/result/<job_id>.zip",
-    "jobs_url": "/jobs.json"
-  }
-  ```
-
-- `GET /jobs.json`  
-  List jobs.
-
-- `GET /job/<job_id>.json`  
-  Job status.
-
-- `GET /tail/<job_id>.json`  
-  Job status plus tail logs (stdout and stderr).
-
-  You can optionally use offsets for incremental fetching:
-
-  - `stdout_from=<int>`
-  - `stderr_from=<int>`
-  - `max_bytes=<int>` (capped to 1 MiB per stream)
-
-- `GET /result/<job_id>.zip`  
-  Download the result zip.
-
-- `GET /stdout/<job_id>.txt` and `GET /stderr/<job_id>.txt`  
-  Download full logs, or use deltas with query parameters:
-
-  - `from=<int>`
-  - `max_bytes=<int>` (capped)
-
-- `POST /cancel/<job_id>`  
-  Request cancellation.
-
-- `DELETE /job/<job_id>`  
-  Delete a job and its artefacts.
-
-- `POST /purge`  
-  Purge multiple jobs. Body must be a JSON object (`application/json` or `text/json`, or no `Content-Type` header), for example:
-
-  ```json
-  {
-    "states": ["done", "error"],
-    "older_than_hours": 24,
-    "dry_run": true
-  }
-  ```
-
-## Pythonista client examples
-
-Pythonista includes the `requests` module and a `dialogs` module for a file picker:
-
-- Requests docs (Pythonista): https://omz-software.com/pythonista/docs/ios/requests.html
-- dialogs.pick_document docs: https://omz-software.com/pythonista/docs/ios/dialogs.html#importing-files
-
-### Example 1: Build a zip in Pythonista and run it
-
-This script:
-
-- Builds a job zip in a temporary directory
-- Uploads it to Home Assistant
-- Polls the tail endpoint until the job is finished
-- Downloads and extracts the result zip
-
-```python
-"""Pythonista client for Pythonista Job Runner.
-
-Edit RUNNER_URL and TOKEN, then run in Pythonista. The placeholder host name and token below match the shorter examples elsewhere in this guide.
-"""
-
-import io
-import json
-import os
-import tempfile
-import time
-import zipfile
-
-import requests
-
-
-RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
-TOKEN = "YOUR_RUNNER_TOKEN"
-SUBMIT_TIMEOUT_SECONDS = 60
-POLL_TIMEOUT_SECONDS = 30
-DOWNLOAD_TIMEOUT_SECONDS = 120
-
-
-def build_job_zip(zip_path):
-    """Create a minimal job zip with run.py at the zip root."""
-    run_py = """import os
-
-print("Hello from Home Assistant")
-os.makedirs("outputs", exist_ok=True)
-with open("outputs/hello.txt", "w", encoding="utf-8") as f:
-    f.write("Created by the add-on.\n")
-"""
-    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("run.py", run_py)
-
-
-def submit_job(zip_path):
-    """Upload the zip and return the parsed JSON response."""
-    with open(zip_path, "rb") as f:
-        r = requests.post(
-            RUNNER_URL + "/run",
-            data=f,  # raw zip bytes
-            headers={"X-Runner-Token": TOKEN},
-            timeout=SUBMIT_TIMEOUT_SECONDS,
-        )
-    r.raise_for_status()
-    return r.json()
-
-
-def poll_until_done(job_id, poll_seconds=1):
-    """Poll /tail until the job state is done or error."""
-    last_out = 0
-    last_err = 0
-    while True:
-        r = requests.get(
-            RUNNER_URL + "/tail/{}.json".format(job_id),
-            params={"stdout_from": last_out, "stderr_from": last_err},
-            headers={"X-Runner-Token": TOKEN},
-            timeout=POLL_TIMEOUT_SECONDS,
-        )
-        r.raise_for_status()
-        payload = r.json()
-
-        status = payload.get("status") or {}
-        tail = payload.get("tail") or {}
-        offsets = payload.get("offsets") or {}
-
-        out = tail.get("stdout") or ""
-        err = tail.get("stderr") or ""
-        if out:
-            print(out, end="")
-        if err:
-            print(err, end="")
-
-        last_out = int(offsets.get("stdout_next", last_out))
-        last_err = int(offsets.get("stderr_next", last_err))
-
-        state = status.get("state")
-        if state in ("done", "error"):
-            return status
-
-        time.sleep(poll_seconds)
-
-
-def download_result(job_id, out_zip_path):
-    """Download /result/<job_id>.zip."""
-    r = requests.get(
-        RUNNER_URL + "/result/{}.zip".format(job_id),
-        headers={"X-Runner-Token": TOKEN},
-        timeout=DOWNLOAD_TIMEOUT_SECONDS,
-    )
-    r.raise_for_status()
-    with open(out_zip_path, "wb") as f:
-        f.write(r.content)
-
-
-def main():
-    tmp = tempfile.mkdtemp(prefix="runner_job_")
-    job_zip = os.path.join(tmp, "job.zip")
-    result_zip = os.path.join(tmp, "result.zip")
-    result_dir = os.path.join(tmp, "result")
-
-    build_job_zip(job_zip)
-    resp = submit_job(job_zip)
-    job_id = resp["job_id"]
-    print("Submitted job:", job_id)
-
-    status = poll_until_done(job_id)
-    print("\nFinal status:", json.dumps(status, indent=2))
-
-    download_result(job_id, result_zip)
-    os.makedirs(result_dir, exist_ok=True)
-    with zipfile.ZipFile(result_zip, "r") as zf:
-        zf.extractall(result_dir)
-
-    print("Result extracted to:", result_dir)
-    print("Files:", os.listdir(result_dir))
-
-
-if __name__ == "__main__":
-    main()
-```
-
-### Example 2: Upload an existing zip using a file picker
-
-If you already have a `job.zip` saved in Files, you can pick it:
-
-```python
-"""Pick an existing job zip from Files and upload it."""
-
-import requests
-import dialogs
-
-RUNNER_URL = "http://YOUR_HOME_ASSISTANT_HOST:8787"
-TOKEN = "YOUR_RUNNER_TOKEN"
-SUBMIT_TIMEOUT_SECONDS = 60
-
-
-def main():
-    path = dialogs.pick_document()  # returns a temporary file path
-    if not path:
-        print("No file picked")
-        return
-
-    with open(path, "rb") as f:
-        r = requests.post(
-            RUNNER_URL + "/run",
-            data=f,
-            headers={"X-Runner-Token": TOKEN},
-            timeout=SUBMIT_TIMEOUT_SECONDS,
-        )
-
-    r.raise_for_status()
-    print(r.json())
-
-
-if __name__ == "__main__":
-    main()
-```
-
-Note: `dialogs.pick_document()` returns a temporary file path. If you need to keep the selected file, move or copy it into your Pythonista Documents folder.
+See [`app/pythonista_client.py`](app/pythonista_client.py) and [`examples/pythonista_run_job.py`](examples/pythonista_run_job.py).
 
 ## Troubleshooting
 
-### 401 unauthorised
+### `401 unauthorised`
 
-Causes:
+Check all three of these:
 
-- Missing or wrong `X-Runner-Token`.
-- Access token is blank, so direct API access is disabled.
-- "Ingress only" (`ingress_strict`) is enabled, and you are calling the API directly from Pythonista.
-- You set "Allowed client CIDRs" (`api_allow_cidrs`) and your phone is not in the allowed range.
+1. **Access token** is set in the add-on configuration.
+2. The request sends the correct `X-Runner-Token`.
+3. **Ingress only** is off when you are calling the direct API.
 
-Fix:
+### Pythonista cannot connect
 
-- Confirm the token matches the configured Access token.
-- Set an Access token if you want direct Pythonista access.
-- Disable "Ingress only" if you need direct Pythonista access.
-- Adjust the CIDR allowlist.
+Check that:
 
-### Cannot connect
+- The add-on is started.
+- Your iPhone can reach the Home Assistant host on the local network.
+- Port `8787` is not blocked by local firewall rules.
+- Any CIDR allowlist includes your current client IP range.
 
-- Confirm the add-on is running.
-- Confirm you can reach `http://YOUR_HOME_ASSISTANT_HOST:8787/health` from the same network.
-- If you are using HTTPS for Home Assistant, note the add-on port is still HTTP by default. Use a VPN, a reverse proxy, or keep it local.
+### Upload fails immediately
 
-### 413 upload too large
+Your zip must contain `run.py` at the zip root, not inside an extra parent folder.
 
-- The add-on enforces upload and zip safety limits. Reduce your job zip size or increase limits in the add-on configuration if you understand the trade-offs.
+### Result zip is missing your files
 
-### Job times out
+Only files written under `outputs/` are copied into the result zip.
 
-- Increase Jobs -> Timeout seconds.
-- Reduce work per job or split into multiple jobs.
+### The Web UI loads but seems broken on mobile
 
-## Developer notes
+Confirm you are on the latest add-on version, then hard refresh the Ingress page or restart the add-on so Home Assistant serves the current bundled `webui.html`.
 
-- [`README.md`](README.md) is the short entry.
-- [`DOCS.md`](DOCS.md) is the full user documentation shown in the add-on UI.
-- [`CHANGELOG.md`](CHANGELOG.md) tracks add-on changes.
-- [`../CONTRIBUTING.md`](../CONTRIBUTING.md) covers contributor workflow, Web UI build rules, and local checks.
+## Security and operating notes
 
-## Advanced: Web UI customisation
+- Jobs run inside the add-on container, not on your iPhone.
+- Direct API access and Ingress access are separate trust paths.
+- Prefer Ingress for day-to-day human use.
+- Keep direct API exposure local and token-protected.
+- Review [`config.yaml`](config.yaml) before changing bind or security options.
 
-This section is for contributors who want to change the built-in Web UI. For normal usage, you do not need this.
+## Packaging and architecture notes
 
-The add-on serves the Web UI as a single Ingress-safe file ([`app/webui.html`](app/webui.html)). Do not edit that file directly. It is generated.
+The add-on declares support for `amd64`, `aarch64`, and `armv7` in [`config.yaml`](config.yaml), with matching build-matrix entries in [`build.yaml`](build.yaml).
 
-Edit these source files instead:
+Repository truthfulness note: automated runtime tests in this repository currently run on `amd64` continuous integration runners. `aarch64` and `armv7` are validated here at packaging and declaration level and still need native-host smoke testing before release sign-off.
 
-- [`app/webui_src.html`](app/webui_src.html) (HTML wrapper and placeholders)
-- [`app/webui_html/`](app/webui_html/) (`*.html`, HTML body partials)
-- [`app/webui_css/`](app/webui_css/) (`*.css`, CSS parts)
-- [`app/webui_js/`](app/webui_js/) (`*.js`, JavaScript parts)
+## Advanced and contributor notes
 
-Rebuild generated outputs:
-
-- `python pythonista_job_runner/app/webui_build.py`
-
-Check that generated outputs are up to date:
-
-- `python pythonista_job_runner/app/webui_build.py --check`
-
-Generated outputs (do not edit by hand):
-
-- [`app/webui.html`](app/webui.html)
-- [`app/webui.css`](app/webui.css)
-- [`app/webui.js`](app/webui.js)
-
-Build rules enforced by [`app/webui_build.py`](app/webui_build.py):
-
-- Deterministic part ordering: the builder enforces explicit ordered lists for HTML, CSS, and JS parts.
-- No root-relative URLs: references like `href="/..."`, `fetch("/...")`, or `url(/...)` are rejected because Home Assistant Ingress runs under a path prefix.
-- HTML ids must be unique across all partials.
-- JS parts must not declare their own `VERSION:` headers; the generated `webui.js` header is the single source of truth.
-
-After rebuilding, run the test suite:
-
-- `pytest -q` (from the `pythonista_job_runner/` folder)
-
-For the contributor-focused version of this workflow, see [../CONTRIBUTING.md](../CONTRIBUTING.md#web-ui-build).
-
-
-## Platform hardening notes
-
-- Add-on ingress now enables streamed uploads (`ingress_stream: true`) for safer large payload handling through Home Assistant ingress.
-- A custom `apparmor.txt` profile is included and the add-on config explicitly declares non-privileged runtime flags.
-- Job and control actions are written to `/data/audit_events.jsonl` with ingress identity metadata when Home Assistant provides `X-Remote-User-*` headers.
-- Companion Home Assistant integration is available under `custom_components/pythonista_job_runner` with sensors, system health, and repair issue hooks.
-
-
-## Diagnostics and support bundle
-
-- Add-on endpoint: `GET /support_bundle.json` (auth required).
-- Included: redacted options summary, stats snapshot, queue counters, recent job metadata, recent audit events.
-- Excluded: access tokens, password-like fields, raw uploaded payloads, stdout/stderr full file contents, Supervisor token.
-
-## Optional MQTT telemetry
-
-Telemetry is optional and disabled by default.
-
-- `telemetry.telemetry_mqtt_enabled`: enable publish via Home Assistant `mqtt.publish` service.
-- `telemetry.telemetry_topic_prefix`: topic prefix (default `pythonista_job_runner`).
-- Events are intentionally low-noise: audit actions and job completion state changes.
+- Repository landing page: [`../README.md`](../README.md)
+- Security guidance: [`../SECURITY.md`](../SECURITY.md)
+- Release channels: [`../docs/RELEASE_CHANNELS.md`](../docs/RELEASE_CHANNELS.md)
+- Contributor guide: [`../CONTRIBUTING.md`](../CONTRIBUTING.md)
+- Web UI bundler: [`app/webui_build.py`](app/webui_build.py)

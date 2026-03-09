@@ -1,4 +1,4 @@
-# Version: 0.6.12-docs.3
+# Version: 0.6.12-docs.10
 """Checks internal Markdown links, anchors, and prose references stay tidy."""
 
 from __future__ import annotations
@@ -8,8 +8,10 @@ from pathlib import Path
 
 DOC_FILES = [
     Path('README.md'),
+    Path('CODE_OF_CONDUCT.md'),
     Path('CONTRIBUTING.md'),
     Path('SECURITY.md'),
+    Path('docs/RELEASE_CHANNELS.md'),
     Path('docs/screenshots/README.md'),
     Path('pythonista_job_runner/README.md'),
     Path('pythonista_job_runner/DOCS.md'),
@@ -155,11 +157,10 @@ def test_internal_markdown_links_resolve() -> None:
 
 def test_internal_markdown_links_do_not_repeat_within_a_single_block() -> None:
     """Repeated internal links inside one prose block should be intentional, not accidental."""
-    repo_root = Path(__file__).resolve().parents[2]
     offenders: list[str] = []
 
     for relative_doc in DOC_FILES:
-        markdown_path = repo_root / relative_doc
+        markdown_path = Path(__file__).resolve().parents[2] / relative_doc
         for heading, line_number, block_text in _iter_section_blocks(markdown_path):
             targets = [
                 target
@@ -181,11 +182,10 @@ def test_internal_markdown_links_do_not_repeat_within_a_single_block() -> None:
 
 def test_internal_file_references_use_markdown_links() -> None:
     """Repo file references in visible prose should use Markdown links."""
-    repo_root = Path(__file__).resolve().parents[2]
     offenders: list[str] = []
 
     for relative_doc in PLAIN_REFERENCE_DOC_FILES:
-        markdown_path = repo_root / relative_doc
+        markdown_path = Path(__file__).resolve().parents[2] / relative_doc
         visible_text = _visible_text_without_links(markdown_path)
 
         for match in INLINE_CODE_RE.finditer(visible_text):

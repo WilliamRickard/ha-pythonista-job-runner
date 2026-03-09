@@ -1,24 +1,28 @@
-# Release Channels
+<!-- Version: 0.6.12-docs.10 -->
+# Release channels
 
-This repository uses a practical two-channel model.
-This repository uses a practical two-channel model.
+This repository uses a simple two-channel model.
 
-## Stable channel
-- Source of truth: `main` branch.
-- Intended for normal users.
-- Changes are validated via repository test gates before tagging.
+## Stable
 
-## Next/Canary channel
-- Source of truth: `next` branch.
-- Intended for early adopters and pre-release validation.
-- May include migration notes and breaking changes not yet promoted to stable.
+- Source of truth: `main`
+- Intended for normal users
+- Best choice when you want predictable updates and the lowest change risk
+
+## Next
+
+- Source of truth: `next`
+- Intended for pre-release validation and earlier feedback
+- May contain changes that are not ready for wider use yet
 
 ## Promotion flow
-1. Develop and validate on `next`.
-2. Document noteworthy changes in add-on and integration docs.
-3. Cherry-pick or merge validated changes to `main`.
-4. Tag stable version from `main`.
 
-## User guidance
-- If you want predictable updates, follow stable (`main`/release tags).
-- If you want earliest features, follow next/canary (`next`) and expect occasional churn.
+1. Develop and validate on `next`.
+2. Update user docs and release notes for any user-facing change.
+3. Merge or cherry-pick validated changes to `main`.
+4. Tag the stable release from `main`.
+
+## Which one should you follow?
+
+- Choose **Stable** when you want the default recommendation.
+- Choose **Next** when you want earlier features and are happy to test rougher edges.

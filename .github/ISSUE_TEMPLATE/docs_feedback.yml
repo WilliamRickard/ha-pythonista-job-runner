@@ -1,0 +1,28 @@
+---
+name: Documentation feedback
+description: Report unclear, missing, or incorrect documentation
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is unclear or incorrect?
+      description: Point to the file or section if you can.
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: What happened because of it?
+      description: For example, wrong setup, confusion, or wasted time.
+    validations:
+      required: false
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+    validations:
+      required: false

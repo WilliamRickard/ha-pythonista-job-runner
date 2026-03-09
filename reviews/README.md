@@ -1,7 +1,7 @@
-Version: 0.6.12-review-index.1
-# Reviews Directory Index
+<!-- Version: 0.6.12-review-index.2 -->
+# Reviews directory index
 
-This directory now groups review artefacts and review-adjacent pass notes into clearer subfolders.
+This directory groups review artefacts and review-adjacent pass notes into clearer subfolders.
 
 ## Structure
 
@@ -11,12 +11,12 @@ This directory now groups review artefacts and review-adjacent pass notes into c
 - `pass-notes/addon/`
   - add-on platform and Home Assistant native-functionality pass notes
 - `pass-notes/closeout/`
-  - close-out notes for implementation and root-level pytest tidy-up
+  - close-out notes for implementation and repository tidy-up
 - `pass-notes/ui/`
-  - UI planning, refinement, and sign-off pass notes
+  - UI planning, redesign, refinement, and sign-off pass notes
 
 ## Notes
 
-- The code review master plan now lives at `reviews/code-review/2026-03-08/FULL_CODE_REVIEW_PLAN.md`.
-- The code review process README for that batch now lives at `reviews/code-review/2026-03-08/README.md`.
-- Apply status for the merged review programme is still recorded in the master plan unless a separate apply artefact is created explicitly.
+- The code review master plan lives at [`reviews/code-review/2026-03-08/FULL_CODE_REVIEW_PLAN.md`](code-review/2026-03-08/FULL_CODE_REVIEW_PLAN.md).
+- The code review process README for that batch lives at [`reviews/code-review/2026-03-08/README.md`](code-review/2026-03-08/README.md).
+- Root-level UI pass notes were moved into [`reviews/pass-notes/ui/`](pass-notes/ui/) to keep the repository landing page focused on user and contributor documentation.

@@ -1,6 +1,9 @@
 ---
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
-  - name: Home Assistant Add-ons documentation
-    url: https://developers.home-assistant.io/docs/add-ons/
-    about: Read the official Home Assistant add-on development docs.
+  - name: Pythonista Job Runner full user guide
+    url: https://github.com/WilliamRickard/ha-pythonista-job-runner/blob/main/pythonista_job_runner/DOCS.md
+    about: Start here for installation, Pythonista examples, troubleshooting, and API usage.
+  - name: Home Assistant add-on presentation docs
+    url: https://developers.home-assistant.io/docs/apps/presentation/
+    about: Official Home Assistant docs for add-on repository and presentation structure.

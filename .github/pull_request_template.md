@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.3 -->
+<!-- Version: 0.6.12-docs.10 -->
 ## What changed
 
 -
@@ -15,9 +15,10 @@
   - [ ] [`README.md`](../README.md)
   - [ ] [`pythonista_job_runner/README.md`](../pythonista_job_runner/README.md)
   - [ ] [`pythonista_job_runner/DOCS.md`](../pythonista_job_runner/DOCS.md)
-  - [ ] [`SECURITY.md`](../SECURITY.md), if security behaviour changed
+  - [ ] [`SECURITY.md`](../SECURITY.md), if access control or trust boundaries changed
+  - [ ] [`docs/RELEASE_CHANNELS.md`](../docs/RELEASE_CHANNELS.md), if release-channel guidance changed
 - [ ] Tests are green (`python -m pytest -q`) or rationale given if not applicable
-- [ ] If Markdown or internal docs changed, `python -m pytest -q pythonista_job_runner/tests/test_docs_links_exist.py` passed
+- [ ] If Markdown or screenshots changed, `python -m pytest -q pythonista_job_runner/tests/test_docs_links_exist.py pythonista_job_runner/tests/test_readme_screenshot_assets.py pythonista_job_runner/tests/test_screenshot_filename_contract.py` passed
 - [ ] If Web UI sources changed, `python pythonista_job_runner/app/webui_build.py --check` passed
 - [ ] Verified in Home Assistant with a basic smoke test where practical
 - [ ] No secrets or tokens committed
