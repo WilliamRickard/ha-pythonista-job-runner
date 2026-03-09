@@ -140,12 +140,13 @@ def _default_paths() -> WebUiPaths:
 
 WEBUI_HTML_PARTS: tuple[str, ...] = (
     "00_shell.html",
-    "10_overview.html",
     "20_jobs.html",
+    "10_overview.html",
     "30_detail.html",
     "40_advanced.html",
     "45_settings.html",
     "50_help.html",
+    "55_overlays.html",
     "60_toast.html",
 )
 

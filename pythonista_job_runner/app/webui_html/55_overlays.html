@@ -1,0 +1,41 @@
+<!-- Section: Command palette and confirm dialog -->
+  <div id="command_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal command-modal" id="command_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="command_title" aria-describedby="command_sub">
+      <div class="modal-header compact-header">
+        <div>
+          <div class="modal-title" id="command_title">Command menu</div>
+          <div class="modal-sub" id="command_sub">Quick actions and navigation</div>
+        </div>
+        <button type="button" id="command_close" class="small tertiary" data-action="close-command" aria-label="Close command menu">Close</button>
+      </div>
+      <div class="modal-body command-body">
+        <div class="field-shell command-search-shell">
+          <label class="field-label" for="command_input">Find an action</label>
+          <input id="command_input" type="search" placeholder="Search commands" autocomplete="off" aria-describedby="command_hint" />
+          <div class="field-hint" id="command_hint">Try refresh, help, settings, search, sample, or maintenance.</div>
+        </div>
+        <div class="separator" role="separator" aria-hidden="true"></div>
+        <div id="command_list" class="command-list" role="listbox" aria-label="Available commands"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal alert-modal" id="confirm_modal" role="alertdialog" aria-modal="true" tabindex="-1" aria-labelledby="confirm_title" aria-describedby="confirm_body">
+      <div class="modal-header compact-header">
+        <div>
+          <div class="modal-title" id="confirm_title">Confirm action</div>
+          <div class="modal-sub">Destructive changes need explicit confirmation.</div>
+        </div>
+        <button type="button" id="confirm_close" class="small tertiary" data-action="close-confirm" aria-label="Close confirmation">Close</button>
+      </div>
+      <div class="modal-body alert-body">
+        <p id="confirm_body" class="alert-copy">Are you sure?</p>
+        <div class="separator" role="separator" aria-hidden="true"></div>
+        <div class="actionsbar alert-actions">
+          <button type="button" class="small secondary" data-action="close-confirm">Cancel</button>
+          <button type="button" class="small danger" id="confirm_accept" data-action="confirm-accept">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>

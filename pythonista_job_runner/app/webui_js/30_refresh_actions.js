@@ -125,17 +125,25 @@ Client IP: ${ip || ""}`;
     toast("ok", "Copied", val);
   }
 
-  async function cancelJob() {
+  async function performCancelJob() {
     if (!currentJob) return;
-    if (!window.confirm(`Cancel job ${currentJob}?`)) return;
     await api(`cancel/${encodeURIComponent(currentJob)}`, { method: "POST" });
     toast("ok", "Cancelled", `Job ${currentJob} cancelled`);
     await refreshAll();
   }
 
-  async function deleteJob() {
+  async function cancelJob() {
     if (!currentJob) return;
-    if (!window.confirm(`Delete job ${currentJob}? This removes job files.`)) return;
+    openConfirm({
+      title: `Cancel job ${currentJob}?`,
+      body: "The current run will stop and can still be inspected afterward.",
+      confirmLabel: "Cancel job",
+      onConfirm: async () => performCancelJob(),
+    });
+  }
+
+  async function performDeleteJob() {
+    if (!currentJob) return;
     await api(`job/${encodeURIComponent(currentJob)}`, { method: "DELETE" });
     toast("ok", "Deleted", `Job ${currentJob} deleted`);
     currentJob = null;
@@ -143,6 +151,16 @@ Client IP: ${ip || ""}`;
     els.detail_empty.hidden = false;
     applyFilters();
     await refreshAll();
+  }
+
+  async function deleteJob() {
+    if (!currentJob) return;
+    openConfirm({
+      title: `Delete job ${currentJob}?`,
+      body: "This removes the job record and any downloaded outputs linked to it.",
+      confirmLabel: "Delete job",
+      onConfirm: async () => performDeleteJob(),
+    });
   }
 
   function downloadZip() {

@@ -12,43 +12,69 @@
       <div class="modal-body">
         <details open>
           <summary>Refresh behavior</summary>
-          <label class="tog"><input type="checkbox" id="auto"/> Auto refresh</label>
-          <div class="field adv-field">
-            <label for="pollms">Poll interval (ms)</label>
-            <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-            <div class="hint compact-hint">Lower intervals update faster but use more battery and network.</div>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Auto refresh</div>
+                <div class="item-description">Keep the Jobs list up to date automatically.</div>
+              </div>
+              <label class="tog"><input type="checkbox" id="auto"/> On</label>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="field adv-field">
+              <label for="pollms" class="field-label">Poll interval (ms)</label>
+              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
+              <div class="field-hint">Lower intervals update faster but use more battery and network.</div>
+            </div>
           </div>
         </details>
 
         <details open>
           <summary>Jobs list defaults</summary>
-          <div class="field adv-field">
-            <label for="settings_default_sort">Default sort</label>
-            <select id="settings_default_sort" aria-label="Default sort">
+          <div class="field-shell">
+            <div class="field adv-field">
+              <label for="settings_default_sort" class="field-label">Default sort</label>
+              <select id="settings_default_sort" aria-label="Default sort">
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="active">Active first</option>
               <option value="errors">Errors first</option>
             </select>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Remember secondary filters</div>
+                <div class="item-description">Keep the result-only filter between sessions.</div>
+              </div>
+              <label class="tog"><input type="checkbox" id="settings_keep_secondary"/> On</label>
+            </div>
           </div>
-          <label class="tog"><input type="checkbox" id="settings_keep_secondary"/> Keep secondary filters between sessions</label>
         </details>
 
         <details>
           <summary>Display</summary>
-          <div class="field adv-field">
-            <label for="settings_density">UI density</label>
-            <select id="settings_density" aria-label="UI density">
+          <div class="field-shell">
+            <div class="field adv-field">
+              <label for="settings_density" class="field-label">UI density</label>
+              <select id="settings_density" aria-label="UI density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
+              <div class="field-hint">Compact density reduces spacing in list and detail views.</div>
+            </div>
           </div>
         </details>
         <details>
           <summary>Maintenance</summary>
-          <div class="hint compact-hint">Advanced cleanup and maintenance actions live here so the main header stays focused on jobs.</div>
-          <div class="help-actions-row">
-            <button type="button" class="small tertiary" data-action="open-advanced">Open maintenance tools</button>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Maintenance tools</div>
+                <div class="item-description">Cleanup and reset tools live here so the main screen stays focused on jobs.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="open-advanced">Open tools</button>
+            </div>
           </div>
         </details>
       </div>

@@ -13,6 +13,8 @@
 @media (max-width: 720px){
   .monitor-header{gap:8px;margin-bottom:6px;}
   .header-actions{width:100%;justify-content:flex-start;gap:6px;}
+  .header-more-menu{margin-left:auto;}
+  .header-more-panel{left:auto;right:0;min-width:150px;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
   .clear-inline{padding:10px 11px;min-width:68px;}
@@ -25,7 +27,9 @@
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
   .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
-  .detail-primary-actions button{flex:0 0 auto;}
+  .detail-primary-actions button,.detail-primary-actions details{flex:0 0 auto;}
+  .detail-heading{width:100%;}
+  .detail-meta-block,.detail-log-shell,.detail-api-block{padding:8px 10px;}
 
   table{ min-width: 0 !important; }
   #jobtable thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
@@ -47,6 +51,12 @@
   .empty-pattern{flex-direction:column;}
   .empty-actions{align-items:flex-start;}
   .empty-icon{width:36px;height:36px;}
+  .item-row,
+  .item-slab,
+  .command-item{flex-direction:column;align-items:flex-start;}
+  .item-meta,.command-item .command-hint{text-align:left;white-space:normal;}
+  .alert-actions{width:100%;justify-content:stretch;}
+  .alert-actions button{flex:1 1 auto;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }

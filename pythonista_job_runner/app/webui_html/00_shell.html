@@ -13,17 +13,15 @@
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn tertiary" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
-        <button type="button" class="linkbtn tertiary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <details class="header-more-menu">
+          <summary class="linkbtn tertiary" aria-haspopup="menu" aria-label="More actions">More</summary>
+          <div class="header-more-panel" role="menu" aria-label="Secondary actions">
+            <button type="button" class="small tertiary menu-item" data-action="open-command" aria-haspopup="dialog" aria-label="Open command menu">Command</button>
+            <button type="button" class="small tertiary menu-item" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
+            <button type="button" class="small tertiary menu-item" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+          </div>
+        </details>
       </div>
     </header>
-
-    <details class="header-meta" id="header_meta">
-      <summary>System details</summary>
-      <div class="header-meta-content" aria-label="System metadata">
-        <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
-        <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
-      </div>
-    </details>
 
     <main id="main_content" tabindex="-1">

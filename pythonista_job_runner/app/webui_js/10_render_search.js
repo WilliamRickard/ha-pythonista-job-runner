@@ -443,9 +443,8 @@ function applyFilters() {
     }
   }
 
-  async function purgeState(state) {
+  async function performPurgeState(state) {
     if (!state) return;
-    if (!window.confirm(`Purge ${state} jobs? This deletes job files.`)) return;
     await api("purge", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -453,6 +452,16 @@ function applyFilters() {
     });
     toast("ok", "Purge complete", `Purged ${state} jobs`);
     await refreshAll();
+  }
+
+  async function purgeState(state) {
+    if (!state) return;
+    openConfirm({
+      title: `Purge ${state} jobs?`,
+      body: "This removes job files for the selected job state.",
+      confirmLabel: `Purge ${state}`,
+      onConfirm: async () => performPurgeState(state),
+    });
   }
 
   function parseEndpointPath(v) {
@@ -592,6 +601,137 @@ function applyFilters() {
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
   let _settingsReturnFocus = null;
+  let _commandReturnFocus = null;
+  let _confirmReturnFocus = null;
+  let confirmActionHandler = null;
+
+  function commandItems() {
+    return [
+      { key: "refresh", title: "Refresh now", description: "Reload queue stats, jobs, and the selected detail view.", hint: "Action", action: async () => refreshAll() },
+      { key: "search", title: "Focus search", description: "Jump straight to the Jobs search field.", hint: "/", action: async () => { if (els.search) els.search.focus(); } },
+      { key: "settings", title: "Open settings", description: "Change runtime and UI preferences.", hint: "Panel", action: async () => openSettings() },
+      { key: "help", title: "Open help", description: "See quick start, samples, and troubleshooting.", hint: "Panel", action: async () => openAbout() },
+      { key: "maintenance", title: "Open maintenance tools", description: "Open advanced cleanup and reset actions.", hint: "Panel", action: async () => openAdvanced() },
+      { key: "sample", title: "Copy sample Python task", description: "Copy the quick-start Python task to the clipboard.", hint: "Copy", action: async () => copySampleTask() },
+    ];
+  }
+
+  function updateCommandList(filterText) {
+    if (!els.command_list) return;
+    const q = String(filterText || "").trim().toLowerCase();
+    els.command_list.textContent = "";
+    for (const item of commandItems()) {
+      const hay = `${item.title} ${item.description}`.toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "small tertiary command-item";
+      btn.setAttribute("data-action", "command-run");
+      btn.setAttribute("data-command", item.key);
+
+      const copy = document.createElement("span");
+      copy.className = "item-copy";
+      const title = document.createElement("span");
+      title.className = "item-title";
+      title.textContent = item.title;
+      const desc = document.createElement("span");
+      desc.className = "item-description";
+      desc.textContent = item.description;
+      copy.append(title, desc);
+
+      const hint = document.createElement("span");
+      hint.className = "command-hint";
+      hint.textContent = item.hint;
+
+      btn.append(copy, hint);
+      els.command_list.appendChild(btn);
+    }
+    if (!els.command_list.children.length) {
+      const empty = document.createElement("div");
+      empty.className = "hint compact-hint";
+      empty.textContent = "No commands match that search.";
+      els.command_list.appendChild(empty);
+    }
+  }
+
+  async function runCommand(key) {
+    const found = commandItems().find((item) => item.key === key);
+    if (!found) return;
+    closeCommand();
+    await found.action();
+  }
+
+  function openCommand() {
+    _commandReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.command_overlay.hidden = false;
+    els.command_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.command_input) {
+      els.command_input.value = "";
+      updateCommandList("");
+      els.command_input.focus();
+    } else if (els.command_modal) {
+      els.command_modal.focus();
+    }
+  }
+
+  function closeCommand() {
+    if (!els.command_overlay) return;
+    els.command_overlay.hidden = true;
+    els.command_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_commandReturnFocus && document.contains(_commandReturnFocus)) {
+      try { _commandReturnFocus.focus(); } catch (_e) {}
+    }
+    _commandReturnFocus = null;
+  }
+
+  function openConfirm(opts) {
+    confirmActionHandler = (opts && typeof opts.onConfirm === "function") ? opts.onConfirm : null;
+    _confirmReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.confirm_title) els.confirm_title.textContent = (opts && opts.title) ? String(opts.title) : "Confirm action";
+    if (els.confirm_body) els.confirm_body.textContent = (opts && opts.body) ? String(opts.body) : "Are you sure?";
+    if (els.confirm_accept) els.confirm_accept.textContent = (opts && opts.confirmLabel) ? String(opts.confirmLabel) : "Confirm";
+    els.confirm_overlay.hidden = false;
+    els.confirm_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.confirm_accept) els.confirm_accept.focus();
+    else if (els.confirm_modal) els.confirm_modal.focus();
+  }
+
+  function closeConfirm() {
+    if (!els.confirm_overlay) return;
+    els.confirm_overlay.hidden = true;
+    els.confirm_overlay.setAttribute("aria-hidden", "true");
+    confirmActionHandler = null;
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_confirmReturnFocus && document.contains(_confirmReturnFocus)) {
+      try { _confirmReturnFocus.focus(); } catch (_e) {}
+    }
+    _confirmReturnFocus = null;
+  }
+
+  async function acceptConfirm() {
+    if (typeof confirmActionHandler !== "function") {
+      closeConfirm();
+      return;
+    }
+    const fn = confirmActionHandler;
+    closeConfirm();
+    await fn();
+  }
 
   async function openAbout() {
     _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;

@@ -27,10 +27,14 @@ def test_bundle_has_detail_lifecycle_sections() -> None:
     html = build_webui()
 
     assert 'id="detail_state_banner"' in html
+    assert 'id="detail_inline_state"' in html
     assert 'id="detail_timeline" class="timeline"' in html
     assert 'id="detail_result_summary"' in html
     assert 'id="detail_limits_summary"' in html
     assert 'id="detail_failure_summary"' in html
+    assert 'detail-more-actions' in html
+    assert 'detail-meta-block' in html
+    assert 'detail-log-shell' in html
 
 
 def test_js_tracks_empty_state_messages_and_row_selection() -> None:
@@ -140,7 +144,30 @@ def test_single_primary_refresh_and_secondary_header_actions() -> None:
     html = build_webui()
 
     assert html.count('data-action="refresh"') == 1
-    assert 'class="linkbtn tertiary" data-action="open-settings"' in html
-    assert 'class="linkbtn tertiary" data-action="open-about"' in html
-    assert 'class="linkbtn tertiary" data-action="open-settings"' in html
+    assert 'class="header-more-menu"' in html
+    assert 'data-action="open-settings"' in html
+    assert 'data-action="open-about"' in html
     assert 'data-action="open-advanced"' in html
+    assert 'System details' in html
+
+
+def test_bundle_has_command_and_confirm_overlays() -> None:
+    html = build_webui()
+
+    assert 'id="command_modal" role="dialog"' in html
+    assert 'id="command_input" type="search"' in html
+    assert 'id="confirm_modal" role="alertdialog"' in html
+    assert 'data-action="confirm-accept"' in html
+
+
+def test_js_uses_custom_confirm_overlay_and_command_shortcut() -> None:
+    events = _read_js_part("40_events_init.js")
+    render = _read_js_part("10_render_search.js")
+    refresh = _read_js_part("30_refresh_actions.js")
+
+    assert 'openConfirm({' in render
+    assert 'openConfirm({' in refresh
+    assert 'window.confirm(' not in render
+    assert 'window.confirm(' not in refresh
+    assert 'openCommand();' in events
+    assert 'String(ev.key).toLowerCase() === "k"' in events

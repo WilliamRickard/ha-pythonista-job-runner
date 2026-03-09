@@ -84,6 +84,108 @@ body{
 
 a{ color: var(--link); text-decoration: none; }
 a:hover{ text-decoration: underline; }
+.separator{
+  width:100%;
+  height:1px;
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+  margin: 10px 0;
+}
+
+.field-shell{
+  display:grid;
+  gap:10px;
+}
+
+.field-label{
+  display:block;
+  margin-bottom:6px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+.field-hint{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+
+.item-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.item-copy{
+  min-width:0;
+  flex:1 1 auto;
+}
+
+.item-title{
+  font-size:13px;
+  font-weight:750;
+  color:var(--text);
+}
+
+.item-description{
+  margin-top:4px;
+  font-size:12px;
+  line-height:1.45;
+  color:var(--muted);
+}
+
+.item-list{
+  display:grid;
+  gap:8px;
+}
+
+.item-slab{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border:1px solid color-mix(in srgb, var(--line) 58%, transparent);
+  border-radius:12px;
+  background:color-mix(in srgb, var(--panel2) 46%, transparent);
+}
+
+.item-slab .item-copy{padding-right:8px;}
+.item-meta{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.45;
+  text-align:right;
+  overflow-wrap:anywhere;
+}
+
+.command-list{
+  display:grid;
+  gap:8px;
+}
+
+.command-item{
+  width:100%;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  text-align:left;
+  padding:12px 14px;
+  border-radius:14px;
+}
+
+.command-item .item-description{margin-top:3px;}
+.command-item .command-hint{
+  color:var(--muted);
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.command-item[hidden]{display:none !important;}
+
 .container{
   max-width: 1100px;
   margin: 0 auto;
@@ -156,24 +258,41 @@ a:hover{ text-decoration: underline; }
 }
 
 .header-meta{
+  margin-top: 10px;
   margin-bottom: 6px;
-  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--panel2) 42%, transparent);
-  padding: 4px 8px;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 58%, transparent);
+  background: transparent;
+  padding: 8px 0 0 0;
 }
 
 .header-meta summary{
-  font-size: var(--fs-sm);
-  font-weight: 600;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size: var(--fs-xs);
+  font-weight: 650;
   color: var(--muted);
+  list-style:none;
+}
+
+.header-meta summary::-webkit-details-marker{display:none;}
+
+.header-meta summary::after{
+  content:"▾";
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.header-meta[open] summary::after{
+  transform: rotate(180deg);
 }
 
 .header-meta-content{
   margin-top: 6px;
   display:flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 4px 10px;
 }
 
 .meta-item{
@@ -209,6 +328,41 @@ a:hover{ text-decoration: underline; }
 
 .header-actions .secondary{
   background: transparent;
+}
+
+.header-more-menu{
+  position:relative;
+}
+
+.header-more-menu summary{
+  list-style:none;
+}
+
+.header-more-menu summary::-webkit-details-marker{display:none;}
+
+.header-more-menu[open] > summary{
+  border-color: color-mix(in srgb, var(--line) 95%, transparent);
+  background: color-mix(in srgb, var(--panel2) 66%, transparent);
+}
+
+.header-more-panel{
+  position:absolute;
+  right:0;
+  top: calc(100% + 8px);
+  min-width: 168px;
+  display:grid;
+  gap:6px;
+  padding:8px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: var(--shadow);
+  z-index: 20;
+}
+
+.header-more-panel .menu-item{
+  width:100%;
+  justify-content:flex-start;
 }
 
 button.tertiary, .linkbtn.tertiary{
@@ -445,6 +599,19 @@ label{
   top: 12px;
 }
 
+
+.detail-heading{display:grid;gap:4px;min-width:0;}
+.detail-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:0.35px;color:var(--muted);font-weight:700;}
+.detail-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.detail-subtitle{font-size:12px;color:var(--muted);}
+.detail-inline-state{font-size:11px;line-height:1;}
+.detail-more-actions{min-width:0;}
+.detail-more-actions summary{min-height:36px;padding:8px 10px;border-radius:999px;background:color-mix(in srgb, var(--panel2) 46%, transparent);}
+.detail-more-actions-body{display:flex;flex-direction:column;gap:6px;min-width:180px;}
+.detail-block{margin-top:10px;}
+.detail-block .kvgrid{margin-top:10px;}
+.detail-log-shell{margin-top:10px;}
+.detail-log-tools-body{display:grid;gap:10px;}
 .detail-topline{
   display:flex;
   flex-wrap:wrap;
@@ -460,12 +627,13 @@ label{
 
 .detail-primary-actions{
   row-gap: 8px;
+  align-items:flex-start;
 }
 
 .state-banner{
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
   border-radius: 12px;
-  background: var(--panel2);
+  background: color-mix(in srgb, var(--panel2) 58%, transparent);
   padding: 10px 12px;
 }
 
@@ -497,8 +665,8 @@ label{
 }
 
 .timeline li{
-  border: 1px solid var(--line);
-  background: var(--panel2);
+  border: 1px solid color-mix(in srgb, var(--line) 66%, transparent);
+  background: color-mix(in srgb, var(--panel2) 60%, transparent);
   border-radius: 10px;
   padding: 8px;
   min-height: 58px;
@@ -530,10 +698,10 @@ label{
 }
 
 .insight-card{
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--line) 66%, transparent);
   border-radius: 12px;
   padding: 10px;
-  background: var(--panel2);
+  background: color-mix(in srgb, var(--panel2) 52%, transparent);
   min-height: 84px;
 }
 
@@ -646,6 +814,19 @@ body[data-density="compact"] input[type="text"], body[data-density="compact"] in
 
 .text-link{padding-inline:0;background:transparent;border-color:transparent;color:var(--link);}
 .text-link:hover{text-decoration:underline;background:transparent;}
+
+.overview-meta{
+  margin-top: 10px;
+}
+
+.queue-collapsible{
+  border-color: color-mix(in srgb, var(--line) 54%, transparent);
+  box-shadow:none;
+}
+
+.queue-details-shell > summary{
+  padding: 0 0 2px 0;
+}
 .banner{
   margin-bottom: 10px;
   padding: 9px 11px;
@@ -825,23 +1006,7 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 .empty-actions{margin-top:12px;}
 .empty-action{margin-top:10px;font-size:12px;max-width:44ch;color:var(--muted);}
 
-.kvgrid{
-  display:grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 6px 12px;
-  margin: 0;
-}
-
-.kvgrid dt{
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.kvgrid dd{
-  margin: 0;
-  font-size: 13px;
-  word-break: break-word;
-}
+.meta-items{margin-top:10px;}
 
 .tabs{
   display:flex;
@@ -861,7 +1026,7 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 }
 
 .logtools{
-  margin-top: 10px;
+  margin-top: 6px;
   display:flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -955,6 +1120,38 @@ tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 .row-overflow summary{list-style:none;cursor:pointer;padding:8px 9px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:10px;background:color-mix(in srgb, var(--panel2) 40%, transparent);color:var(--muted);font-size:12px;min-height:40px;display:flex;align-items:center;}
 .row-overflow-menu{position:absolute;right:0;top:calc(100% + 5px);display:flex;flex-direction:column;gap:6px;min-width:120px;padding:8px;background:var(--panel);border:1px solid var(--line);border-radius:10px;z-index:6;}
 .row-overflow:not([open]) .row-overflow-menu{display:none;}
+
+.detail-log-shell summary{font-size:12px;}
+.detail-log-shell[open]{padding-bottom:10px;}
+
+.alert-modal{
+  max-width: 420px;
+  margin-top: 40px;
+}
+
+.alert-copy{
+  margin:0;
+  color:var(--text);
+  line-height:1.5;
+}
+
+.alert-actions{
+  justify-content:flex-end;
+}
+
+.command-modal{
+  max-width: 620px;
+  margin-top: 40px;
+}
+
+.command-search-shell input{
+  width:100%;
+}
+
+.detail-meta-block .item-slab,
+.queue-details-body .item-slab{
+  background: color-mix(in srgb, var(--panel) 84%, transparent);
+}
 #logview .logline{
   display:block;
   padding: 0 2px;
@@ -1248,6 +1445,20 @@ details[open] summary::after{ transform: rotate(0deg); }
 #about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;max-height:180px;font-size:11.5px;line-height:1.4;border-radius:12px;background:color-mix(in srgb, var(--panel2) 72%, transparent);}
 #about_api .api-path{overflow-wrap:anywhere;}
 .help-actions-row button{min-height:40px;}
+
+.command-body{
+  gap:12px;
+}
+
+.command-modal .modal-body,
+.alert-modal .modal-body{
+  padding-top:12px;
+}
+
+.alert-modal .modal-sub,
+.command-modal .modal-sub{
+  max-width: 32ch;
+}
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -1263,6 +1474,8 @@ details[open] summary::after{ transform: rotate(0deg); }
 @media (max-width: 720px){
   .monitor-header{gap:8px;margin-bottom:6px;}
   .header-actions{width:100%;justify-content:flex-start;gap:6px;}
+  .header-more-menu{margin-left:auto;}
+  .header-more-panel{left:auto;right:0;min-width:150px;}
   .header-meta{padding:6px 9px;}
   .searchbar-row{gap:6px;}
   .clear-inline{padding:10px 11px;min-width:68px;}
@@ -1275,7 +1488,9 @@ details[open] summary::after{ transform: rotate(0deg); }
   .detail-insights{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
   .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}
-  .detail-primary-actions button{flex:0 0 auto;}
+  .detail-primary-actions button,.detail-primary-actions details{flex:0 0 auto;}
+  .detail-heading{width:100%;}
+  .detail-meta-block,.detail-log-shell,.detail-api-block{padding:8px 10px;}
 
   table{ min-width: 0 !important; }
   #jobtable thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
@@ -1297,6 +1512,12 @@ details[open] summary::after{ transform: rotate(0deg); }
   .empty-pattern{flex-direction:column;}
   .empty-actions{align-items:flex-start;}
   .empty-icon{width:36px;height:36px;}
+  .item-row,
+  .item-slab,
+  .command-item{flex-direction:column;align-items:flex-start;}
+  .item-meta,.command-item .command-hint{text-align:left;white-space:normal;}
+  .alert-actions{width:100%;justify-content:stretch;}
+  .alert-actions button{flex:1 1 auto;}
 }
 
 .loading{ color: var(--muted); font-size: var(--fs-sm); padding: 10px 0 4px 2px; }
@@ -1333,63 +1554,18 @@ details[open] summary::after{ transform: rotate(0deg); }
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <button type="button" class="linkbtn tertiary" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
-        <button type="button" class="linkbtn tertiary" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <details class="header-more-menu">
+          <summary class="linkbtn tertiary" aria-haspopup="menu" aria-label="More actions">More</summary>
+          <div class="header-more-panel" role="menu" aria-label="Secondary actions">
+            <button type="button" class="small tertiary menu-item" data-action="open-command" aria-haspopup="dialog" aria-label="Open command menu">Command</button>
+            <button type="button" class="small tertiary menu-item" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
+            <button type="button" class="small tertiary menu-item" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+          </div>
+        </details>
       </div>
     </header>
 
-    <details class="header-meta" id="header_meta">
-      <summary>System details</summary>
-      <div class="header-meta-content" aria-label="System metadata">
-        <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
-        <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
-      </div>
-    </details>
-
     <main id="main_content" tabindex="-1">
-<!-- Section: Overview stats panel -->
-      <section id="stats" class="card card-quiet queue-compact queue-collapsible" hidden>
-        <details id="queue_details" class="queue-details-shell">
-          <summary>
-            <span class="queue-summary-title">Queue</span>
-            <span class="queue-summary-inline" id="queue_summary_text">0 total</span>
-          </summary>
-          <div class="card-body compact queue-details-body">
-            <div class="kpis" id="kpis">
-            <div class="kpi running">
-              <button type="button" data-action="set-view" data-view="running" aria-label="Show running jobs">
-                <div class="label">Running</div>
-                <div class="value" id="kpi_running">0</div>
-              </button>
-            </div>
-            <div class="kpi queued">
-              <button type="button" data-action="set-view" data-view="queued" aria-label="Show queued jobs">
-                <div class="label">Queued</div>
-                <div class="value" id="kpi_queued">0</div>
-              </button>
-            </div>
-            <div class="kpi error">
-              <button type="button" data-action="set-view" data-view="error" aria-label="Show error jobs">
-                <div class="label">Errors</div>
-                <div class="value" id="kpi_error">0</div>
-              </button>
-            </div>
-            <div class="kpi done">
-              <button type="button" data-action="set-view" data-view="done" aria-label="Show completed jobs">
-                <div class="label">Done</div>
-                <div class="value" id="kpi_done">0</div>
-              </button>
-            </div>
-            <div class="kpi">
-              <button type="button" data-action="set-view" data-view="all" aria-label="Show all jobs">
-                <div class="label">Total</div>
-                <div class="value" id="kpi_total">0</div>
-              </button>
-            </div>
-            </div>
-          </div>
-        </details>
-      </section>
 <!-- Section: Jobs list and filters -->
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
@@ -1480,6 +1656,57 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
         </div>
       </section>
+<!-- Section: Overview stats panel -->
+      <section id="stats" class="card card-quiet queue-compact queue-collapsible" hidden>
+        <details id="queue_details" class="queue-details-shell">
+          <summary>
+            <span class="queue-summary-title">Queue</span>
+            <span class="queue-summary-inline" id="queue_summary_text">0 total</span>
+          </summary>
+          <div class="card-body compact queue-details-body">
+            <div class="kpis" id="kpis">
+            <div class="kpi running">
+              <button type="button" data-action="set-view" data-view="running" aria-label="Show running jobs">
+                <div class="label">Running</div>
+                <div class="value" id="kpi_running">0</div>
+              </button>
+            </div>
+            <div class="kpi queued">
+              <button type="button" data-action="set-view" data-view="queued" aria-label="Show queued jobs">
+                <div class="label">Queued</div>
+                <div class="value" id="kpi_queued">0</div>
+              </button>
+            </div>
+            <div class="kpi error">
+              <button type="button" data-action="set-view" data-view="error" aria-label="Show error jobs">
+                <div class="label">Errors</div>
+                <div class="value" id="kpi_error">0</div>
+              </button>
+            </div>
+            <div class="kpi done">
+              <button type="button" data-action="set-view" data-view="done" aria-label="Show completed jobs">
+                <div class="label">Done</div>
+                <div class="value" id="kpi_done">0</div>
+              </button>
+            </div>
+            <div class="kpi">
+              <button type="button" data-action="set-view" data-view="all" aria-label="Show all jobs">
+                <div class="label">Total</div>
+                <div class="value" id="kpi_total">0</div>
+              </button>
+            </div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <details class="header-meta overview-meta" id="header_meta">
+        <summary>System details</summary>
+        <div class="header-meta-content" aria-label="System metadata">
+          <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
+          <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
+        </div>
+      </details>
 <!-- Section: Job detail panel and closes main container -->
       <section id="pane_detail" class="card" style="margin-top:14px;" aria-label="Selected job details">
         <div class="card-header">
@@ -1491,17 +1718,30 @@ details[open] summary::after{ transform: rotate(0deg); }
         </div>
 
         <div class="card-body">
-          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job from the list to see logs, lifecycle state, metadata, and download the result zip.</div>
+          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job to see lifecycle status, outputs, logs, and download options.</div>
 
           <section id="detail" hidden aria-label="Job detail">
             <div class="detail-topline">
-              <div class="detail-title">Job <span id="jobid"></span></div>
+              <div class="detail-heading">
+                <div class="detail-eyebrow">Selected job</div>
+                <div class="detail-title-row">
+                  <div class="detail-title">Job <span id="jobid"></span></div>
+                  <span class="badge queued detail-inline-state" id="detail_inline_state" hidden>queued</span>
+                </div>
+                <div class="detail-subtitle">Lifecycle, outputs, and logs in one place.</div>
+              </div>
               <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
                 <button type="button" class="small primary" data-action="download-zip">Download zip</button>
-                <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
-                <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
                 <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
                 <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
+                <details class="secondary-panel detail-more-actions">
+                  <summary>More</summary>
+                  <div class="secondary-panel-body detail-more-actions-body" role="menu" aria-label="More job actions">
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem">Download stdout</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem">Download stderr</button>
+                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem">Copy curl</button>
+                  </div>
+                </details>
               </div>
             </div>
 
@@ -1533,14 +1773,15 @@ details[open] summary::after{ transform: rotate(0deg); }
               </article>
             </div>
 
-            <div style="margin-top:10px;">
-              <dl class="kvgrid" id="meta"></dl>
-            </div>
+            <details class="detail-block detail-meta-block" style="margin-top:10px;" open>
+              <summary>Metadata</summary>
+              <div class="item-list meta-items" id="meta"></div>
+            </details>
 
             <div id="overview" hidden style="margin-top:14px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="true">
               <div class="hint" id="overview_text"></div>
-              <details class="moreopts" style="margin-top:10px;">
-                <summary>API examples</summary>
+              <details class="detail-block detail-api-block" style="margin-top:10px;">
+                <summary>Request and API</summary>
                 <textarea id="curl_snippet" rows="9" readonly></textarea>
               </details>
             </div>
@@ -1548,9 +1789,12 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div class="tabs" style="margin-top:14px;" role="tablist" aria-label="Output tabs">
               <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="true" aria-controls="logpanel" tabindex="0">stdout</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">overview</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">summary</button>
             </div>
 
+            <details class="detail-log-shell" style="margin-top:10px;" open>
+              <summary>Log controls</summary>
+              <div class="detail-log-tools-body">
             <div class="logtools" id="logtools" style="margin-top:10px;">
               <div class="livebar" role="group" aria-label="Live tail controls">
                 <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
@@ -1601,6 +1845,8 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
               <pre id="logview"></pre>
             </div>
+              </div>
+            </details>
           </section>
         </div>
       </section>
@@ -1619,12 +1865,38 @@ details[open] summary::after{ transform: rotate(0deg); }
       <div class="modal-body">
         <details open>
           <summary>Maintenance</summary>
-          <div class="actionsbar destructive-group">
-            <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
-            <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
-          </div>
-          <div class="actionsbar utility-group">
-            <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Finished jobs</div>
+                <div class="item-description">Delete job files for completed runs.</div>
+              </div>
+              <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Failed jobs</div>
+                <div class="item-description">Delete job files for failed runs.</div>
+              </div>
+              <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Interface state</div>
+                <div class="item-description">Reset saved UI preferences such as density and filters.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Quick actions</div>
+                <div class="item-description">Open the command menu for refresh, search, help, and navigation.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="open-command">Open command menu</button>
+            </div>
           </div>
         </details>
       </div>
@@ -1644,43 +1916,69 @@ details[open] summary::after{ transform: rotate(0deg); }
       <div class="modal-body">
         <details open>
           <summary>Refresh behavior</summary>
-          <label class="tog"><input type="checkbox" id="auto"/> Auto refresh</label>
-          <div class="field adv-field">
-            <label for="pollms">Poll interval (ms)</label>
-            <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
-            <div class="hint compact-hint">Lower intervals update faster but use more battery and network.</div>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Auto refresh</div>
+                <div class="item-description">Keep the Jobs list up to date automatically.</div>
+              </div>
+              <label class="tog"><input type="checkbox" id="auto"/> On</label>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="field adv-field">
+              <label for="pollms" class="field-label">Poll interval (ms)</label>
+              <input type="number" id="pollms" min="250" max="10000" step="250" value="2000" inputmode="numeric"/>
+              <div class="field-hint">Lower intervals update faster but use more battery and network.</div>
+            </div>
           </div>
         </details>
 
         <details open>
           <summary>Jobs list defaults</summary>
-          <div class="field adv-field">
-            <label for="settings_default_sort">Default sort</label>
-            <select id="settings_default_sort" aria-label="Default sort">
+          <div class="field-shell">
+            <div class="field adv-field">
+              <label for="settings_default_sort" class="field-label">Default sort</label>
+              <select id="settings_default_sort" aria-label="Default sort">
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="active">Active first</option>
               <option value="errors">Errors first</option>
             </select>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Remember secondary filters</div>
+                <div class="item-description">Keep the result-only filter between sessions.</div>
+              </div>
+              <label class="tog"><input type="checkbox" id="settings_keep_secondary"/> On</label>
+            </div>
           </div>
-          <label class="tog"><input type="checkbox" id="settings_keep_secondary"/> Keep secondary filters between sessions</label>
         </details>
 
         <details>
           <summary>Display</summary>
-          <div class="field adv-field">
-            <label for="settings_density">UI density</label>
-            <select id="settings_density" aria-label="UI density">
+          <div class="field-shell">
+            <div class="field adv-field">
+              <label for="settings_density" class="field-label">UI density</label>
+              <select id="settings_density" aria-label="UI density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
+              <div class="field-hint">Compact density reduces spacing in list and detail views.</div>
+            </div>
           </div>
         </details>
         <details>
           <summary>Maintenance</summary>
-          <div class="hint compact-hint">Advanced cleanup and maintenance actions live here so the main header stays focused on jobs.</div>
-          <div class="help-actions-row">
-            <button type="button" class="small tertiary" data-action="open-advanced">Open maintenance tools</button>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Maintenance tools</div>
+                <div class="item-description">Cleanup and reset tools live here so the main screen stays focused on jobs.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="open-advanced">Open tools</button>
+            </div>
           </div>
         </details>
       </div>
@@ -1741,6 +2039,47 @@ details[open] summary::after{ transform: rotate(0deg); }
             <button type="button" class="small tertiary" data-action="open-info">Open raw info.json</button>
           </div>
         </details>
+      </div>
+    </div>
+  </div>
+<!-- Section: Command palette and confirm dialog -->
+  <div id="command_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal command-modal" id="command_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="command_title" aria-describedby="command_sub">
+      <div class="modal-header compact-header">
+        <div>
+          <div class="modal-title" id="command_title">Command menu</div>
+          <div class="modal-sub" id="command_sub">Quick actions and navigation</div>
+        </div>
+        <button type="button" id="command_close" class="small tertiary" data-action="close-command" aria-label="Close command menu">Close</button>
+      </div>
+      <div class="modal-body command-body">
+        <div class="field-shell command-search-shell">
+          <label class="field-label" for="command_input">Find an action</label>
+          <input id="command_input" type="search" placeholder="Search commands" autocomplete="off" aria-describedby="command_hint" />
+          <div class="field-hint" id="command_hint">Try refresh, help, settings, search, sample, or maintenance.</div>
+        </div>
+        <div class="separator" role="separator" aria-hidden="true"></div>
+        <div id="command_list" class="command-list" role="listbox" aria-label="Available commands"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal alert-modal" id="confirm_modal" role="alertdialog" aria-modal="true" tabindex="-1" aria-labelledby="confirm_title" aria-describedby="confirm_body">
+      <div class="modal-header compact-header">
+        <div>
+          <div class="modal-title" id="confirm_title">Confirm action</div>
+          <div class="modal-sub">Destructive changes need explicit confirmation.</div>
+        </div>
+        <button type="button" id="confirm_close" class="small tertiary" data-action="close-confirm" aria-label="Close confirmation">Close</button>
+      </div>
+      <div class="modal-body alert-body">
+        <p id="confirm_body" class="alert-copy">Are you sure?</p>
+        <div class="separator" role="separator" aria-hidden="true"></div>
+        <div class="actionsbar alert-actions">
+          <button type="button" class="small secondary" data-action="close-confirm">Cancel</button>
+          <button type="button" class="small danger" id="confirm_accept" data-action="confirm-accept">Confirm</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2854,9 +3193,8 @@ function applyFilters() {
     }
   }
 
-  async function purgeState(state) {
+  async function performPurgeState(state) {
     if (!state) return;
-    if (!window.confirm(`Purge ${state} jobs? This deletes job files.`)) return;
     await api("purge", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -2864,6 +3202,16 @@ function applyFilters() {
     });
     toast("ok", "Purge complete", `Purged ${state} jobs`);
     await refreshAll();
+  }
+
+  async function purgeState(state) {
+    if (!state) return;
+    openConfirm({
+      title: `Purge ${state} jobs?`,
+      body: "This removes job files for the selected job state.",
+      confirmLabel: `Purge ${state}`,
+      onConfirm: async () => performPurgeState(state),
+    });
   }
 
   function parseEndpointPath(v) {
@@ -3003,6 +3351,137 @@ function applyFilters() {
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
   let _settingsReturnFocus = null;
+  let _commandReturnFocus = null;
+  let _confirmReturnFocus = null;
+  let confirmActionHandler = null;
+
+  function commandItems() {
+    return [
+      { key: "refresh", title: "Refresh now", description: "Reload queue stats, jobs, and the selected detail view.", hint: "Action", action: async () => refreshAll() },
+      { key: "search", title: "Focus search", description: "Jump straight to the Jobs search field.", hint: "/", action: async () => { if (els.search) els.search.focus(); } },
+      { key: "settings", title: "Open settings", description: "Change runtime and UI preferences.", hint: "Panel", action: async () => openSettings() },
+      { key: "help", title: "Open help", description: "See quick start, samples, and troubleshooting.", hint: "Panel", action: async () => openAbout() },
+      { key: "maintenance", title: "Open maintenance tools", description: "Open advanced cleanup and reset actions.", hint: "Panel", action: async () => openAdvanced() },
+      { key: "sample", title: "Copy sample Python task", description: "Copy the quick-start Python task to the clipboard.", hint: "Copy", action: async () => copySampleTask() },
+    ];
+  }
+
+  function updateCommandList(filterText) {
+    if (!els.command_list) return;
+    const q = String(filterText || "").trim().toLowerCase();
+    els.command_list.textContent = "";
+    for (const item of commandItems()) {
+      const hay = `${item.title} ${item.description}`.toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "small tertiary command-item";
+      btn.setAttribute("data-action", "command-run");
+      btn.setAttribute("data-command", item.key);
+
+      const copy = document.createElement("span");
+      copy.className = "item-copy";
+      const title = document.createElement("span");
+      title.className = "item-title";
+      title.textContent = item.title;
+      const desc = document.createElement("span");
+      desc.className = "item-description";
+      desc.textContent = item.description;
+      copy.append(title, desc);
+
+      const hint = document.createElement("span");
+      hint.className = "command-hint";
+      hint.textContent = item.hint;
+
+      btn.append(copy, hint);
+      els.command_list.appendChild(btn);
+    }
+    if (!els.command_list.children.length) {
+      const empty = document.createElement("div");
+      empty.className = "hint compact-hint";
+      empty.textContent = "No commands match that search.";
+      els.command_list.appendChild(empty);
+    }
+  }
+
+  async function runCommand(key) {
+    const found = commandItems().find((item) => item.key === key);
+    if (!found) return;
+    closeCommand();
+    await found.action();
+  }
+
+  function openCommand() {
+    _commandReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.command_overlay.hidden = false;
+    els.command_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.command_input) {
+      els.command_input.value = "";
+      updateCommandList("");
+      els.command_input.focus();
+    } else if (els.command_modal) {
+      els.command_modal.focus();
+    }
+  }
+
+  function closeCommand() {
+    if (!els.command_overlay) return;
+    els.command_overlay.hidden = true;
+    els.command_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_commandReturnFocus && document.contains(_commandReturnFocus)) {
+      try { _commandReturnFocus.focus(); } catch (_e) {}
+    }
+    _commandReturnFocus = null;
+  }
+
+  function openConfirm(opts) {
+    confirmActionHandler = (opts && typeof opts.onConfirm === "function") ? opts.onConfirm : null;
+    _confirmReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.confirm_title) els.confirm_title.textContent = (opts && opts.title) ? String(opts.title) : "Confirm action";
+    if (els.confirm_body) els.confirm_body.textContent = (opts && opts.body) ? String(opts.body) : "Are you sure?";
+    if (els.confirm_accept) els.confirm_accept.textContent = (opts && opts.confirmLabel) ? String(opts.confirmLabel) : "Confirm";
+    els.confirm_overlay.hidden = false;
+    els.confirm_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.confirm_accept) els.confirm_accept.focus();
+    else if (els.confirm_modal) els.confirm_modal.focus();
+  }
+
+  function closeConfirm() {
+    if (!els.confirm_overlay) return;
+    els.confirm_overlay.hidden = true;
+    els.confirm_overlay.setAttribute("aria-hidden", "true");
+    confirmActionHandler = null;
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_confirmReturnFocus && document.contains(_confirmReturnFocus)) {
+      try { _confirmReturnFocus.focus(); } catch (_e) {}
+    }
+    _confirmReturnFocus = null;
+  }
+
+  async function acceptConfirm() {
+    if (typeof confirmActionHandler !== "function") {
+      closeConfirm();
+      return;
+    }
+    const fn = confirmActionHandler;
+    closeConfirm();
+    await fn();
+  }
 
   async function openAbout() {
     _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
@@ -3259,6 +3738,11 @@ function closeAbout() {
       els.state_badge.className = `badge ${state}`;
       els.state_badge.textContent = state;
     }
+    if (els.detail_inline_state) {
+      els.detail_inline_state.hidden = false;
+      els.detail_inline_state.className = `badge ${state} detail-inline-state`;
+      els.detail_inline_state.textContent = state;
+    }
     if (els.state_title) els.state_title.textContent = titleMap[state] || "Unknown state";
 
     let desc = `Phase: ${phase}`;
@@ -3368,11 +3852,22 @@ function closeAbout() {
     els.meta.textContent = "";
     for (const [k, v] of items) {
       if (v === "") continue;
-      const dt = document.createElement("dt");
-      dt.textContent = k;
-      const dd = document.createElement("dd");
-      dd.textContent = v;
-      els.meta.append(dt, dd);
+      const row = document.createElement("div");
+      row.className = "item-slab";
+      const copy = document.createElement("div");
+      copy.className = "item-copy";
+      const title = document.createElement("div");
+      title.className = "item-title";
+      title.textContent = k;
+      const desc = document.createElement("div");
+      desc.className = "item-description";
+      desc.textContent = "Job metadata";
+      copy.append(title, desc);
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.textContent = v;
+      row.append(copy, meta);
+      els.meta.append(row);
     }
 
     _setStateBanner(s);
@@ -3531,17 +4026,25 @@ Client IP: ${ip || ""}`;
     toast("ok", "Copied", val);
   }
 
-  async function cancelJob() {
+  async function performCancelJob() {
     if (!currentJob) return;
-    if (!window.confirm(`Cancel job ${currentJob}?`)) return;
     await api(`cancel/${encodeURIComponent(currentJob)}`, { method: "POST" });
     toast("ok", "Cancelled", `Job ${currentJob} cancelled`);
     await refreshAll();
   }
 
-  async function deleteJob() {
+  async function cancelJob() {
     if (!currentJob) return;
-    if (!window.confirm(`Delete job ${currentJob}? This removes job files.`)) return;
+    openConfirm({
+      title: `Cancel job ${currentJob}?`,
+      body: "The current run will stop and can still be inspected afterward.",
+      confirmLabel: "Cancel job",
+      onConfirm: async () => performCancelJob(),
+    });
+  }
+
+  async function performDeleteJob() {
+    if (!currentJob) return;
     await api(`job/${encodeURIComponent(currentJob)}`, { method: "DELETE" });
     toast("ok", "Deleted", `Job ${currentJob} deleted`);
     currentJob = null;
@@ -3549,6 +4052,16 @@ Client IP: ${ip || ""}`;
     els.detail_empty.hidden = false;
     applyFilters();
     await refreshAll();
+  }
+
+  async function deleteJob() {
+    if (!currentJob) return;
+    openConfirm({
+      title: `Delete job ${currentJob}?`,
+      body: "This removes the job record and any downloaded outputs linked to it.",
+      confirmLabel: "Delete job",
+      onConfirm: async () => performDeleteJob(),
+    });
   }
 
   function downloadZip() {
@@ -3632,14 +4145,25 @@ function toggleAuto() {
       const action = btn.getAttribute("data-action");
       try {
         if (action === "refresh") await refreshAll();
-        if (action === "open-settings") openSettings();
+        if (action === "open-command") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          openCommand();
+        }
+        if (action === "close-command") closeCommand();
+        if (action === "command-run") await runCommand(btn.getAttribute("data-command") || "");
+        if (action === "open-settings") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          openSettings();
+        }
         if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
         if (action === "focus-search" && els.search) els.search.focus();
-        if (action === "reset-ui") resetUi();
+        if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
@@ -3651,8 +4175,14 @@ function toggleAuto() {
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
         if (action === "copy-about-curl") await copyAboutCurl();
-        if (action === "open-about") await openAbout();
+        if (action === "open-about") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          await openAbout();
+        }
         if (action === "close-about") closeAbout();
+        if (action === "close-confirm") closeConfirm();
+        if (action === "confirm-accept") await acceptConfirm();
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
@@ -3690,6 +4220,18 @@ function toggleAuto() {
       });
     }
 
+    if (els.command_overlay) {
+      els.command_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.command_overlay) closeCommand();
+      });
+    }
+
+    if (els.confirm_overlay) {
+      els.confirm_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.confirm_overlay) closeConfirm();
+      });
+    }
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -3722,14 +4264,38 @@ function toggleAuto() {
       els.settings_close.addEventListener("touchend", close, { passive: false });
     }
 
+    if (els.command_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeCommand();
+      };
+      els.command_close.addEventListener("click", close);
+      els.command_close.addEventListener("touchend", close, { passive: false });
+    }
+
+    if (els.confirm_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeConfirm();
+      };
+      els.confirm_close.addEventListener("click", close);
+      els.confirm_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
+        if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
+        if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
         return;
       }
       if (ev.key === "Tab") {
+        if (els.command_overlay && !els.command_overlay.hidden) trapTabKey(ev, els.command_modal || els.command_overlay);
+        if (els.confirm_overlay && !els.confirm_overlay.hidden) trapTabKey(ev, els.confirm_modal || els.confirm_overlay);
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
         if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
@@ -3781,6 +4347,19 @@ function toggleAuto() {
         uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
         storageSet("pjr_density", uiDensity);
         updateDensityUi();
+      });
+    }
+
+    if (els.command_input) {
+      els.command_input.addEventListener("input", () => updateCommandList(els.command_input.value));
+      els.command_input.addEventListener("keydown", async (ev) => {
+        if (ev.key === "Enter") {
+          const first = els.command_list ? els.command_list.querySelector("button[data-action='command-run']") : null;
+          if (first) {
+            ev.preventDefault();
+            await runCommand(first.getAttribute("data-command") || "");
+          }
+        }
       });
     }
 
@@ -3837,6 +4416,11 @@ function toggleAuto() {
     window.addEventListener("resize", ensurePaneForViewport);
 
     window.addEventListener("keydown", (ev) => {
+      if ((ev.metaKey || ev.ctrlKey) && String(ev.key).toLowerCase() === "k") {
+        ev.preventDefault();
+        openCommand();
+        return;
+      }
       if (ev.defaultPrevented) return;
       if (ev.key !== "/") return;
       const active = document.activeElement;
@@ -3891,6 +4475,7 @@ function toggleAuto() {
     els.detail_result_summary = document.getElementById("detail_result_summary");
     els.detail_limits_summary = document.getElementById("detail_limits_summary");
     els.detail_failure_summary = document.getElementById("detail_failure_summary");
+    els.detail_inline_state = document.getElementById("detail_inline_state");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");
@@ -3920,6 +4505,18 @@ function toggleAuto() {
     els.toast_title = document.getElementById("toast_title");
     els.toast_msg = document.getElementById("toast_msg");
     els.toast_action = document.getElementById("toast_action");
+
+    els.command_overlay = document.getElementById("command_overlay");
+    els.command_modal = document.getElementById("command_modal");
+    els.command_close = document.getElementById("command_close");
+    els.command_input = document.getElementById("command_input");
+    els.command_list = document.getElementById("command_list");
+    els.confirm_overlay = document.getElementById("confirm_overlay");
+    els.confirm_modal = document.getElementById("confirm_modal");
+    els.confirm_close = document.getElementById("confirm_close");
+    els.confirm_title = document.getElementById("confirm_title");
+    els.confirm_body = document.getElementById("confirm_body");
+    els.confirm_accept = document.getElementById("confirm_accept");
 
     els.about_overlay = document.getElementById("about_overlay");
     els.about_modal = document.getElementById("about_modal");

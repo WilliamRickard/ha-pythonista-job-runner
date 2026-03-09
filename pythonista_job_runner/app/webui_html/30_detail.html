@@ -9,17 +9,30 @@
         </div>
 
         <div class="card-body">
-          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job from the list to see logs, lifecycle state, metadata, and download the result zip.</div>
+          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job to see lifecycle status, outputs, logs, and download options.</div>
 
           <section id="detail" hidden aria-label="Job detail">
             <div class="detail-topline">
-              <div class="detail-title">Job <span id="jobid"></span></div>
+              <div class="detail-heading">
+                <div class="detail-eyebrow">Selected job</div>
+                <div class="detail-title-row">
+                  <div class="detail-title">Job <span id="jobid"></span></div>
+                  <span class="badge queued detail-inline-state" id="detail_inline_state" hidden>queued</span>
+                </div>
+                <div class="detail-subtitle">Lifecycle, outputs, and logs in one place.</div>
+              </div>
               <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
                 <button type="button" class="small primary" data-action="download-zip">Download zip</button>
-                <button type="button" class="small" data-action="download-text" data-which="stdout">stdout.txt</button>
-                <button type="button" class="small" data-action="download-text" data-which="stderr">stderr.txt</button>
                 <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
                 <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
+                <details class="secondary-panel detail-more-actions">
+                  <summary>More</summary>
+                  <div class="secondary-panel-body detail-more-actions-body" role="menu" aria-label="More job actions">
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem">Download stdout</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem">Download stderr</button>
+                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem">Copy curl</button>
+                  </div>
+                </details>
               </div>
             </div>
 
@@ -51,14 +64,15 @@
               </article>
             </div>
 
-            <div style="margin-top:10px;">
-              <dl class="kvgrid" id="meta"></dl>
-            </div>
+            <details class="detail-block detail-meta-block" style="margin-top:10px;" open>
+              <summary>Metadata</summary>
+              <div class="item-list meta-items" id="meta"></div>
+            </details>
 
             <div id="overview" hidden style="margin-top:14px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="true">
               <div class="hint" id="overview_text"></div>
-              <details class="moreopts" style="margin-top:10px;">
-                <summary>API examples</summary>
+              <details class="detail-block detail-api-block" style="margin-top:10px;">
+                <summary>Request and API</summary>
                 <textarea id="curl_snippet" rows="9" readonly></textarea>
               </details>
             </div>
@@ -66,9 +80,12 @@
             <div class="tabs" style="margin-top:14px;" role="tablist" aria-label="Output tabs">
               <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="true" aria-controls="logpanel" tabindex="0">stdout</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
-              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">overview</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="false" aria-controls="overview" tabindex="-1">summary</button>
             </div>
 
+            <details class="detail-log-shell" style="margin-top:10px;" open>
+              <summary>Log controls</summary>
+              <div class="detail-log-tools-body">
             <div class="logtools" id="logtools" style="margin-top:10px;">
               <div class="livebar" role="group" aria-label="Live tail controls">
                 <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
@@ -119,6 +136,8 @@
             <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="false">
               <pre id="logview"></pre>
             </div>
+              </div>
+            </details>
           </section>
         </div>
       </section>
