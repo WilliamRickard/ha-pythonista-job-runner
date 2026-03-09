@@ -1,0 +1,44 @@
+---
+name: Support question
+description: Ask for help using the add-on or integration
+title: "[Support]: "
+labels: ["question"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Add-on version
+      description: Version from `pythonista_job_runner/config.yaml` or the Home Assistant UI
+      placeholder: "0.6.12"
+    validations:
+      required: false
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is going wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment details
+      description: Home Assistant version, host type, phone client, network path, and any other useful context.
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Redact tokens and private details before posting.
+    validations:
+      required: false
