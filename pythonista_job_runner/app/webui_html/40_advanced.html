@@ -11,12 +11,38 @@
       <div class="modal-body">
         <details open>
           <summary>Maintenance</summary>
-          <div class="actionsbar destructive-group">
-            <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
-            <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
-          </div>
-          <div class="actionsbar utility-group">
-            <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Finished jobs</div>
+                <div class="item-description">Delete job files for completed runs.</div>
+              </div>
+              <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Failed jobs</div>
+                <div class="item-description">Delete job files for failed runs.</div>
+              </div>
+              <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Interface state</div>
+                <div class="item-description">Reset saved UI preferences such as density and filters.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+            </div>
+            <div class="separator" role="separator" aria-hidden="true"></div>
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Quick actions</div>
+                <div class="item-description">Open the command menu for refresh, search, help, and navigation.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="open-command">Open command menu</button>
+            </div>
           </div>
         </details>
       </div>

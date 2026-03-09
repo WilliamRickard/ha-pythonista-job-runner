@@ -231,3 +231,17 @@ details[open] summary::after{ transform: rotate(0deg); }
 #about_python,#about_curl{overflow:auto;white-space:pre;word-break:normal;overflow-wrap:normal;max-height:180px;font-size:11.5px;line-height:1.4;border-radius:12px;background:color-mix(in srgb, var(--panel2) 72%, transparent);}
 #about_api .api-path{overflow-wrap:anywhere;}
 .help-actions-row button{min-height:40px;}
+
+.command-body{
+  gap:12px;
+}
+
+.command-modal .modal-body,
+.alert-modal .modal-body{
+  padding-top:12px;
+}
+
+.alert-modal .modal-sub,
+.command-modal .modal-sub{
+  max-width: 32ch;
+}

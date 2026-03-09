@@ -25,14 +25,25 @@ function toggleAuto() {
       const action = btn.getAttribute("data-action");
       try {
         if (action === "refresh") await refreshAll();
-        if (action === "open-settings") openSettings();
+        if (action === "open-command") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          openCommand();
+        }
+        if (action === "close-command") closeCommand();
+        if (action === "command-run") await runCommand(btn.getAttribute("data-command") || "");
+        if (action === "open-settings") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          openSettings();
+        }
         if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
         if (action === "focus-search" && els.search) els.search.focus();
-        if (action === "reset-ui") resetUi();
+        if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
@@ -44,8 +55,14 @@ function toggleAuto() {
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
         if (action === "copy-about-curl") await copyAboutCurl();
-        if (action === "open-about") await openAbout();
+        if (action === "open-about") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          await openAbout();
+        }
         if (action === "close-about") closeAbout();
+        if (action === "close-confirm") closeConfirm();
+        if (action === "confirm-accept") await acceptConfirm();
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
@@ -83,6 +100,18 @@ function toggleAuto() {
       });
     }
 
+    if (els.command_overlay) {
+      els.command_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.command_overlay) closeCommand();
+      });
+    }
+
+    if (els.confirm_overlay) {
+      els.confirm_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.confirm_overlay) closeConfirm();
+      });
+    }
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -115,14 +144,38 @@ function toggleAuto() {
       els.settings_close.addEventListener("touchend", close, { passive: false });
     }
 
+    if (els.command_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeCommand();
+      };
+      els.command_close.addEventListener("click", close);
+      els.command_close.addEventListener("touchend", close, { passive: false });
+    }
+
+    if (els.confirm_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeConfirm();
+      };
+      els.confirm_close.addEventListener("click", close);
+      els.confirm_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
+        if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
+        if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
         return;
       }
       if (ev.key === "Tab") {
+        if (els.command_overlay && !els.command_overlay.hidden) trapTabKey(ev, els.command_modal || els.command_overlay);
+        if (els.confirm_overlay && !els.confirm_overlay.hidden) trapTabKey(ev, els.confirm_modal || els.confirm_overlay);
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
         if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
@@ -174,6 +227,19 @@ function toggleAuto() {
         uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
         storageSet("pjr_density", uiDensity);
         updateDensityUi();
+      });
+    }
+
+    if (els.command_input) {
+      els.command_input.addEventListener("input", () => updateCommandList(els.command_input.value));
+      els.command_input.addEventListener("keydown", async (ev) => {
+        if (ev.key === "Enter") {
+          const first = els.command_list ? els.command_list.querySelector("button[data-action='command-run']") : null;
+          if (first) {
+            ev.preventDefault();
+            await runCommand(first.getAttribute("data-command") || "");
+          }
+        }
       });
     }
 
@@ -230,6 +296,11 @@ function toggleAuto() {
     window.addEventListener("resize", ensurePaneForViewport);
 
     window.addEventListener("keydown", (ev) => {
+      if ((ev.metaKey || ev.ctrlKey) && String(ev.key).toLowerCase() === "k") {
+        ev.preventDefault();
+        openCommand();
+        return;
+      }
       if (ev.defaultPrevented) return;
       if (ev.key !== "/") return;
       const active = document.activeElement;
@@ -284,6 +355,7 @@ function toggleAuto() {
     els.detail_result_summary = document.getElementById("detail_result_summary");
     els.detail_limits_summary = document.getElementById("detail_limits_summary");
     els.detail_failure_summary = document.getElementById("detail_failure_summary");
+    els.detail_inline_state = document.getElementById("detail_inline_state");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");
@@ -313,6 +385,18 @@ function toggleAuto() {
     els.toast_title = document.getElementById("toast_title");
     els.toast_msg = document.getElementById("toast_msg");
     els.toast_action = document.getElementById("toast_action");
+
+    els.command_overlay = document.getElementById("command_overlay");
+    els.command_modal = document.getElementById("command_modal");
+    els.command_close = document.getElementById("command_close");
+    els.command_input = document.getElementById("command_input");
+    els.command_list = document.getElementById("command_list");
+    els.confirm_overlay = document.getElementById("confirm_overlay");
+    els.confirm_modal = document.getElementById("confirm_modal");
+    els.confirm_close = document.getElementById("confirm_close");
+    els.confirm_title = document.getElementById("confirm_title");
+    els.confirm_body = document.getElementById("confirm_body");
+    els.confirm_accept = document.getElementById("confirm_accept");
 
     els.about_overlay = document.getElementById("about_overlay");
     els.about_modal = document.getElementById("about_modal");

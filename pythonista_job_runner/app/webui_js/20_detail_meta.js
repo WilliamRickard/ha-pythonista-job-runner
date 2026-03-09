@@ -67,6 +67,11 @@
       els.state_badge.className = `badge ${state}`;
       els.state_badge.textContent = state;
     }
+    if (els.detail_inline_state) {
+      els.detail_inline_state.hidden = false;
+      els.detail_inline_state.className = `badge ${state} detail-inline-state`;
+      els.detail_inline_state.textContent = state;
+    }
     if (els.state_title) els.state_title.textContent = titleMap[state] || "Unknown state";
 
     let desc = `Phase: ${phase}`;
@@ -176,11 +181,22 @@
     els.meta.textContent = "";
     for (const [k, v] of items) {
       if (v === "") continue;
-      const dt = document.createElement("dt");
-      dt.textContent = k;
-      const dd = document.createElement("dd");
-      dd.textContent = v;
-      els.meta.append(dt, dd);
+      const row = document.createElement("div");
+      row.className = "item-slab";
+      const copy = document.createElement("div");
+      copy.className = "item-copy";
+      const title = document.createElement("div");
+      title.className = "item-title";
+      title.textContent = k;
+      const desc = document.createElement("div");
+      desc.className = "item-description";
+      desc.textContent = "Job metadata";
+      copy.append(title, desc);
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.textContent = v;
+      row.append(copy, meta);
+      els.meta.append(row);
     }
 
     _setStateBanner(s);

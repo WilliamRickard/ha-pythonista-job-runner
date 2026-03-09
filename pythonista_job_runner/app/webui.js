@@ -1096,9 +1096,8 @@ function applyFilters() {
     }
   }
 
-  async function purgeState(state) {
+  async function performPurgeState(state) {
     if (!state) return;
-    if (!window.confirm(`Purge ${state} jobs? This deletes job files.`)) return;
     await api("purge", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -1106,6 +1105,16 @@ function applyFilters() {
     });
     toast("ok", "Purge complete", `Purged ${state} jobs`);
     await refreshAll();
+  }
+
+  async function purgeState(state) {
+    if (!state) return;
+    openConfirm({
+      title: `Purge ${state} jobs?`,
+      body: "This removes job files for the selected job state.",
+      confirmLabel: `Purge ${state}`,
+      onConfirm: async () => performPurgeState(state),
+    });
   }
 
   function parseEndpointPath(v) {
@@ -1245,6 +1254,137 @@ function applyFilters() {
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
   let _settingsReturnFocus = null;
+  let _commandReturnFocus = null;
+  let _confirmReturnFocus = null;
+  let confirmActionHandler = null;
+
+  function commandItems() {
+    return [
+      { key: "refresh", title: "Refresh now", description: "Reload queue stats, jobs, and the selected detail view.", hint: "Action", action: async () => refreshAll() },
+      { key: "search", title: "Focus search", description: "Jump straight to the Jobs search field.", hint: "/", action: async () => { if (els.search) els.search.focus(); } },
+      { key: "settings", title: "Open settings", description: "Change runtime and UI preferences.", hint: "Panel", action: async () => openSettings() },
+      { key: "help", title: "Open help", description: "See quick start, samples, and troubleshooting.", hint: "Panel", action: async () => openAbout() },
+      { key: "maintenance", title: "Open maintenance tools", description: "Open advanced cleanup and reset actions.", hint: "Panel", action: async () => openAdvanced() },
+      { key: "sample", title: "Copy sample Python task", description: "Copy the quick-start Python task to the clipboard.", hint: "Copy", action: async () => copySampleTask() },
+    ];
+  }
+
+  function updateCommandList(filterText) {
+    if (!els.command_list) return;
+    const q = String(filterText || "").trim().toLowerCase();
+    els.command_list.textContent = "";
+    for (const item of commandItems()) {
+      const hay = `${item.title} ${item.description}`.toLowerCase();
+      if (q && !hay.includes(q)) continue;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "small tertiary command-item";
+      btn.setAttribute("data-action", "command-run");
+      btn.setAttribute("data-command", item.key);
+
+      const copy = document.createElement("span");
+      copy.className = "item-copy";
+      const title = document.createElement("span");
+      title.className = "item-title";
+      title.textContent = item.title;
+      const desc = document.createElement("span");
+      desc.className = "item-description";
+      desc.textContent = item.description;
+      copy.append(title, desc);
+
+      const hint = document.createElement("span");
+      hint.className = "command-hint";
+      hint.textContent = item.hint;
+
+      btn.append(copy, hint);
+      els.command_list.appendChild(btn);
+    }
+    if (!els.command_list.children.length) {
+      const empty = document.createElement("div");
+      empty.className = "hint compact-hint";
+      empty.textContent = "No commands match that search.";
+      els.command_list.appendChild(empty);
+    }
+  }
+
+  async function runCommand(key) {
+    const found = commandItems().find((item) => item.key === key);
+    if (!found) return;
+    closeCommand();
+    await found.action();
+  }
+
+  function openCommand() {
+    _commandReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.command_overlay.hidden = false;
+    els.command_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.command_input) {
+      els.command_input.value = "";
+      updateCommandList("");
+      els.command_input.focus();
+    } else if (els.command_modal) {
+      els.command_modal.focus();
+    }
+  }
+
+  function closeCommand() {
+    if (!els.command_overlay) return;
+    els.command_overlay.hidden = true;
+    els.command_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_commandReturnFocus && document.contains(_commandReturnFocus)) {
+      try { _commandReturnFocus.focus(); } catch (_e) {}
+    }
+    _commandReturnFocus = null;
+  }
+
+  function openConfirm(opts) {
+    confirmActionHandler = (opts && typeof opts.onConfirm === "function") ? opts.onConfirm : null;
+    _confirmReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    if (els.confirm_title) els.confirm_title.textContent = (opts && opts.title) ? String(opts.title) : "Confirm action";
+    if (els.confirm_body) els.confirm_body.textContent = (opts && opts.body) ? String(opts.body) : "Are you sure?";
+    if (els.confirm_accept) els.confirm_accept.textContent = (opts && opts.confirmLabel) ? String(opts.confirmLabel) : "Confirm";
+    els.confirm_overlay.hidden = false;
+    els.confirm_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.confirm_accept) els.confirm_accept.focus();
+    else if (els.confirm_modal) els.confirm_modal.focus();
+  }
+
+  function closeConfirm() {
+    if (!els.confirm_overlay) return;
+    els.confirm_overlay.hidden = true;
+    els.confirm_overlay.setAttribute("aria-hidden", "true");
+    confirmActionHandler = null;
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_confirmReturnFocus && document.contains(_confirmReturnFocus)) {
+      try { _confirmReturnFocus.focus(); } catch (_e) {}
+    }
+    _confirmReturnFocus = null;
+  }
+
+  async function acceptConfirm() {
+    if (typeof confirmActionHandler !== "function") {
+      closeConfirm();
+      return;
+    }
+    const fn = confirmActionHandler;
+    closeConfirm();
+    await fn();
+  }
 
   async function openAbout() {
     _aboutReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
@@ -1501,6 +1641,11 @@ function closeAbout() {
       els.state_badge.className = `badge ${state}`;
       els.state_badge.textContent = state;
     }
+    if (els.detail_inline_state) {
+      els.detail_inline_state.hidden = false;
+      els.detail_inline_state.className = `badge ${state} detail-inline-state`;
+      els.detail_inline_state.textContent = state;
+    }
     if (els.state_title) els.state_title.textContent = titleMap[state] || "Unknown state";
 
     let desc = `Phase: ${phase}`;
@@ -1610,11 +1755,22 @@ function closeAbout() {
     els.meta.textContent = "";
     for (const [k, v] of items) {
       if (v === "") continue;
-      const dt = document.createElement("dt");
-      dt.textContent = k;
-      const dd = document.createElement("dd");
-      dd.textContent = v;
-      els.meta.append(dt, dd);
+      const row = document.createElement("div");
+      row.className = "item-slab";
+      const copy = document.createElement("div");
+      copy.className = "item-copy";
+      const title = document.createElement("div");
+      title.className = "item-title";
+      title.textContent = k;
+      const desc = document.createElement("div");
+      desc.className = "item-description";
+      desc.textContent = "Job metadata";
+      copy.append(title, desc);
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.textContent = v;
+      row.append(copy, meta);
+      els.meta.append(row);
     }
 
     _setStateBanner(s);
@@ -1773,17 +1929,25 @@ Client IP: ${ip || ""}`;
     toast("ok", "Copied", val);
   }
 
-  async function cancelJob() {
+  async function performCancelJob() {
     if (!currentJob) return;
-    if (!window.confirm(`Cancel job ${currentJob}?`)) return;
     await api(`cancel/${encodeURIComponent(currentJob)}`, { method: "POST" });
     toast("ok", "Cancelled", `Job ${currentJob} cancelled`);
     await refreshAll();
   }
 
-  async function deleteJob() {
+  async function cancelJob() {
     if (!currentJob) return;
-    if (!window.confirm(`Delete job ${currentJob}? This removes job files.`)) return;
+    openConfirm({
+      title: `Cancel job ${currentJob}?`,
+      body: "The current run will stop and can still be inspected afterward.",
+      confirmLabel: "Cancel job",
+      onConfirm: async () => performCancelJob(),
+    });
+  }
+
+  async function performDeleteJob() {
+    if (!currentJob) return;
     await api(`job/${encodeURIComponent(currentJob)}`, { method: "DELETE" });
     toast("ok", "Deleted", `Job ${currentJob} deleted`);
     currentJob = null;
@@ -1791,6 +1955,16 @@ Client IP: ${ip || ""}`;
     els.detail_empty.hidden = false;
     applyFilters();
     await refreshAll();
+  }
+
+  async function deleteJob() {
+    if (!currentJob) return;
+    openConfirm({
+      title: `Delete job ${currentJob}?`,
+      body: "This removes the job record and any downloaded outputs linked to it.",
+      confirmLabel: "Delete job",
+      onConfirm: async () => performDeleteJob(),
+    });
   }
 
   function downloadZip() {
@@ -1874,14 +2048,25 @@ function toggleAuto() {
       const action = btn.getAttribute("data-action");
       try {
         if (action === "refresh") await refreshAll();
-        if (action === "open-settings") openSettings();
+        if (action === "open-command") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          openCommand();
+        }
+        if (action === "close-command") closeCommand();
+        if (action === "command-run") await runCommand(btn.getAttribute("data-command") || "");
+        if (action === "open-settings") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          openSettings();
+        }
         if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
         if (action === "focus-search" && els.search) els.search.focus();
-        if (action === "reset-ui") resetUi();
+        if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
         if (action === "jump-error") jumpToNextError();
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
@@ -1893,8 +2078,14 @@ function toggleAuto() {
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
         if (action === "copy-about-curl") await copyAboutCurl();
-        if (action === "open-about") await openAbout();
+        if (action === "open-about") {
+          const moreMenu = btn.closest(".header-more-menu");
+          if (moreMenu) moreMenu.open = false;
+          await openAbout();
+        }
         if (action === "close-about") closeAbout();
+        if (action === "close-confirm") closeConfirm();
+        if (action === "confirm-accept") await acceptConfirm();
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
@@ -1932,6 +2123,18 @@ function toggleAuto() {
       });
     }
 
+    if (els.command_overlay) {
+      els.command_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.command_overlay) closeCommand();
+      });
+    }
+
+    if (els.confirm_overlay) {
+      els.confirm_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.confirm_overlay) closeConfirm();
+      });
+    }
+
 
     if (els.about_close) {
       const close = (ev) => {
@@ -1964,14 +2167,38 @@ function toggleAuto() {
       els.settings_close.addEventListener("touchend", close, { passive: false });
     }
 
+    if (els.command_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeCommand();
+      };
+      els.command_close.addEventListener("click", close);
+      els.command_close.addEventListener("touchend", close, { passive: false });
+    }
+
+    if (els.confirm_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeConfirm();
+      };
+      els.confirm_close.addEventListener("click", close);
+      els.confirm_close.addEventListener("touchend", close, { passive: false });
+    }
+
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
+        if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
+        if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
         if (!els.about_overlay.hidden) closeAbout();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
         return;
       }
       if (ev.key === "Tab") {
+        if (els.command_overlay && !els.command_overlay.hidden) trapTabKey(ev, els.command_modal || els.command_overlay);
+        if (els.confirm_overlay && !els.confirm_overlay.hidden) trapTabKey(ev, els.confirm_modal || els.confirm_overlay);
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
         if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
@@ -2023,6 +2250,19 @@ function toggleAuto() {
         uiDensity = els.settings_density.value === "compact" ? "compact" : "comfortable";
         storageSet("pjr_density", uiDensity);
         updateDensityUi();
+      });
+    }
+
+    if (els.command_input) {
+      els.command_input.addEventListener("input", () => updateCommandList(els.command_input.value));
+      els.command_input.addEventListener("keydown", async (ev) => {
+        if (ev.key === "Enter") {
+          const first = els.command_list ? els.command_list.querySelector("button[data-action='command-run']") : null;
+          if (first) {
+            ev.preventDefault();
+            await runCommand(first.getAttribute("data-command") || "");
+          }
+        }
       });
     }
 
@@ -2079,6 +2319,11 @@ function toggleAuto() {
     window.addEventListener("resize", ensurePaneForViewport);
 
     window.addEventListener("keydown", (ev) => {
+      if ((ev.metaKey || ev.ctrlKey) && String(ev.key).toLowerCase() === "k") {
+        ev.preventDefault();
+        openCommand();
+        return;
+      }
       if (ev.defaultPrevented) return;
       if (ev.key !== "/") return;
       const active = document.activeElement;
@@ -2133,6 +2378,7 @@ function toggleAuto() {
     els.detail_result_summary = document.getElementById("detail_result_summary");
     els.detail_limits_summary = document.getElementById("detail_limits_summary");
     els.detail_failure_summary = document.getElementById("detail_failure_summary");
+    els.detail_inline_state = document.getElementById("detail_inline_state");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");
@@ -2162,6 +2408,18 @@ function toggleAuto() {
     els.toast_title = document.getElementById("toast_title");
     els.toast_msg = document.getElementById("toast_msg");
     els.toast_action = document.getElementById("toast_action");
+
+    els.command_overlay = document.getElementById("command_overlay");
+    els.command_modal = document.getElementById("command_modal");
+    els.command_close = document.getElementById("command_close");
+    els.command_input = document.getElementById("command_input");
+    els.command_list = document.getElementById("command_list");
+    els.confirm_overlay = document.getElementById("confirm_overlay");
+    els.confirm_modal = document.getElementById("confirm_modal");
+    els.confirm_close = document.getElementById("confirm_close");
+    els.confirm_title = document.getElementById("confirm_title");
+    els.confirm_body = document.getElementById("confirm_body");
+    els.confirm_accept = document.getElementById("confirm_accept");
 
     els.about_overlay = document.getElementById("about_overlay");
     els.about_modal = document.getElementById("about_modal");
