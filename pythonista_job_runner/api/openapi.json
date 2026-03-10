@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Pythonista Job Runner Direct API",
-    "version": "0.6.12",
+    "version": "0.6.13",
     "description": "Machine-readable contract for the direct HTTP API exposed by pythonista_job_runner. This contract is derived from app/http_api_server.py and validated by tests."
   },
   "servers": [
@@ -92,7 +92,11 @@
     "/stats.json": {
       "get": {
         "summary": "Runner stats",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Stats map",
@@ -114,7 +118,11 @@
     "/jobs.json": {
       "get": {
         "summary": "List jobs",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Jobs list",
@@ -122,7 +130,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["jobs"],
+                  "required": [
+                    "jobs"
+                  ],
                   "properties": {
                     "jobs": {
                       "type": "array",
@@ -144,33 +154,73 @@
     "/job/{job_id}.json": {
       "get": {
         "summary": "Get job status",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "parameters": [
-          {"$ref": "#/components/parameters/JobId"}
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
         ],
         "responses": {
           "200": {
             "description": "Job status",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/JobStatus"}
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
-          "404": {"$ref": "#/components/responses/UnknownJob"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "$ref": "#/components/responses/UnknownJob"
+          }
         }
       }
     },
     "/tail/{job_id}.json": {
       "get": {
         "summary": "Tail stdout and stderr",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "parameters": [
-          {"$ref": "#/components/parameters/JobId"},
-          {"name": "stdout_from", "in": "query", "schema": {"type": "integer", "minimum": -1}},
-          {"name": "stderr_from", "in": "query", "schema": {"type": "integer", "minimum": -1}},
-          {"name": "max_bytes", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 1048576}}
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "name": "stdout_from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": -1
+            }
+          },
+          {
+            "name": "stderr_from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": -1
+            }
+          },
+          {
+            "name": "max_bytes",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -183,30 +233,59 @@
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
-          "404": {"$ref": "#/components/responses/UnknownJob"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "$ref": "#/components/responses/UnknownJob"
+          }
         }
       }
     },
     "/stdout/{job_id}.txt": {
       "get": {
         "summary": "Read stdout log",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "parameters": [
-          {"$ref": "#/components/parameters/JobId"},
-          {"name": "from", "in": "query", "schema": {"type": "integer", "minimum": -1}},
-          {"name": "max_bytes", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 1048576}}
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": -1
+            }
+          },
+          {
+            "name": "max_bytes",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Plain-text stdout"
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
           "404": {
             "description": "Unknown job or log not ready",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
@@ -216,22 +295,47 @@
     "/stderr/{job_id}.txt": {
       "get": {
         "summary": "Read stderr log",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "parameters": [
-          {"$ref": "#/components/parameters/JobId"},
-          {"name": "from", "in": "query", "schema": {"type": "integer", "minimum": -1}},
-          {"name": "max_bytes", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 1048576}}
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": -1
+            }
+          },
+          {
+            "name": "max_bytes",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Plain-text stderr"
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
           "404": {
             "description": "Unknown job or log not ready",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
@@ -241,20 +345,30 @@
     "/result/{job_id}.zip": {
       "get": {
         "summary": "Download result zip",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "parameters": [
-          {"$ref": "#/components/parameters/JobId"}
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
         ],
         "responses": {
           "200": {
             "description": "Zip bytes"
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
           "404": {
             "description": "Unknown job or result not ready",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
@@ -264,15 +378,25 @@
     "/run": {
       "post": {
         "summary": "Submit a job zip",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/zip": {
-              "schema": {"type": "string", "format": "binary"}
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
             },
             "application/octet-stream": {
-              "schema": {"type": "string", "format": "binary"}
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
             }
           }
         },
@@ -281,7 +405,9 @@
             "description": "Accepted",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/RunAcceptedResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/RunAcceptedResponse"
+                }
               }
             }
           },
@@ -289,16 +415,22 @@
             "description": "Invalid request payload",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
           "411": {
             "description": "Missing Content-Length",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -306,7 +438,9 @@
             "description": "Upload too large",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -314,7 +448,9 @@
             "description": "Unsupported content type",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
@@ -324,15 +460,23 @@
     "/purge": {
       "post": {
         "summary": "Purge jobs by state and age",
-        "security": [{"RunnerToken": []}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
         "requestBody": {
           "required": false,
           "content": {
             "application/json": {
-              "schema": {"$ref": "#/components/schemas/PurgeRequest"}
+              "schema": {
+                "$ref": "#/components/schemas/PurgeRequest"
+              }
             },
             "text/json": {
-              "schema": {"$ref": "#/components/schemas/PurgeRequest"}
+              "schema": {
+                "$ref": "#/components/schemas/PurgeRequest"
+              }
             }
           }
         },
@@ -341,7 +485,9 @@
             "description": "Purge result",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/PurgeResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeResponse"
+                }
               }
             }
           },
@@ -349,16 +495,22 @@
             "description": "Invalid JSON payload",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"},
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
           "413": {
             "description": "Payload too large",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -366,7 +518,9 @@
             "description": "Unsupported content type",
             "content": {
               "application/json": {
-                "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
@@ -376,8 +530,16 @@
     "/cancel/{job_id}": {
       "post": {
         "summary": "Cancel a job",
-        "security": [{"RunnerToken": []}],
-        "parameters": [{"$ref": "#/components/parameters/JobId"}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Cancellation request accepted",
@@ -385,23 +547,37 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "properties": {
-                    "ok": {"type": "boolean"}
+                    "ok": {
+                      "type": "boolean"
+                    }
                   }
                 }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
         }
       }
     },
     "/job/{job_id}": {
       "delete": {
         "summary": "Delete a job",
-        "security": [{"RunnerToken": []}],
-        "parameters": [{"$ref": "#/components/parameters/JobId"}],
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Delete request result",
@@ -409,15 +585,204 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["ok"],
+                  "required": [
+                    "ok"
+                  ],
                   "properties": {
-                    "ok": {"type": "boolean"}
+                    "ok": {
+                      "type": "boolean"
+                    }
                   }
                 }
               }
             }
           },
-          "401": {"$ref": "#/components/responses/Unauthorised"}
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/package_profiles.json": {
+      "get": {
+        "summary": "List package profiles",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package profile inventory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/package_profiles/build": {
+      "post": {
+        "summary": "Build or rebuild a package profile",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package profile build result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Build failed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/packages/cache.json": {
+      "get": {
+        "summary": "Get package cache summary",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package cache summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/packages/cache/prune": {
+      "post": {
+        "summary": "Prune private package cache",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package cache prune result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/packages/cache/purge": {
+      "post": {
+        "summary": "Purge private package cache",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Package cache purge result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/packages/summary.json": {
+      "get": {
+        "summary": "Get combined package subsystem summary",
+        "responses": {
+          "200": {
+            "description": "Package summary payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -446,8 +811,12 @@
         "description": "Authentication failed",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
-            "example": {"error": "unauthorised"}
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "unauthorised"
+            }
           }
         }
       },
@@ -455,8 +824,12 @@
         "description": "Job not found",
         "content": {
           "application/json": {
-            "schema": {"$ref": "#/components/schemas/ErrorResponse"},
-            "example": {"error": "unknown_job"}
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "unknown_job"
+            }
           }
         }
       }
@@ -464,109 +837,280 @@
     "schemas": {
       "ErrorResponse": {
         "type": "object",
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": {"type": "string"}
+          "error": {
+            "type": "string"
+          }
         }
       },
       "HealthResponse": {
         "type": "object",
-        "required": ["status", "version"],
+        "required": [
+          "status",
+          "version"
+        ],
         "properties": {
-          "status": {"type": "string", "enum": ["ok"]},
-          "version": {"type": "string"}
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "version": {
+            "type": "string"
+          }
         }
       },
       "ServiceInfo": {
         "type": "object",
-        "required": ["service", "version", "endpoints"],
+        "required": [
+          "service",
+          "version",
+          "endpoints"
+        ],
         "properties": {
-          "service": {"type": "string"},
-          "version": {"type": "string"},
+          "service": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
           "endpoints": {
             "type": "object",
-            "additionalProperties": {"type": "string"}
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       },
       "SubmittedBy": {
         "type": "object",
-        "required": ["id", "name", "display_name"],
+        "required": [
+          "id",
+          "name",
+          "display_name"
+        ],
         "properties": {
-          "id": {"type": ["string", "null"]},
-          "name": {"type": ["string", "null"]},
-          "display_name": {"type": ["string", "null"]}
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       },
       "JobLimits": {
         "type": "object",
-        "required": ["cpu_percent", "cpu_limit_mode", "cpu_count", "cpu_cpulimit_pct", "mem_mb", "threads", "timeout_seconds"],
+        "required": [
+          "cpu_percent",
+          "cpu_limit_mode",
+          "cpu_count",
+          "cpu_cpulimit_pct",
+          "mem_mb",
+          "threads",
+          "timeout_seconds"
+        ],
         "properties": {
-          "cpu_percent": {"type": "integer"},
-          "cpu_limit_mode": {"type": "string"},
-          "cpu_count": {"type": "integer"},
-          "cpu_cpulimit_pct": {"type": "integer"},
-          "mem_mb": {"type": "integer"},
-          "threads": {"type": "integer"},
-          "timeout_seconds": {"type": "integer"}
+          "cpu_percent": {
+            "type": "integer"
+          },
+          "cpu_limit_mode": {
+            "type": "string"
+          },
+          "cpu_count": {
+            "type": "integer"
+          },
+          "cpu_cpulimit_pct": {
+            "type": "integer"
+          },
+          "mem_mb": {
+            "type": "integer"
+          },
+          "threads": {
+            "type": "integer"
+          },
+          "timeout_seconds": {
+            "type": "integer"
+          }
         }
       },
       "JobStatus": {
         "type": "object",
-        "required": ["job_id", "created_utc", "state", "phase", "runner_version", "submitted_by", "limits", "result_filename", "delete_requested"],
+        "required": [
+          "job_id",
+          "created_utc",
+          "state",
+          "phase",
+          "runner_version",
+          "submitted_by",
+          "limits",
+          "result_filename",
+          "delete_requested"
+        ],
         "properties": {
-          "job_id": {"type": "string"},
-          "created_utc": {"type": "string"},
-          "started_utc": {"type": ["string", "null"]},
-          "finished_utc": {"type": ["string", "null"]},
-          "duration_seconds": {"type": ["integer", "null"]},
-          "state": {"type": "string", "enum": ["queued", "running", "done", "error"]},
-          "phase": {"type": "string"},
-          "exit_code": {"type": ["integer", "null"]},
-          "error": {"type": ["string", "null"]},
-          "runner_version": {"type": "string"},
-          "client_ip": {"type": ["string", "null"]},
-          "submitted_by": {"$ref": "#/components/schemas/SubmittedBy"},
-          "limits": {"$ref": "#/components/schemas/JobLimits"},
-          "result_filename": {"type": "string"},
-          "input_sha256": {"type": ["string", "null"]},
-          "delete_requested": {"type": "boolean"}
+          "job_id": {
+            "type": "string"
+          },
+          "created_utc": {
+            "type": "string"
+          },
+          "started_utc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finished_utc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "error"
+            ]
+          },
+          "phase": {
+            "type": "string"
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "runner_version": {
+            "type": "string"
+          },
+          "client_ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_by": {
+            "$ref": "#/components/schemas/SubmittedBy"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/JobLimits"
+          },
+          "result_filename": {
+            "type": "string"
+          },
+          "input_sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "delete_requested": {
+            "type": "boolean"
+          }
         }
       },
       "TailResponse": {
         "type": "object",
-        "required": ["status", "tail"],
+        "required": [
+          "status",
+          "tail"
+        ],
         "properties": {
-          "status": {"$ref": "#/components/schemas/JobStatus"},
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
           "tail": {
             "type": "object",
-            "required": ["stdout", "stderr"],
+            "required": [
+              "stdout",
+              "stderr"
+            ],
             "properties": {
-              "stdout": {"type": "string"},
-              "stderr": {"type": "string"}
+              "stdout": {
+                "type": "string"
+              },
+              "stderr": {
+                "type": "string"
+              }
             }
           },
           "offsets": {
             "type": "object",
             "properties": {
-              "stdout_from": {"type": "integer"},
-              "stdout_next": {"type": "integer"},
-              "stdout_size": {"type": "integer"},
-              "stderr_from": {"type": "integer"},
-              "stderr_next": {"type": "integer"},
-              "stderr_size": {"type": "integer"}
+              "stdout_from": {
+                "type": "integer"
+              },
+              "stdout_next": {
+                "type": "integer"
+              },
+              "stdout_size": {
+                "type": "integer"
+              },
+              "stderr_from": {
+                "type": "integer"
+              },
+              "stderr_next": {
+                "type": "integer"
+              },
+              "stderr_size": {
+                "type": "integer"
+              }
             }
           }
         }
       },
       "RunAcceptedResponse": {
         "type": "object",
-        "required": ["job_id", "tail_url", "result_url", "jobs_url"],
+        "required": [
+          "job_id",
+          "tail_url",
+          "result_url",
+          "jobs_url"
+        ],
         "properties": {
-          "job_id": {"type": "string"},
-          "tail_url": {"type": "string"},
-          "result_url": {"type": "string"},
-          "jobs_url": {"type": "string"}
+          "job_id": {
+            "type": "string"
+          },
+          "tail_url": {
+            "type": "string"
+          },
+          "result_url": {
+            "type": "string"
+          },
+          "jobs_url": {
+            "type": "string"
+          }
         }
       },
       "PurgeRequest": {
@@ -574,25 +1118,46 @@
         "properties": {
           "states": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
-          "state": {"type": "string"},
-          "older_than_hours": {"type": "integer"},
-          "dry_run": {"type": "boolean"}
+          "state": {
+            "type": "string"
+          },
+          "older_than_hours": {
+            "type": "integer"
+          },
+          "dry_run": {
+            "type": "boolean"
+          }
         },
         "additionalProperties": true
       },
       "PurgeResponse": {
         "type": "object",
-        "required": ["ok", "deleted", "count", "dry_run"],
+        "required": [
+          "ok",
+          "deleted",
+          "count",
+          "dry_run"
+        ],
         "properties": {
-          "ok": {"type": "boolean"},
+          "ok": {
+            "type": "boolean"
+          },
           "deleted": {
             "type": "array",
-            "items": {"type": "string"}
+            "items": {
+              "type": "string"
+            }
           },
-          "count": {"type": "integer"},
-          "dry_run": {"type": "boolean"}
+          "count": {
+            "type": "integer"
+          },
+          "dry_run": {
+            "type": "boolean"
+          }
         }
       }
     }

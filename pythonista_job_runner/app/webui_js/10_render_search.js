@@ -1218,6 +1218,8 @@ function applyFilters() {
 
     if (els.auto) els.auto.checked = auto;
     if (els.pollms) els.pollms.value = String(pollMs);
+    refreshPackageCache().catch((_err) => {});
+    refreshPackageProfiles().catch((_err) => {});
   }
 
   function closeAdvanced() {

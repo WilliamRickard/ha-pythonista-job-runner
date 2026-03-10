@@ -1,11 +1,11 @@
-<!-- Version: 0.6.12-docs.10 -->
+<!-- Version: 0.6.13-docs.8 -->
 # Pythonista Job Runner
 
 Run Python jobs from Pythonista on your iPhone, execute them on your Home Assistant host, and download the result zip back to the phone.
 
 The add-on includes two ways to use it:
 
-- **Ingress Web UI** inside Home Assistant for jobs, logs, and downloads.
+- **Ingress Web UI** inside Home Assistant for jobs, logs, package management, and downloads.
 - **Direct HTTP API** on port `8787` for Pythonista and other scripts.
 
 The full user guide lives in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md). Home Assistant shows that file in the add-on **Documentation** tab.
@@ -21,8 +21,11 @@ Repository truthfulness note: automated test suite in this repository executes o
 
 - **I want to install it and get a first successful run**: use this page, then continue to [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 - **I want the short store-facing add-on summary**: open [`pythonista_job_runner/README.md`](pythonista_job_runner/README.md).
+- **I want the examples catalogue**: open [`pythonista_job_runner/examples/README.md`](pythonista_job_runner/examples/README.md).
+- **I want the package-mode examples and migration notes**: open [`pythonista_job_runner/examples/packages/README.md`](pythonista_job_runner/examples/packages/README.md) and [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
 - **I want security guidance before exposing the API**: read [`SECURITY.md`](SECURITY.md).
 - **I want release-channel guidance**: read [`docs/RELEASE_CHANNELS.md`](docs/RELEASE_CHANNELS.md).
+- **I want the release-readiness checklist and upgrade validation matrix**: read [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md).
 - **I want to contribute**: read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
 ## One-minute install
@@ -35,13 +38,13 @@ Repository truthfulness note: automated test suite in this repository executes o
 5. Start the add-on.
 6. Open **Open Web UI** to confirm the jobs list loads.
 
-If you want to call the direct API from Pythonista, keep **Ingress only** off. Full setup and security guidance are in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md) and [`SECURITY.md`](SECURITY.md).
+If you want to call the direct API from Pythonista, keep **Ingress only** off. Full setup, package-mode guidance, and security notes are in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md) and [`SECURITY.md`](SECURITY.md).
 
 ## Choose your access path
 
 ### Use the Web UI inside Home Assistant
 
-Use **Open Web UI** when you want the simplest path for browsing jobs, reading logs, downloading result zips, and managing retention from an authenticated Home Assistant session.
+Use **Open Web UI** when you want the simplest path for browsing jobs, reading logs, managing package cache and profiles, and downloading result zips from an authenticated Home Assistant session.
 
 ### Use the direct API from Pythonista
 
@@ -59,7 +62,12 @@ Your first good run is simple:
 4. The job reaches `done`.
 5. The result zip contains `stdout.txt`, `stderr.txt`, `status.json`, and any files you wrote under `outputs/`.
 
-That exact flow is documented in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md).
+After that, the next package-focused checks are:
+- repeated `per_job` runs can reuse dependency environments
+- wheelhouse imports can satisfy installs without bundling the wheel in every job zip
+- profile mode can attach one named prepared environment across multiple jobs
+
+That exact flow is documented in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md) and exercised in [`pythonista_job_runner/examples/packages/README.md`](pythonista_job_runner/examples/packages/README.md).
 
 ## Screenshots
 
@@ -75,13 +83,24 @@ That exact flow is documented in [`pythonista_job_runner/DOCS.md`](pythonista_jo
 
 ![Pythonista Job Runner Ingress Web UI showing the jobs list](docs/screenshots/03_webui_jobs.png)
 
+### Package cache and diagnostics
+
+![Pythonista Job Runner package cache overview in the Advanced panel](docs/screenshots/04_packages_overview.png)
+
+### Package profiles
+
+![Pythonista Job Runner package profiles area showing a default profile and cache actions](docs/screenshots/05_package_profiles.png)
+
 ## Documentation map
 
 - [`README.md`](README.md): repository landing page and fastest route to first success.
 - [`pythonista_job_runner/README.md`](pythonista_job_runner/README.md): short add-on summary for store-style viewing.
-- [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md): canonical user guide, Pythonista examples, troubleshooting, and API reference.
+- [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md): canonical user guide, package modes, migration notes, Pythonista examples, troubleshooting, and API reference.
+- [`pythonista_job_runner/examples/README.md`](pythonista_job_runner/examples/README.md): example catalogue.
+- [`pythonista_job_runner/examples/packages/README.md`](pythonista_job_runner/examples/packages/README.md): package-focused examples covering cache reuse, offline wheelhouse installs, and named package profiles.
 - [`SECURITY.md`](SECURITY.md): access model, trust boundaries, and safe operating guidance.
 - [`docs/RELEASE_CHANNELS.md`](docs/RELEASE_CHANNELS.md): stable versus next channel guidance.
+- [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md): final validation checklist, upgrade notes, backup-restore checks, and release sign-off matrix.
 - [`docs/screenshots/README.md`](docs/screenshots/README.md): screenshot filename contract and replacement guidance.
 
 ## Support and feedback

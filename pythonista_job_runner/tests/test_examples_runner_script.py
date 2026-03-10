@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-examples-runner.3
+# Version: 0.6.13-tests-examples-runner.5
 """Regression tests for the standalone Pythonista examples runner script."""
 
 from __future__ import annotations
@@ -204,3 +204,69 @@ def test_stream_job_until_terminal_supports_current_tail_schema(monkeypatch):
     assert status["state"] == "done"
     assert status["exit_code"] == 0
     assert client.job_calls == 0
+
+
+def test_zip_directory_creates_bundle_with_top_level_folder(tmp_path):
+    """The runner should zip the whole run folder into one portable archive."""
+    module = _load_runner_module()
+    run_dir = tmp_path / "run_001"
+    run_dir.mkdir()
+    nested = run_dir / "nested"
+    nested.mkdir()
+    (run_dir / "submitted.json").write_text("{}\n", encoding="utf-8")
+    (nested / "status.json").write_text("{}\n", encoding="utf-8")
+
+    bundle_path = module._zip_directory(run_dir, run_dir.with_suffix('.zip'))
+
+    assert bundle_path.exists()
+    with zipfile.ZipFile(bundle_path, 'r') as archive:
+        names = sorted(archive.namelist())
+    assert names == ['run_001/nested/status.json', 'run_001/submitted.json']
+
+
+def test_maybe_download_terminal_result_zip_allows_error_state_result_bundle(tmp_path, monkeypatch):
+    """The runner should still fetch a result bundle when an error-state job exposes one."""
+    module = _load_runner_module()
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
+    client = _FakeClient(["success"])
+
+    result_zip_path, extracted_dir, attempts_path = module._maybe_download_terminal_result_zip(
+        client,
+        "job123",
+        tmp_path,
+        terminal_state="error",
+    )
+
+    assert result_zip_path is not None and result_zip_path.exists()
+    assert extracted_dir is not None and (extracted_dir / "stdout.txt").exists()
+    attempts = json.loads(attempts_path.read_text(encoding="utf-8"))
+    assert attempts[-1]["result"] == "saved"
+
+
+def test_maybe_download_terminal_result_zip_tolerates_missing_error_state_result_bundle(tmp_path, monkeypatch):
+    """A non-done terminal state should not fail the whole runner if no result zip is available."""
+    module = _load_runner_module()
+    attempts_path = tmp_path / "download_attempts.json"
+    attempts_path.write_text(
+        json.dumps([{"attempt": 1, "result": "error", "error": "http_error:404:not_ready"}]) + "\n",
+        encoding="utf-8",
+    )
+
+    def raise_missing_result(client, job_id, run_dir):
+        raise module.RunnerClientError("result_zip_not_available_after_retries:job123:http_error:404:not_ready")
+
+    monkeypatch.setattr(module, "_download_result_zip_with_retries", raise_missing_result)
+    client = _FakeClient([])
+
+    result_zip_path, extracted_dir, returned_attempts_path = module._maybe_download_terminal_result_zip(
+        client,
+        "job123",
+        tmp_path,
+        terminal_state="error",
+    )
+
+    assert result_zip_path is None
+    assert extracted_dir is None
+    assert returned_attempts_path == attempts_path
+    attempts = json.loads(attempts_path.read_text(encoding="utf-8"))
+    assert attempts[0]["result"] == "error"

@@ -1,4 +1,4 @@
-# Version: 0.6.13-webui.1
+# Version: 0.6.13-stats.3
 """Stats helpers for the Runner.
 
 These functions are intentionally side-effect free except for updating Runner cache
@@ -116,6 +116,18 @@ def stats_dict(runner: object) -> Dict[str, Any]:
     jobs_bytes = get_jobs_dir_bytes_cached(runner)
 
     addon_version = str(getattr(runner, "addon_version", ""))
+    package_profiles = {"profile_count": 0, "ready_count": 0}
+    package_cache = {"status": "unavailable"}
+    try:
+        if hasattr(runner, "list_package_profiles"):
+            package_profiles = runner.list_package_profiles()
+    except Exception:
+        package_profiles = {"profile_count": 0, "ready_count": 0}
+    try:
+        if hasattr(runner, "package_cache_summary"):
+            package_cache = runner.package_cache_summary()
+    except Exception:
+        package_cache = {"status": "error"}
 
     return {
         "runner_version": addon_version,
@@ -132,4 +144,18 @@ def stats_dict(runner: object) -> Dict[str, Any]:
         "api_allow_cidrs": list(getattr(runner, "api_allow_cidrs", [])),
         "bind_host": str(getattr(runner, "bind_host", "")),
         "bind_port": int(getattr(runner, "bind_port", 0)),
+        "package_profiles_enabled": bool(getattr(runner, "package_profiles_enabled", True)),
+        "package_profile_default": str(getattr(runner, "package_profile_default", "") or ""),
+        "package_profile_count": int(package_profiles.get("profile_count", 0) or 0),
+        "package_profiles_ready_count": int(package_profiles.get("ready_count", 0) or 0),
+        "package_cache_status": str(package_cache.get("status") or "unknown"),
+        "package_cache_private_bytes": int(package_cache.get("private_bytes", 0) or 0),
+        "package_cache_public_bytes": int(package_cache.get("public_bytes", 0) or 0),
+        "package_cache_max_bytes": int(package_cache.get("package_cache_max_bytes", 0) or 0),
+        "package_cache_over_limit": bool(package_cache.get("over_limit", False)),
+        "package_cache_last_action_kind": package_cache.get("last_action_kind"),
+        "package_cache_last_action_reason": package_cache.get("last_action_reason"),
+        "package_cache_last_prune_status": package_cache.get("last_prune_status"),
+        "package_cache_last_prune_removed": int(package_cache.get("last_prune_removed", 0) or 0),
+        "package_venv_count": int(package_cache.get("venv_count", 0) or 0),
     }

@@ -1,3 +1,4 @@
+# Version: 0.3.0-client.1
 """HTTP client for the Pythonista Job Runner add-on API."""
 
 from __future__ import annotations
@@ -73,6 +74,45 @@ class RunnerClient:
     def support_bundle(self) -> dict:
         """Return redacted support bundle from add-on API."""
         return self._json_get("/support_bundle.json")
+
+    def package_summary(self) -> dict:
+        """Return package subsystem summary payload."""
+        return self._json_get("/packages/summary.json")
+
+    def package_profiles(self) -> dict:
+        """Return package profile inventory payload."""
+        return self._json_get("/package_profiles.json")
+
+    def package_cache(self) -> dict:
+        """Return package cache summary payload."""
+        return self._json_get("/packages/cache.json")
+
+    def build_package_profile(self, profile_name: str = "", rebuild: bool = False) -> dict:
+        """Build or rebuild one named package profile."""
+        payload = {"rebuild": bool(rebuild)}
+        if profile_name.strip():
+            payload["profile_name"] = profile_name.strip()
+        return self._json_post("/package_profiles/build", payload)
+
+    def prune_package_cache(self, reason: str = "manual") -> dict:
+        """Request package cache prune."""
+        return self._json_post("/packages/cache/prune", {"reason": str(reason or "manual")})
+
+    def purge_package_cache(
+        self,
+        reason: str = "manual",
+        include_venvs: bool = False,
+        include_imported_wheels: bool = False,
+    ) -> dict:
+        """Request package cache purge."""
+        return self._json_post(
+            "/packages/cache/purge",
+            {
+                "reason": str(reason or "manual"),
+                "include_venvs": bool(include_venvs),
+                "include_imported_wheels": bool(include_imported_wheels),
+            },
+        )
 
     def purge(self, states: list[str], older_than_hours: int = 0, dry_run: bool = False) -> dict:
         """Purge jobs matching selected states."""

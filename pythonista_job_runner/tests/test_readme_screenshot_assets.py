@@ -1,4 +1,4 @@
-# Version: 0.6.12-docs.2
+# Version: 0.6.13-docs.3
 """Checks screenshot assets embedded by the root README exist and are usable."""
 
 from __future__ import annotations
@@ -17,6 +17,8 @@ ALT_TEXT_KEYWORDS = {
     '01_addon_store.png': ('add-on', 'store'),
     '02_config_token.png': ('configuration', 'token'),
     '03_webui_jobs.png': ('web ui', 'jobs'),
+    '04_packages_overview.png': ('package', 'cache'),
+    '05_package_profiles.png': ('package', 'profile'),
 }
 
 

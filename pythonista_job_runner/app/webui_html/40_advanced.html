@@ -45,6 +45,38 @@
             </div>
           </div>
         </details>
+        <details open>
+          <summary>Package storage</summary>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Persistent package cache</div>
+                <div class="item-description">Inspect usage, prune to the configured size cap, or purge caches without touching running jobs.</div>
+              </div>
+              <div class="item-actions">
+                <button type="button" class="small tertiary" data-action="refresh-package-cache">Refresh</button>
+                <button type="button" class="small tertiary" data-action="prune-package-cache">Prune</button>
+                <button type="button" class="small danger" data-action="purge-package-cache">Purge caches</button>
+              </div>
+            </div>
+            <div class="field-hint" id="package_cache_summary">Package cache summary unavailable.</div>
+            <div id="package_cache_list" class="stack-list" aria-live="polite"></div>
+          </div>
+        </details>
+        <details open>
+          <summary>Package profiles</summary>
+          <div class="field-shell">
+            <div class="item-row">
+              <div class="item-copy">
+                <div class="item-title">Reusable package profiles</div>
+                <div class="item-description">Build and reuse named package environments from /config/package_profiles.</div>
+              </div>
+              <button type="button" class="small tertiary" data-action="refresh-package-profiles">Refresh</button>
+            </div>
+            <div class="field-hint" id="package_profiles_summary">No package profiles loaded yet.</div>
+            <div id="package_profiles_list" class="stack-list" aria-live="polite"></div>
+          </div>
+        </details>
       </div>
     </div>
   </div>

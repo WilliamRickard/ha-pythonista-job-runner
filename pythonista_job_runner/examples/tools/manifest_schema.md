@@ -1,4 +1,4 @@
-Version: 0.6.13-examples.1
+Version: 0.6.13-examples.2
 
 # Manifest schema notes
 
@@ -14,7 +14,7 @@ Top-level keys:
 Each example entry must contain:
 - `id`: folder name such as `01_hello_world`
 - `order`: numeric sort order matching the folder prefix
-- `track`: `core` or `toolchain`
+- `track`: `core`, `packages`, or `toolchain`
 - `title`: user-facing title
 - `status`: `scaffold`, `implemented`, or `validated`
 - `requires_toolchain`: boolean
@@ -24,4 +24,4 @@ Each example entry must contain:
 - `job_zip`: relative path to the built zip file
 - `notes`: short implementation note
 
-The Phase 1 validator enforces this shape directly in Python so it stays dependency-light.
+The validator also understands optional checked-in `expected_result/`, `expected_result.zip`, and `expected_result_manifest.json` artefacts when an example includes deterministic outputs.

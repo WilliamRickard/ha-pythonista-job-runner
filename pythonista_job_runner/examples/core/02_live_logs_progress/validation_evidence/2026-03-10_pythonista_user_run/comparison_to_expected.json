@@ -1,0 +1,47 @@
+{
+  "_version": "0.6.13-examples.7",
+  "all_compared_files_matched": true,
+  "compare_files": [
+    {
+      "actual_sha256": "0dbb33ebb817b1ae708152b2e76d0bb749ff5042f0a2c23225e04b1da521363c",
+      "actual_size": 114,
+      "expected_sha256": "0dbb33ebb817b1ae708152b2e76d0bb749ff5042f0a2c23225e04b1da521363c",
+      "expected_size": 114,
+      "matched": true,
+      "path": "outputs/progress_summary.json"
+    },
+    {
+      "actual_sha256": "335153d7cb027f861acbe5cee9b3fbe8ad71672f46ee4dc2de676a7c69fc9969",
+      "actual_size": 235,
+      "expected_sha256": "335153d7cb027f861acbe5cee9b3fbe8ad71672f46ee4dc2de676a7c69fc9969",
+      "expected_size": 235,
+      "matched": true,
+      "path": "outputs/progress_timeline.txt"
+    },
+    {
+      "actual_sha256": "90a09c6d568ae0fccdbe747d7e662a03ddbd3ae631cb8e10526afa2b26d11e7b",
+      "actual_size": 276,
+      "expected_sha256": "90a09c6d568ae0fccdbe747d7e662a03ddbd3ae631cb8e10526afa2b26d11e7b",
+      "expected_size": 276,
+      "matched": true,
+      "path": "stdout.txt"
+    },
+    {
+      "actual_sha256": "e89861ec0960c3f8ba7d2aa14745ecd3f21724d18998f569e77562abe333609d",
+      "actual_size": 84,
+      "expected_sha256": "e89861ec0960c3f8ba7d2aa14745ecd3f21724d18998f569e77562abe333609d",
+      "expected_size": 84,
+      "matched": true,
+      "path": "stderr.txt"
+    }
+  ],
+  "example_id": "02_live_logs_progress",
+  "validated_run": {
+    "created_utc": "2026-03-10T11:51:36Z",
+    "duration_seconds": 9,
+    "exit_code": 0,
+    "finished_utc": "2026-03-10T11:51:45Z",
+    "job_id": "e68d9d1fefed489e906f64308b43dbb2",
+    "state": "done"
+  }
+}

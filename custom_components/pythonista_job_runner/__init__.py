@@ -1,3 +1,4 @@
+# Version: 0.3.0-init.1
 """Home Assistant integration for Pythonista Job Runner."""
 
 from __future__ import annotations
@@ -126,6 +127,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up component root."""
+    hass.data.setdefault(DOMAIN, {})
+    await async_register_services(hass)
     return True
 
 

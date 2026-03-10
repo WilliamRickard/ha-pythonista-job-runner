@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.10 -->
+<!-- Version: 0.6.13-docs.8 -->
 # Release channels
 
 This repository uses a simple two-channel model.
@@ -26,3 +26,7 @@ This repository uses a simple two-channel model.
 
 - Choose **Stable** when you want the default recommendation.
 - Choose **Next** when you want earlier features and are happy to test rougher edges.
+
+## Release sign-off
+
+Before promoting from **Next** to **Stable**, complete the checklist in [`RELEASE_READINESS.md`](RELEASE_READINESS.md). That checklist is the release gate for package-mode changes, upgrade validation, backup and restore checks, and native-host smoke testing.

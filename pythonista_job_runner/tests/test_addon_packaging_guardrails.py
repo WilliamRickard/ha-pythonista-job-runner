@@ -1,4 +1,4 @@
-# Version: 0.6.12-packaging-tests.1
+# Version: 0.6.13-packaging-tests.1
 """Guardrail tests for add-on packaging, architecture, and security config alignment."""
 
 from __future__ import annotations
@@ -151,3 +151,20 @@ def test_workflow_runs_root_pytest() -> None:
 
     assert "pytest -q" in workflow
     assert "cd pythonista_job_runner" not in workflow
+
+
+def test_config_maps_public_addon_config_to_config_path() -> None:
+    config_text = _read("pythonista_job_runner/config.yaml")
+
+    assert "map:" in config_text
+    assert "- type: addon_config" in config_text
+    assert "read_only: false" in config_text
+    assert "path: /config" in config_text
+
+
+def test_docs_describe_package_storage_foundation() -> None:
+    docs = _read("pythonista_job_runner/DOCS.md")
+
+    assert "/data/pythonista_job_runner/" in docs
+    assert "Package storage foundation" in docs
+    assert "`addon_config:rw`" in docs

@@ -1,0 +1,5 @@
+{
+  "example_id": "04_cancel_long_running_job",
+  "heartbeat_count_completed": 90,
+  "status": "completed_without_cancellation"
+}

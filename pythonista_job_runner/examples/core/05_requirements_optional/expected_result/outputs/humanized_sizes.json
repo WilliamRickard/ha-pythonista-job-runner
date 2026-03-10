@@ -1,0 +1,11 @@
+{
+  "dependency": "pjr_demo_formatsize",
+  "example_id": "05_requirements_optional",
+  "files": {
+    "backup_snapshot.tar": "512 Bytes",
+    "camera_archive.zip": "1.5 kB",
+    "grafana_export.json": "1.2 MB"
+  },
+  "requirements_source": "local wheel",
+  "status": "dependency_available"
+}

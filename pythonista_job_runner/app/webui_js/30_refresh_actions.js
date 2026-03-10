@@ -118,6 +118,172 @@ Client IP: ${ip || ""}`;
     toast("ok", "Copied", "Base URL copied to clipboard");
   }
 
+  function renderPackageCache(payload) {
+    if (!els.package_cache_summary || !els.package_cache_list) return;
+
+    const data = payload || {};
+    const privateBytes = Number(data.private_bytes || 0);
+    const maxBytes = Number(data.package_cache_max_bytes || 0);
+    const overLimit = !!data.over_limit;
+    const activeKeys = Array.isArray(data.active_environment_keys) ? data.active_environment_keys : [];
+    let summary = `${fmtBytes(privateBytes)} used`;
+    if (maxBytes > 0) summary += ` of ${fmtBytes(maxBytes)}`;
+    if (overLimit) summary += `, over limit`;
+    if (data.last_action_kind) summary += `, last ${data.last_action_kind} ${data.last_action_reason || ""}`.trimEnd();
+    if (activeKeys.length) summary += `, ${activeKeys.length} active envs protected`;
+    els.package_cache_summary.textContent = summary;
+
+    els.package_cache_list.textContent = "";
+    const entries = [];
+    const breakdown = data.breakdown || {};
+    entries.push(["pip cache", fmtBytes(Number(breakdown.cache_pip_bytes || 0))]);
+    entries.push(["HTTP cache", fmtBytes(Number(breakdown.cache_http_bytes || 0))]);
+    entries.push(["Wheelhouse downloaded", fmtBytes(Number(breakdown.wheelhouse_downloaded_bytes || 0))]);
+    entries.push(["Wheelhouse built", fmtBytes(Number(breakdown.wheelhouse_built_bytes || 0))]);
+    entries.push(["Wheelhouse imported", fmtBytes(Number(breakdown.wheelhouse_imported_bytes || 0))]);
+    entries.push(["Reusable venvs", fmtBytes(Number(breakdown.venv_bytes || 0))]);
+    entries.push(["Package reports", fmtBytes(Number(breakdown.jobs_package_reports_bytes || 0))]);
+    entries.push(["Last prune", `${data.last_prune_status || ""}${data.last_prune_removed !== undefined && data.last_prune_removed !== null ? ` (${String(data.last_prune_removed)} removed)` : ""}`.trim()]);
+
+    for (const [label, value] of entries) {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      const copy = document.createElement("div");
+      copy.className = "item-copy";
+      const title = document.createElement("div");
+      title.className = "item-title";
+      title.textContent = String(label || "");
+      const desc = document.createElement("div");
+      desc.className = "item-description";
+      desc.textContent = String(value || "");
+      copy.append(title, desc);
+      row.append(copy);
+      els.package_cache_list.appendChild(row);
+    }
+  }
+
+  async function refreshPackageCache() {
+    const payload = await api("packages/cache.json");
+    renderPackageCache(payload || {});
+  }
+
+  async function prunePackageCache() {
+    const payload = await api("packages/cache/prune", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "manual" }),
+    });
+    toast("ok", "Package cache pruned", `${String(payload.removed || 0)} items removed`);
+    await refreshPackageCache();
+    await refreshAll({ silent: true });
+  }
+
+  async function purgePackageCache() {
+    const payload = await api("packages/cache/purge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: "manual", include_venvs: false, include_imported_wheels: false }),
+    });
+    toast("ok", "Package caches purged", `${String(payload.removed || 0)} items removed`);
+    await refreshPackageCache();
+    await refreshAll({ silent: true });
+  }
+
+  function renderPackageProfiles(payload) {
+    if (!els.package_profiles_summary || !els.package_profiles_list) return;
+
+    const data = payload || {};
+    const profiles = Array.isArray(data.profiles) ? data.profiles : [];
+    const defaultProfile = String(data.default_profile || "");
+    const readyCount = Number(data.ready_count || 0);
+    const enabled = !!data.enabled;
+
+    let summary = `${profiles.length} profiles`;
+    if (enabled) summary += `, ${readyCount} ready`;
+    if (defaultProfile) summary += `, default ${defaultProfile}`;
+    if (!enabled) summary += ", disabled in add-on config";
+    els.package_profiles_summary.textContent = summary;
+
+    els.package_profiles_list.textContent = "";
+    if (!profiles.length) {
+      const empty = document.createElement("div");
+      empty.className = "field-hint";
+      empty.textContent = "Create folders under /config/package_profiles with requirements.lock or requirements.txt to define reusable profiles.";
+      els.package_profiles_list.appendChild(empty);
+      return;
+    }
+
+    for (const profile of profiles) {
+      const row = document.createElement("div");
+      row.className = "item-row";
+
+      const copy = document.createElement("div");
+      copy.className = "item-copy";
+
+      const title = document.createElement("div");
+      title.className = "item-title";
+      const name = String(profile.display_name || profile.name || "profile");
+      const state = String(profile.status || (profile.ready ? "ready" : "not_built"));
+      title.textContent = `${name} (${state})`;
+
+      const desc = document.createElement("div");
+      desc.className = "item-description";
+      const parts = [];
+      if (profile.name) parts.push(`Name: ${profile.name}`);
+      if (profile.requirements_kind) parts.push(`Source: ${profile.requirements_kind}`);
+      if (profile.environment_key) parts.push(`Env key: ${profile.environment_key}`);
+      if (profile.last_build_utc) parts.push(`Last build: ${profile.last_build_utc}`);
+      if (profile.last_error) parts.push(`Last error: ${profile.last_error}`);
+      desc.textContent = parts.join(" • ");
+
+      copy.append(title, desc);
+
+      const actions = document.createElement("div");
+      actions.className = "item-actions";
+
+      const buildBtn = document.createElement("button");
+      buildBtn.type = "button";
+      buildBtn.className = "small tertiary";
+      buildBtn.setAttribute("data-action", "build-package-profile");
+      buildBtn.setAttribute("data-profile", String(profile.name || ""));
+      buildBtn.textContent = profile.ready ? "Refresh build" : "Build";
+
+      const rebuildBtn = document.createElement("button");
+      rebuildBtn.type = "button";
+      rebuildBtn.className = "small tertiary";
+      rebuildBtn.setAttribute("data-action", "rebuild-package-profile");
+      rebuildBtn.setAttribute("data-profile", String(profile.name || ""));
+      rebuildBtn.textContent = "Rebuild";
+
+      actions.append(buildBtn, rebuildBtn);
+      row.append(copy, actions);
+      els.package_profiles_list.appendChild(row);
+    }
+  }
+
+  async function refreshPackageProfiles() {
+    const payload = await api("package_profiles.json");
+    renderPackageProfiles(payload || {});
+  }
+
+  async function buildPackageProfile(profileName, rebuild) {
+    const name = String(profileName || "").trim();
+    if (!name) {
+      toast("err", "No profile selected", "Choose a package profile first.");
+      return;
+    }
+    const payload = await api("package_profiles/build", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile: name, rebuild: !!rebuild }),
+    });
+    const actionText = rebuild ? "Rebuilt" : "Built";
+    const status = String((payload && payload.status) || "unknown");
+    toast(status === "ready" ? "ok" : "err", actionText, `${name}: ${status}`);
+    await refreshPackageProfiles();
+    await refreshAll({ silent: true });
+  }
+
   async function copyEndpoint(btn) {
     const val = btn.getAttribute("data-copy") || "";
     if (!val) return;

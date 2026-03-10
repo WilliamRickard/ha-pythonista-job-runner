@@ -1,0 +1,6 @@
+timestamp,device,reading,band,reading_delta_from_average
+2026-01-01T08:00:00Z,sensor_a,72,medium,8
+2026-01-01T08:05:00Z,sensor_b,55,low,-9
+2026-01-01T08:10:00Z,sensor_c,83,high,19
+2026-01-01T08:15:00Z,sensor_a,61,medium,-3
+2026-01-01T08:20:00Z,sensor_b,47,low,-17

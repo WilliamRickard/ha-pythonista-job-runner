@@ -1,3 +1,4 @@
+# Version: 0.3.0-tests-custom-integration.1
 """Validation tests for custom integration baseline structure."""
 
 from __future__ import annotations
@@ -36,5 +37,5 @@ def test_required_files_include_diagnostics() -> None:
 
 def test_service_translation_keys_present() -> None:
     data = json.loads(Path("custom_components/pythonista_job_runner/translations/en.json").read_text(encoding="utf-8"))
-    for key in ["purge_jobs", "purge_done_jobs", "purge_failed_jobs", "refresh", "cancel_job"]:
+    for key in ["purge_jobs", "purge_done_jobs", "purge_failed_jobs", "refresh", "cancel_job", "build_package_profile", "prune_package_cache", "purge_package_cache"]:
         assert key in data.get("services", {})

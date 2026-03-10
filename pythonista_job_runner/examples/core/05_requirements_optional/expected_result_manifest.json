@@ -1,0 +1,39 @@
+{
+  "_version": "0.6.13-examples.4",
+  "compare_files": [
+    "outputs/humanized_sizes.json",
+    "outputs/requirements_status.json",
+    "outputs/summary.md",
+    "stdout.txt",
+    "stderr.txt"
+  ],
+  "description": "Deterministic reference files for the stable success-path subset of the optional-requirements result.",
+  "example_id": "05_requirements_optional",
+  "files": [
+    {
+      "path": "outputs/humanized_sizes.json",
+      "sha256": "cf795a6ed0ba6dcc11d89394ee83074525a443c551519e15f2fe2fca293a36c1",
+      "size": 292
+    },
+    {
+      "path": "outputs/requirements_status.json",
+      "sha256": "520c6026d68219bf4e06318f7e563241c6255d89767046137c7f868906767a63",
+      "size": 144
+    },
+    {
+      "path": "outputs/summary.md",
+      "sha256": "b4d59a28625cfac271f1b1b73528eb7d7074aa9719073e5076f356fd147151ea",
+      "size": 243
+    },
+    {
+      "path": "stdout.txt",
+      "sha256": "d75cbb7ab0fa12c9d99fb7c822a067d1b3479b2d09e8539c04fb38018ba9b4e6",
+      "size": 138
+    },
+    {
+      "path": "stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    }
+  ]
+}

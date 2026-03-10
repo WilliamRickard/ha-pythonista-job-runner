@@ -71,6 +71,18 @@
     "cancel_job": {
       "name": "Cancel job",
       "description": "Request cancellation of a queued or running job."
+    },
+    "build_package_profile": {
+      "name": "Compilar perfil de paquetes",
+      "description": "Compila o recompila un perfil de paquetes con nombre dentro del almacén de paquetes del add-on."
+    },
+    "prune_package_cache": {
+      "name": "Recortar caché de paquetes",
+      "description": "Reduce el almacenamiento privado de paquetes hacia el límite de caché configurado."
+    },
+    "purge_package_cache": {
+      "name": "Purgar caché de paquetes",
+      "description": "Elimina artefactos de paquetes en caché, con entornos reutilizables y ruedas importadas opcionales."
     }
   }
 }

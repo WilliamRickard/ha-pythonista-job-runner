@@ -1,4 +1,4 @@
-# Version: 0.6.13-examples-runner.4
+# Version: 0.6.13-examples-runner.6
 """Standalone Pythonista runner for Pythonista Job Runner example zips."""
 
 from __future__ import annotations
@@ -83,6 +83,7 @@ class JobRunArtifacts:
     submitted_json_path: Path
     extracted_dir: Optional[Path]
     download_attempts_path: Path
+    run_bundle_zip_path: Path
 
 
 class RunnerClient:
@@ -451,6 +452,20 @@ def _write_json(path: Path, payload: Any) -> Path:
     return path
 
 
+def _zip_directory(source_dir: Path, destination_zip: Path) -> Path:
+    """Zip a directory recursively, preserving the top-level folder name."""
+    destination_zip.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(destination_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(source_dir.rglob("*")):
+            if path == destination_zip:
+                continue
+            if path.is_dir():
+                continue
+            arcname = Path(source_dir.name) / path.relative_to(source_dir)
+            archive.write(path, arcname.as_posix())
+    return destination_zip
+
+
 def _print_text_chunk(prefix: str, text: str) -> None:
     """Print a text chunk with an optional prefix per line."""
     for line in text.splitlines():
@@ -604,6 +619,44 @@ def _download_result_zip_with_retries(
     )
 
 
+def _maybe_download_terminal_result_zip(
+    client: RunnerClient,
+    job_id: str,
+    run_dir: Path,
+    *,
+    terminal_state: str,
+) -> tuple[Optional[Path], Optional[Path], Path]:
+    """Try to download a result zip for any terminal state and extract it when present."""
+    download_attempts_path = run_dir / "download_attempts.json"
+    if terminal_state not in {"done", "error", "cancelled", "canceled"}:
+        _write_json(
+            download_attempts_path,
+            [
+                {
+                    "attempt": 0,
+                    "result": "skipped",
+                    "reason": f"terminal_state:{terminal_state}",
+                }
+            ],
+        )
+        return None, None, download_attempts_path
+
+    try:
+        result_zip_path, download_attempts_path = _download_result_zip_with_retries(
+            client,
+            job_id,
+            run_dir,
+        )
+    except RunnerClientError as exc:
+        if terminal_state == "done":
+            raise
+        print(f"Result zip not available for terminal state {terminal_state}: {exc}")
+        return None, None, download_attempts_path
+
+    extracted_dir = _extract_zip_safely(result_zip_path, run_dir / "result_extracted")
+    return result_zip_path, extracted_dir, download_attempts_path
+
+
 def run_selected_zip() -> JobRunArtifacts:
     """Prompt for settings and a job zip, then submit the job and save artefacts."""
     host = _ensure_keychain_value(
@@ -650,34 +703,25 @@ def run_selected_zip() -> JobRunArtifacts:
     status = _stream_job_until_terminal(client, submitted)
     status_json_path = _write_json(run_dir / "status.json", status)
 
-    result_zip_path: Optional[Path] = None
-    extracted_dir: Optional[Path] = None
-    download_attempts_path = run_dir / "download_attempts.json"
-    if str(status.get("state")) == "done":
-        result_zip_path, download_attempts_path = _download_result_zip_with_retries(
-            client,
-            submitted.job_id,
-            run_dir,
-        )
-        extracted_dir = _extract_zip_safely(result_zip_path, run_dir / "result_extracted")
+    terminal_state = str(status.get("state"))
+    result_zip_path, extracted_dir, download_attempts_path = _maybe_download_terminal_result_zip(
+        client,
+        submitted.job_id,
+        run_dir,
+        terminal_state=terminal_state,
+    )
+    if result_zip_path is not None:
         print(f"Result zip saved to: {result_zip_path}")
-        print(f"Result extracted to: {extracted_dir}")
     else:
-        _write_json(
-            download_attempts_path,
-            [
-                {
-                    "attempt": 0,
-                    "result": "skipped",
-                    "reason": f"terminal_state:{status.get('state')}",
-                }
-            ],
-        )
-        print(f"Job ended without result zip. Final state: {status.get('state')}")
+        print(f"No result zip saved. Final state: {terminal_state}")
+    if extracted_dir is not None:
+        print(f"Result extracted to: {extracted_dir}")
 
+    run_bundle_zip_path = _zip_directory(run_dir, run_dir.with_suffix(".zip"))
     print(f"Submitted JSON saved to: {submitted_json_path}")
     print(f"Status JSON saved to: {status_json_path}")
     print(f"Download attempts JSON saved to: {download_attempts_path}")
+    print(f"Run folder zip saved to: {run_bundle_zip_path}")
     print(f"Run folder ready: {run_dir}")
     return JobRunArtifacts(
         run_dir=run_dir,
@@ -687,6 +731,7 @@ def run_selected_zip() -> JobRunArtifacts:
         submitted_json_path=submitted_json_path,
         extracted_dir=extracted_dir,
         download_attempts_path=download_attempts_path,
+        run_bundle_zip_path=run_bundle_zip_path,
     )
 
 

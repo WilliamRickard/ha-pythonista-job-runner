@@ -1,4 +1,4 @@
-# Version: 0.6.13-examples-runner.4
+# Version: 0.6.13-examples-runner.6
 """Compatibility wrapper for the shared Pythonista example runner script."""
 
 from __future__ import annotations

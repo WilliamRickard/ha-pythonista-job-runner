@@ -1,4 +1,4 @@
-# Version: 0.6.13-config.1
+# Version: 0.6.13-config.2
 name: "Pythonista Job Runner"
 version: "0.6.13"
 slug: "pythonista_job_runner"
@@ -33,6 +33,11 @@ host_ipc: false
 host_dbus: false
 full_access: false
 
+map:
+  - type: addon_config
+    read_only: false
+    path: /config
+
 ports:
   8787/tcp: 8787
 ports_description:
@@ -62,6 +67,18 @@ options:
     max_threads: 1
   python:
     install_requirements: false
+    dependency_mode: "per_job"
+    package_cache_enabled: true
+    package_cache_max_mb: 2048
+    package_cache_prune_on_start: true
+    package_profiles_enabled: true
+    package_profile_default: ""
+    package_allow_public_wheelhouse: true
+    package_public_wheelhouse_subdir: "wheel_uploads"
+    package_require_hashes: false
+    package_offline_prefer_local: true
+    venv_reuse_enabled: true
+    venv_max_count: 20
     pip_timeout_seconds: 120
     pip_index_url: ""
     pip_extra_index_url: ""
@@ -112,6 +129,18 @@ schema:
     max_threads: "int(1,256)"
   python:
     install_requirements: bool
+    dependency_mode: "list(disabled|per_job|profile)"
+    package_cache_enabled: bool
+    package_cache_max_mb: "int(256,65536)"
+    package_cache_prune_on_start: bool
+    package_profiles_enabled: bool
+    package_profile_default: str
+    package_allow_public_wheelhouse: bool
+    package_public_wheelhouse_subdir: str
+    package_require_hashes: bool
+    package_offline_prefer_local: bool
+    venv_reuse_enabled: bool
+    venv_max_count: "int(0,500)"
     pip_timeout_seconds: "int(10,3600)"
     pip_index_url: str
     pip_extra_index_url: str

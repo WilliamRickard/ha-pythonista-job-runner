@@ -1,3 +1,4 @@
+# Version: 0.3.0-system-health.1
 """System health support for Pythonista Job Runner integration."""
 
 from __future__ import annotations
@@ -23,6 +24,8 @@ async def system_health_info(hass: HomeAssistant) -> dict:
     coord = first["coordinator"]
     data = coord.data or {}
     stats = data.get("stats", {})
+    package_summary = data.get("package_summary", {})
+    package_info = package_summary.get("summary", {}) if isinstance(package_summary, dict) else {}
     return {
         "configured": True,
         "base_url": first["base_url"],
@@ -31,4 +34,8 @@ async def system_health_info(hass: HomeAssistant) -> dict:
         "jobs_queued": stats.get("jobs_queued"),
         "jobs_error": stats.get("jobs_error"),
         "disk_free_bytes": stats.get("disk_free_bytes"),
+        "package_cache_private_bytes": package_info.get("cache_private_bytes", stats.get("package_cache_private_bytes")),
+        "package_venv_count": package_info.get("venv_count", stats.get("package_venv_count")),
+        "package_default_profile": package_info.get("default_profile", stats.get("package_profile_default")),
+        "package_last_prune_status": package_info.get("last_prune_status", stats.get("package_cache_last_prune_status")),
     }

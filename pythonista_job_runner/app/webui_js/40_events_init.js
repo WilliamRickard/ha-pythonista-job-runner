@@ -39,6 +39,12 @@ function toggleAuto() {
         }
         if (action === "close-settings") closeSettings();
         if (action === "open-advanced") openAdvanced();
+        if (action === "refresh-package-cache") await refreshPackageCache();
+        if (action === "prune-package-cache") await prunePackageCache();
+        if (action === "purge-package-cache") await purgePackageCache();
+        if (action === "refresh-package-profiles") await refreshPackageProfiles();
+        if (action === "build-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", false);
+        if (action === "rebuild-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", true);
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
@@ -547,6 +553,10 @@ function toggleAuto() {
     els.adv_overlay = document.getElementById("adv_overlay");
     els.adv_modal = document.getElementById("adv_modal");
     els.adv_close = document.getElementById("adv_close");
+    els.package_cache_summary = document.getElementById("package_cache_summary");
+    els.package_cache_list = document.getElementById("package_cache_list");
+    els.package_profiles_summary = document.getElementById("package_profiles_summary");
+    els.package_profiles_list = document.getElementById("package_profiles_list");
     els.auto = document.getElementById("auto");
     els.btn_back = document.getElementById("btn_back");
     els.btn_cancel = document.getElementById("btn_cancel");

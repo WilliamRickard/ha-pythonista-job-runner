@@ -1,3 +1,4 @@
+# Version: 0.6.13-tests-runner-core-options.1
 """Tests for runner_core helpers that do not require job execution."""
 
 from __future__ import annotations
@@ -64,3 +65,36 @@ def test_hashlib_sha256_bytes_known_values():
     assert runner_core.hashlib_sha256_bytes(b"hello world") == (
         "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
     )
+
+
+def test_read_options_grouped_json_with_python_package_fields(temp_data_dir):
+    runner_core.OPTIONS_PATH.write_text(
+        json.dumps(
+            {
+                "python": {
+                    "dependency_mode": "profile",
+                    "package_cache_enabled": True,
+                    "package_public_wheelhouse_subdir": "wheel_uploads",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert runner_core.read_options() == {
+        "dependency_mode": "profile",
+        "package_cache_enabled": True,
+        "package_public_wheelhouse_subdir": "wheel_uploads",
+    }
+
+
+def test_runner_bootstraps_package_store_on_start(temp_data_dir, monkeypatch):
+    public_root = temp_data_dir / "addon_config"
+    public_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(runner_core._package_store, "PUBLIC_CONFIG_ROOT", public_root)
+
+    runner = runner_core.Runner({}, start_reaper=False)
+
+    assert runner.package_store_paths.private_root == temp_data_dir / "pythonista_job_runner"
+    assert runner.package_store_paths.package_index_path.is_file()
+    assert runner.package_store_bootstrap["public_available"] is True
+    assert runner.package_store_paths.public_profiles_dir.is_dir()

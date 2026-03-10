@@ -1,3 +1,4 @@
+# Version: 0.3.0-tests-custom-integration-runtime-guards.1
 """Targeted runtime and guardrail tests for Step 6 custom integration fixes."""
 
 from __future__ import annotations
@@ -77,5 +78,20 @@ def test_service_registration_is_guarded_per_service() -> None:
         "SERVICE_PURGE_FAILED_JOBS",
         "SERVICE_REFRESH",
         "SERVICE_CANCEL_JOB",
+        "SERVICE_BUILD_PACKAGE_PROFILE",
+        "SERVICE_PRUNE_PACKAGE_CACHE",
+        "SERVICE_PURGE_PACKAGE_CACHE",
     ]:
         assert f"if not hass.services.has_service(DOMAIN, {service_name}):" in text
+
+
+def test_client_exposes_package_management_methods() -> None:
+    text = Path("custom_components/pythonista_job_runner/client.py").read_text(encoding="utf-8")
+    for method in ["package_summary", "package_profiles", "package_cache", "build_package_profile", "prune_package_cache", "purge_package_cache"]:
+        assert f"def {method}" in text
+
+
+def test_sensor_platform_exposes_package_diagnostics_entities() -> None:
+    text = Path("custom_components/pythonista_job_runner/sensor.py").read_text(encoding="utf-8")
+    for key in ["package_cache_size", "package_venv_count", "package_last_prune_status", "package_default_profile"]:
+        assert key in text

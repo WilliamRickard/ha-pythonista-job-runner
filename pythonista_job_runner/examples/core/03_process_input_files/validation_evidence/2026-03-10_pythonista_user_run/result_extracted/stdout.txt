@@ -1,0 +1,7 @@
+Loaded 5 input rows from data/sample_readings.csv
+Processed sensor_a reading at 2026-01-01T08:00:00Z: 72 -> medium
+Processed sensor_b reading at 2026-01-01T08:05:00Z: 55 -> low
+Processed sensor_c reading at 2026-01-01T08:10:00Z: 83 -> high
+Processed sensor_a reading at 2026-01-01T08:15:00Z: 61 -> medium
+Processed sensor_b reading at 2026-01-01T08:20:00Z: 47 -> low
+Wrote outputs/processed.csv, outputs/stats.json, and outputs/summary.md

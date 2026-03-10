@@ -1,0 +1,4 @@
+Cached per-job requirements example completed.
+backup_snapshot.tar: 512 Bytes
+camera_archive.zip: 1.5 kB
+grafana_export.json: 1.2 MB

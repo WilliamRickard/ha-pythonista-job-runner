@@ -1,7 +1,7 @@
 {
-  "_version": "0.6.13-examples.4",
+  "_version": "0.6.13-examples.8",
   "schema_version": 1,
-  "examples_version": 2,
+  "examples_version": 5,
   "tracks": [
     {
       "id": "core",
@@ -12,6 +12,11 @@
       "id": "toolchain",
       "title": "Toolchain examples",
       "requires_toolchain": true
+    },
+    {
+      "id": "packages",
+      "title": "Package examples",
+      "requires_toolchain": false
     }
   ],
   "examples": [
@@ -33,52 +38,52 @@
       "order": 2,
       "track": "core",
       "title": "Live logs and progress",
-      "status": "scaffold",
+      "status": "validated",
       "requires_toolchain": false,
       "folder": "core/02_live_logs_progress",
       "readme": "core/02_live_logs_progress/README.md",
       "job_src": "core/02_live_logs_progress/job_src",
       "job_zip": "core/02_live_logs_progress/job.zip",
-      "notes": "Scaffold placeholder for the live log streaming example."
+      "notes": "Implemented live log streaming example with deterministic reference artefacts and checked-in user validation evidence."
     },
     {
       "id": "03_process_input_files",
       "order": 3,
       "track": "core",
       "title": "Process input files",
-      "status": "scaffold",
+      "status": "validated",
       "requires_toolchain": false,
       "folder": "core/03_process_input_files",
       "readme": "core/03_process_input_files/README.md",
       "job_src": "core/03_process_input_files/job_src",
       "job_zip": "core/03_process_input_files/job.zip",
-      "notes": "Scaffold placeholder for the bundled input processing example."
+      "notes": "Implemented bundled CSV processing example with deterministic reference artefacts and checked-in user validation evidence. The deterministic CSV reference was corrected after user validation exposed a newline mismatch."
     },
     {
       "id": "04_cancel_long_running_job",
       "order": 4,
       "track": "core",
       "title": "Cancel long-running job",
-      "status": "scaffold",
+      "status": "implemented",
       "requires_toolchain": false,
       "folder": "core/04_cancel_long_running_job",
       "readme": "core/04_cancel_long_running_job/README.md",
       "job_src": "core/04_cancel_long_running_job/job_src",
       "job_zip": "core/04_cancel_long_running_job/job.zip",
-      "notes": "Scaffold placeholder for the cancellation workflow example."
+      "notes": "Implemented long-running cancellation example with signal handling and partial progress outputs. A completion-path user run is checked in, but the intended cancellation-path validation is still pending."
     },
     {
       "id": "05_requirements_optional",
       "order": 5,
       "track": "core",
       "title": "Optional requirements install",
-      "status": "scaffold",
+      "status": "implemented",
       "requires_toolchain": false,
       "folder": "core/05_requirements_optional",
       "readme": "core/05_requirements_optional/README.md",
       "job_src": "core/05_requirements_optional/job_src",
       "job_zip": "core/05_requirements_optional/job.zip",
-      "notes": "Scaffold placeholder for the optional requirements example."
+      "notes": "Implemented optional requirements example using a vendored local wheel via requirements.txt, so the success path no longer depends on PyPI access. A failure-path user run with requirements disabled is checked in, plus deterministic success-path reference artefacts. The success-path user run is still pending."
     },
     {
       "id": "06_python_package_and_tests",
@@ -144,6 +149,45 @@
       "job_src": "toolchain/10_python_orchestrates_native_binary/job_src",
       "job_zip": "toolchain/10_python_orchestrates_native_binary/job.zip",
       "notes": "Scaffold placeholder for the mixed-language orchestration example."
+    },
+    {
+      "id": "11_cached_per_job_requirements",
+      "order": 11,
+      "track": "packages",
+      "title": "Cached per-job requirements",
+      "status": "implemented",
+      "requires_toolchain": false,
+      "folder": "packages/11_cached_per_job_requirements",
+      "readme": "packages/11_cached_per_job_requirements/README.md",
+      "job_src": "packages/11_cached_per_job_requirements/job_src",
+      "job_zip": "packages/11_cached_per_job_requirements/job.zip",
+      "notes": "Package-focused example that should be run twice in per_job mode so the second run can demonstrate reusable environment attachment and package cache diagnostics."
+    },
+    {
+      "id": "12_offline_wheelhouse_install",
+      "order": 12,
+      "track": "packages",
+      "title": "Offline wheelhouse install",
+      "status": "implemented",
+      "requires_toolchain": false,
+      "folder": "packages/12_offline_wheelhouse_install",
+      "readme": "packages/12_offline_wheelhouse_install/README.md",
+      "job_src": "packages/12_offline_wheelhouse_install/job_src",
+      "job_zip": "packages/12_offline_wheelhouse_install/job.zip",
+      "notes": "Package-focused example that proves the public wheel upload to private wheelhouse flow without bundling the wheel inside the job zip."
+    },
+    {
+      "id": "13_named_package_profile_run",
+      "order": 13,
+      "track": "packages",
+      "title": "Named package profile run",
+      "status": "implemented",
+      "requires_toolchain": false,
+      "folder": "packages/13_named_package_profile_run",
+      "readme": "packages/13_named_package_profile_run/README.md",
+      "job_src": "packages/13_named_package_profile_run/job_src",
+      "job_zip": "packages/13_named_package_profile_run/job.zip",
+      "notes": "Package-focused example that proves profile mode by attaching a prepared named package profile with no job-local requirements.txt."
     }
   ]
 }

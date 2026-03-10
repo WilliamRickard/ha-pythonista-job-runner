@@ -1,0 +1,6 @@
+{
+  "dependency": "pjr_demo_formatsize",
+  "example_id": "05_requirements_optional",
+  "requirements_source": "local wheel",
+  "status": "ok"
+}
