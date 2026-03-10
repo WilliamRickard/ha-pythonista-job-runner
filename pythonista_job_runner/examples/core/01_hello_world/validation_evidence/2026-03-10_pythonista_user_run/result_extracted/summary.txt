@@ -1,0 +1,46 @@
+Pythonista Job Runner summary
+runner_version: 0.6.13
+job_id: 423d3e4f94864c37abbd9aa81bb2d07a
+created_utc: 2026-03-10T08:59:10Z
+started_utc: 2026-03-10T08:59:10Z
+finished_utc: 2026-03-10T08:59:11Z
+state: done
+phase: done
+exit_code: 0
+error: None
+
+limits:
+  cpu_percent: 25
+  cpu_limit_mode: single_core
+  cpu_count: 2
+  cpu_cpulimit_pct: 25
+  mem_mb: 4096
+  threads: 1
+  timeout_seconds: 3600
+
+outputs_total_files: 2
+outputs_total_bytes: 297
+outputs_truncated: False
+outputs_limit_reason: None
+outputs_max_files: 2000
+outputs_max_bytes: 209715200
+
+stdout_head:
+Starting example 01_hello_world
+Wrote outputs/hello.txt
+Wrote outputs/details.json
+Example 01_hello_world completed successfully
+
+
+stdout_tail:
+Starting example 01_hello_world
+Wrote outputs/hello.txt
+Wrote outputs/details.json
+Example 01_hello_world completed successfully
+
+
+stderr_head:
+
+
+stderr_tail:
+
