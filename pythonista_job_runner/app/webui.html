@@ -1,4 +1,4 @@
-<!doctype html><!-- VERSION: 0.6.12-webui.15 -->
+<!doctype html><!-- VERSION: 0.6.13-webui.1 -->
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -6,7 +6,7 @@
   <title>Pythonista Job Runner</title>
   <!-- Generated: edit webui_src.html, webui.css, webui_html/*.html, webui_js/*.js and run webui_build.py to regenerate webui.html -->
   <style>
-/* VERSION: 0.6.12-webui.15 */
+/* VERSION: 0.6.13-webui.1 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -414,6 +414,9 @@ button, .linkbtn{
   cursor: pointer;
   appearance: none;
   touch-action: manipulation;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   background: var(--chip);
   color: var(--text);
   border: 1px solid var(--line);
@@ -422,6 +425,7 @@ button, .linkbtn{
   min-height: 44px;
   font-size: var(--fs-sm);
   line-height: 1.1;
+  text-align:center;
 }
 
 
@@ -689,7 +693,7 @@ label{
 
 .detail-primary-actions{
   row-gap: 8px;
-  align-items:flex-start;
+  align-items:center;
 }
 
 .state-banner{
@@ -806,10 +810,10 @@ label{
 
 .queue-collapsible{padding:0;overflow:hidden;}
 .queue-details-shell{border:0;border-radius:inherit;background:transparent;padding:0;}
-.queue-details-shell summary{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.queue-details-shell summary{padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:12px;}
 .queue-details-shell summary::after{display:none;}
 .queue-summary-title{font-size:15px;font-weight:760;color:var(--text);}
-.queue-summary-inline{font-size:12px;color:var(--muted);font-weight:650;}
+.queue-summary-inline{font-size:12px;color:var(--muted);font-weight:650;text-align:right;white-space:nowrap;}
 .queue-details-body{padding-top:0;}
 .queue-details-shell:not([open]) .queue-details-body{display:none;}
 
@@ -2029,6 +2033,10 @@ details[open] summary::after{ transform: rotate(0deg); }
             <span class="dot" aria-hidden="true"></span>
             <span id="statusline" role="status" aria-live="polite">Connecting…</span>
           </span>
+          <span class="pill passive-pill quiet-meta" id="ha_host_pill" hidden>
+            <span class="dot" aria-hidden="true"></span>
+            <span id="ha_host_label">Home Assistant</span>
+          </span>
         </div>
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
@@ -2212,6 +2220,9 @@ details[open] summary::after{ transform: rotate(0deg); }
         <div class="header-meta-content" aria-label="System metadata">
           <span class="meta-item">Version <strong>__ADDON_VERSION__</strong></span>
           <span class="meta-item">Last update <strong id="lastupdated">never</strong></span>
+          <span class="meta-item" id="meta_ha_host" hidden>Home Assistant <strong></strong></span>
+          <span class="meta-item" id="meta_access_mode" hidden>Direct access <strong></strong></span>
+          <span class="meta-item" id="meta_allowed_cidrs" hidden>Allowed CIDRs <strong></strong></span>
         </div>
       </details>
 <!-- Section: Desktop splitter and selected job detail panel -->
@@ -2667,7 +2678,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   </div>
 
   <script>
-/* VERSION: 0.6.12-webui.15 */
+/* VERSION: 0.6.13-webui.1 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -2744,6 +2755,27 @@ details[open] summary::after{ transform: rotate(0deg); }
   function baseUrl() {
     // Directory URL without trailing slash.
     return new URL(".", window.location.href).toString().replace(/\/$/, "");
+  }
+
+
+  function currentHomeAssistantHost() {
+    try {
+      const host = String(window.location.hostname || "").trim();
+      if (host) return host;
+    } catch (_err) {
+      // fall through
+    }
+    try {
+      return String(window.location.host || "").trim();
+    } catch (_err) {
+      return "";
+    }
+  }
+
+  function safeDownloadName(name, fallback) {
+    const raw = String(name || "").trim();
+    if (!raw) return fallback;
+    return raw.replace(/[^A-Za-z0-9._-]+/g, "_");
   }
 
   function isNarrow() {
@@ -4024,6 +4056,37 @@ function applyFilters() {
       queueSummary.textContent = bits.join(" · ");
     }
 
+    const haHost = currentHomeAssistantHost();
+    if (els.ha_host_pill) {
+      els.ha_host_pill.hidden = !haHost;
+    }
+    if (els.ha_host_label && haHost) {
+      els.ha_host_label.textContent = `Home Assistant ${haHost}`;
+    }
+    if (els.meta_ha_host) {
+      els.meta_ha_host.hidden = !haHost;
+      const strong = els.meta_ha_host.querySelector("strong");
+      if (strong) strong.textContent = haHost;
+    }
+
+    const ingressStrict = !!s.ingress_strict;
+    const cidrs = Array.isArray(s.api_allow_cidrs) ? s.api_allow_cidrs : [];
+    const accessMode = ingressStrict ? "Ingress only" : "Ingress or direct API";
+    const allowedCidrsText = ingressStrict
+      ? "Not used while Ingress-only mode is on"
+      : (cidrs.length ? cidrs.join(", ") : "Any direct IP address");
+
+    if (els.meta_access_mode) {
+      els.meta_access_mode.hidden = false;
+      const strong = els.meta_access_mode.querySelector("strong");
+      if (strong) strong.textContent = accessMode;
+    }
+    if (els.meta_allowed_cidrs) {
+      els.meta_allowed_cidrs.hidden = false;
+      const strong = els.meta_allowed_cidrs.querySelector("strong");
+      if (strong) strong.textContent = allowedCidrsText;
+    }
+
     els.stats.hidden = false;
   }
 
@@ -5163,16 +5226,35 @@ Client IP: ${ip || ""}`;
     });
   }
 
-  function downloadZip() {
-    if (!currentJob) return;
-    window.open(apiUrl(`result/${encodeURIComponent(currentJob)}.zip`), "_blank", "noopener,noreferrer");
+  async function _downloadViaFetch(path, filename) {
+    const response = await fetch(apiUrl(path), { credentials: "same-origin" });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${body}`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
   }
 
-  function downloadText(which) {
+  async function downloadZip() {
+    if (!currentJob) return;
+    const filename = safeDownloadName(`pythonista_job_runner_${currentJob}.zip`, "result.zip");
+    await _downloadViaFetch(`result/${encodeURIComponent(currentJob)}.zip`, filename);
+  }
+
+  async function downloadText(which) {
     if (!currentJob) return;
     const w = which || "stdout";
-    const url = apiUrl(`${w}/${encodeURIComponent(currentJob)}.txt`);
-    window.open(url, "_blank", "noopener,noreferrer");
+    const filename = safeDownloadName(`${currentJob}_${w}.txt`, `${w}.txt`);
+    await _downloadViaFetch(`${w}/${encodeURIComponent(currentJob)}.txt`, filename);
   }
 
   /**
@@ -5302,8 +5384,8 @@ function toggleAuto() {
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
-        if (action === "download-zip") downloadZip();
-        if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
+        if (action === "download-zip") await downloadZip();
+        if (action === "download-text") await downloadText(btn.getAttribute("data-which") || "stdout");
         if (action === "cancel") await cancelJob();
         if (action === "delete") await deleteJob();
         if (action === "go-live") await goLive();
@@ -5636,6 +5718,11 @@ function toggleAuto() {
     els.statuspill = document.getElementById("statuspill");
     els.statusline = document.getElementById("statusline");
     els.lastupdated = document.getElementById("lastupdated");
+    els.ha_host_pill = document.getElementById("ha_host_pill");
+    els.ha_host_label = document.getElementById("ha_host_label");
+    els.meta_ha_host = document.getElementById("meta_ha_host");
+    els.meta_access_mode = document.getElementById("meta_access_mode");
+    els.meta_allowed_cidrs = document.getElementById("meta_allowed_cidrs");
 
     els.stats = document.getElementById("stats");
     els.stats_kv = document.getElementById("stats_kv");

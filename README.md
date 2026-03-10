@@ -10,6 +10,10 @@ The add-on includes two ways to use it:
 
 The full user guide lives in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md). Home Assistant shows that file in the add-on **Documentation** tab.
 
+The add-on declares support for `amd64`, `aarch64`, and `armv7`, using Home Assistant base Python images configured in [`pythonista_job_runner/build.yaml`](pythonista_job_runner/build.yaml).
+
+Repository truthfulness note: automated test suite in this repository executes on `amd64` CI runners. `aarch64` and `armv7` are validated at packaging and declaration level here and still need native-host smoke testing before release sign-off.
+
 [![Add this add-on repository to your Home Assistant instance](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FWilliamRickard%2Fha-pythonista-job-runner)
 [![Open the add-on in Home Assistant](https://my.home-assistant.io/badges/supervisor_addon.svg)](https://my.home-assistant.io/redirect/supervisor_addon/?addon=pythonista_job_runner)
 

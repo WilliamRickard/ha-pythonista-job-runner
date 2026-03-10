@@ -428,6 +428,8 @@ class TestRunner:
         assert stats["jobs_error"] == 0
         assert stats["jobs_queued"] == 0
         assert stats["job_retention_hours"] == 24
+        assert stats["ingress_strict"] is False
+        assert stats["api_allow_cidrs"] == []
         assert "disk_free_bytes" in stats
         assert "disk_total_bytes" in stats
 

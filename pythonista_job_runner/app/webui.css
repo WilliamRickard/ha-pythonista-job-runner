@@ -1,4 +1,4 @@
-/* VERSION: 0.6.12-webui.15 */
+/* VERSION: 0.6.13-webui.1 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -406,6 +406,9 @@ button, .linkbtn{
   cursor: pointer;
   appearance: none;
   touch-action: manipulation;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   background: var(--chip);
   color: var(--text);
   border: 1px solid var(--line);
@@ -414,6 +417,7 @@ button, .linkbtn{
   min-height: 44px;
   font-size: var(--fs-sm);
   line-height: 1.1;
+  text-align:center;
 }
 
 
@@ -681,7 +685,7 @@ label{
 
 .detail-primary-actions{
   row-gap: 8px;
-  align-items:flex-start;
+  align-items:center;
 }
 
 .state-banner{
@@ -798,10 +802,10 @@ label{
 
 .queue-collapsible{padding:0;overflow:hidden;}
 .queue-details-shell{border:0;border-radius:inherit;background:transparent;padding:0;}
-.queue-details-shell summary{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.queue-details-shell summary{padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:12px;}
 .queue-details-shell summary::after{display:none;}
 .queue-summary-title{font-size:15px;font-weight:760;color:var(--text);}
-.queue-summary-inline{font-size:12px;color:var(--muted);font-weight:650;}
+.queue-summary-inline{font-size:12px;color:var(--muted);font-weight:650;text-align:right;white-space:nowrap;}
 .queue-details-body{padding-top:0;}
 .queue-details-shell:not([open]) .queue-details-body{display:none;}
 

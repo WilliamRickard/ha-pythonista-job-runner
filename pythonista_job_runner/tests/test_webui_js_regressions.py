@@ -154,3 +154,27 @@ def test_tooltip_and_popover_markup_exist() -> None:
 
     assert 'data-tooltip="Reload stats and jobs"' in shell
     assert 'data-action="row-popover-view"' in overlays
+
+
+def test_downloads_use_authenticated_fetch_instead_of_window_open() -> None:
+    """Downloads should stay inside the authenticated Ingress session."""
+
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+
+    assert 'fetch(apiUrl(path), { credentials: "same-origin" })' in refresh
+    assert 'window.open(apiUrl(`result/${encodeURIComponent(currentJob)}.zip`)' not in refresh
+    assert 'window.open(url, "_blank", "noopener,noreferrer")' not in refresh
+
+
+def test_shell_and_stats_expose_home_assistant_host_and_cidrs() -> None:
+    """The UI should surface the current Home Assistant host and direct-access summary."""
+
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    overview = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "10_overview.html")
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'id="ha_host_pill"' in shell
+    assert 'id="meta_allowed_cidrs"' in overview
+    assert 'function currentHomeAssistantHost()' in core
+    assert 'const allowedCidrsText = ingressStrict' in render

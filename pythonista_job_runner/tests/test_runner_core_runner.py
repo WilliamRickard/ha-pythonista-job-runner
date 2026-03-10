@@ -83,6 +83,8 @@ def test_stats_dict_empty(temp_data_dir, basic_opts):
     assert stats["jobs_done"] == 0
     assert stats["jobs_error"] == 0
     assert stats["jobs_queued"] == 0
+    assert stats["ingress_strict"] is False
+    assert stats["api_allow_cidrs"] == []
 
 
 def test_list_jobs_and_get(temp_data_dir, basic_opts):
