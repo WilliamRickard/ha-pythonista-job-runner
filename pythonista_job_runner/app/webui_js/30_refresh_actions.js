@@ -163,16 +163,35 @@ Client IP: ${ip || ""}`;
     });
   }
 
-  function downloadZip() {
-    if (!currentJob) return;
-    window.open(apiUrl(`result/${encodeURIComponent(currentJob)}.zip`), "_blank", "noopener,noreferrer");
+  async function _downloadViaFetch(path, filename) {
+    const response = await fetch(apiUrl(path), { credentials: "same-origin" });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`${response.status} ${body}`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
   }
 
-  function downloadText(which) {
+  async function downloadZip() {
+    if (!currentJob) return;
+    const filename = safeDownloadName(`pythonista_job_runner_${currentJob}.zip`, "result.zip");
+    await _downloadViaFetch(`result/${encodeURIComponent(currentJob)}.zip`, filename);
+  }
+
+  async function downloadText(which) {
     if (!currentJob) return;
     const w = which || "stdout";
-    const url = apiUrl(`${w}/${encodeURIComponent(currentJob)}.txt`);
-    window.open(url, "_blank", "noopener,noreferrer");
+    const filename = safeDownloadName(`${currentJob}_${w}.txt`, `${w}.txt`);
+    await _downloadViaFetch(`${w}/${encodeURIComponent(currentJob)}.txt`, filename);
   }
 
   /**

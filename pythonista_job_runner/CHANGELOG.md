@@ -3,6 +3,16 @@
 
 ## Unreleased
 
+### Web UI and add-on usability
+
+- Fix live stdout and stderr streaming so the Web UI updates during execution instead of waiting for large buffered reads or job completion.
+- Replace new-tab stdout, stderr, and result downloads with in-page authenticated fetch downloads so Home Assistant Ingress sessions do not fail with `401 Unauthorized` in Safari or external browser handoff.
+- Show the active Home Assistant host at the top of the Web UI and surface direct-access mode plus configured allowed CIDRs in System details.
+- Tidy header and action alignment, including the Queue summary row and detail action buttons.
+- Rewrite add-on option labels and helper text in `translations/en.yaml`, remove the stale `bind_port` translation entry, and add CIDR examples for iPhone-only and whole-LAN access.
+
+## 0.6.12
+
 ### Docs
 
 - Rework the repository [`README.md`](../README.md) into a shorter landing page with a clearer install path and docs map.

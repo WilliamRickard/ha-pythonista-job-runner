@@ -316,7 +316,7 @@ Confirm you are on the latest add-on version, then hard refresh the Ingress page
 
 The add-on declares support for `amd64`, `aarch64`, and `armv7` in [`config.yaml`](config.yaml), with matching build-matrix entries in [`build.yaml`](build.yaml).
 
-Repository truthfulness note: automated runtime tests in this repository currently run on `amd64` continuous integration runners. `aarch64` and `armv7` are validated here at packaging and declaration level and still need native-host smoke testing before release sign-off.
+Repository truthfulness note: automated runtime tests in this repository execute on `amd64` CI runners. `aarch64` and `armv7` are validated here at packaging and declaration level and still need native-host smoke testing before release sign-off.
 
 ## Advanced and contributor notes
 

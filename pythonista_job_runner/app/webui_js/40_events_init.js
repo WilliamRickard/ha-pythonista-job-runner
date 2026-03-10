@@ -83,8 +83,8 @@ function toggleAuto() {
         if (action === "copy-base") await copyBase();
         if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
         if (action === "copy-endpoint") await copyEndpoint(btn);
-        if (action === "download-zip") downloadZip();
-        if (action === "download-text") downloadText(btn.getAttribute("data-which") || "stdout");
+        if (action === "download-zip") await downloadZip();
+        if (action === "download-text") await downloadText(btn.getAttribute("data-which") || "stdout");
         if (action === "cancel") await cancelJob();
         if (action === "delete") await deleteJob();
         if (action === "go-live") await goLive();
@@ -417,6 +417,11 @@ function toggleAuto() {
     els.statuspill = document.getElementById("statuspill");
     els.statusline = document.getElementById("statusline");
     els.lastupdated = document.getElementById("lastupdated");
+    els.ha_host_pill = document.getElementById("ha_host_pill");
+    els.ha_host_label = document.getElementById("ha_host_label");
+    els.meta_ha_host = document.getElementById("meta_ha_host");
+    els.meta_access_mode = document.getElementById("meta_access_mode");
+    els.meta_allowed_cidrs = document.getElementById("meta_allowed_cidrs");
 
     els.stats = document.getElementById("stats");
     els.stats_kv = document.getElementById("stats_kv");

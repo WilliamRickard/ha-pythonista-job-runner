@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.2
+# Version: 0.6.13-live-logs.1
 """Job execution helpers."""
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import threading
 import time
+from typing import Any
 from pathlib import Path
 from typing import Dict
 
@@ -79,6 +80,31 @@ def prepare_work_dir(runner: object, work_dir: Path) -> None:
                 continue
     except Exception:
         pass
+
+
+def _read_pipe_chunk(src: Any, chunk_size: int = 8192) -> bytes:
+    """Read one available chunk from a subprocess pipe.
+
+    `subprocess.Popen(..., stdout=PIPE)` exposes a buffered reader. Calling
+    `read(8192)` on that object can wait for the full buffer or end-of-file,
+    which makes the Web UI look like logs only arrive at the end of the job.
+    Reading from the underlying file descriptor returns as soon as any bytes are
+    available, which keeps stdout and stderr visibly live.
+    """
+    if chunk_size <= 0:
+        chunk_size = 8192
+    try:
+        fileno = src.fileno()
+    except Exception:
+        fileno = None
+
+    if fileno is not None:
+        try:
+            return os.read(fileno, chunk_size)
+        except Exception:
+            pass
+
+    return src.read(chunk_size)
 
 
 def run_job(runner: object, job_id: str) -> None:
@@ -178,9 +204,10 @@ def run_job(runner: object, job_id: str) -> None:
                 assert p.stdout is not None
                 assert p.stderr is not None
 
-                def pump(src, dst, tail: TailBuffer) -> None:
+                def pump(src: Any, dst: Any, tail: TailBuffer) -> None:
+                    """Copy one process stream into the job artefacts and tail buffer."""
                     while True:
-                        b = src.read(8192)
+                        b = _read_pipe_chunk(src, 8192)
                         if not b:
                             break
                         dst.write(b)

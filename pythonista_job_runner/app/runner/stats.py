@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.2
+# Version: 0.6.13-webui.1
 """Stats helpers for the Runner.
 
 These functions are intentionally side-effect free except for updating Runner cache
@@ -128,4 +128,8 @@ def stats_dict(runner: object) -> Dict[str, Any]:
         "jobs_dir_bytes": jobs_bytes,
         "disk_free_bytes": disk_free,
         "disk_total_bytes": disk_total,
+        "ingress_strict": bool(getattr(runner, "ingress_strict", False)),
+        "api_allow_cidrs": list(getattr(runner, "api_allow_cidrs", [])),
+        "bind_host": str(getattr(runner, "bind_host", "")),
+        "bind_port": int(getattr(runner, "bind_port", 0)),
     }

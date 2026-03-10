@@ -76,6 +76,27 @@
     return new URL(".", window.location.href).toString().replace(/\/$/, "");
   }
 
+
+  function currentHomeAssistantHost() {
+    try {
+      const host = String(window.location.hostname || "").trim();
+      if (host) return host;
+    } catch (_err) {
+      // fall through
+    }
+    try {
+      return String(window.location.host || "").trim();
+    } catch (_err) {
+      return "";
+    }
+  }
+
+  function safeDownloadName(name, fallback) {
+    const raw = String(name || "").trim();
+    if (!raw) return fallback;
+    return raw.replace(/[^A-Za-z0-9._-]+/g, "_");
+  }
+
   function isNarrow() {
     return window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
   }

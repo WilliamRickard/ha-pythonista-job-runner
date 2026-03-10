@@ -655,6 +655,37 @@ function applyFilters() {
       queueSummary.textContent = bits.join(" · ");
     }
 
+    const haHost = currentHomeAssistantHost();
+    if (els.ha_host_pill) {
+      els.ha_host_pill.hidden = !haHost;
+    }
+    if (els.ha_host_label && haHost) {
+      els.ha_host_label.textContent = `Home Assistant ${haHost}`;
+    }
+    if (els.meta_ha_host) {
+      els.meta_ha_host.hidden = !haHost;
+      const strong = els.meta_ha_host.querySelector("strong");
+      if (strong) strong.textContent = haHost;
+    }
+
+    const ingressStrict = !!s.ingress_strict;
+    const cidrs = Array.isArray(s.api_allow_cidrs) ? s.api_allow_cidrs : [];
+    const accessMode = ingressStrict ? "Ingress only" : "Ingress or direct API";
+    const allowedCidrsText = ingressStrict
+      ? "Not used while Ingress-only mode is on"
+      : (cidrs.length ? cidrs.join(", ") : "Any direct IP address");
+
+    if (els.meta_access_mode) {
+      els.meta_access_mode.hidden = false;
+      const strong = els.meta_access_mode.querySelector("strong");
+      if (strong) strong.textContent = accessMode;
+    }
+    if (els.meta_allowed_cidrs) {
+      els.meta_allowed_cidrs.hidden = false;
+      const strong = els.meta_allowed_cidrs.querySelector("strong");
+      if (strong) strong.textContent = allowedCidrsText;
+    }
+
     els.stats.hidden = false;
   }
 
