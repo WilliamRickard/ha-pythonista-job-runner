@@ -1,3 +1,4 @@
+# Version: 0.3.0-coordinator.1
 """Data update coordinator for Pythonista Job Runner."""
 
 from __future__ import annotations
@@ -23,6 +24,45 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _build_package_summary_fallback(stats: dict) -> dict:
+    """Build a lightweight package summary when the dedicated endpoint is unavailable."""
+    stats = stats or {}
+    return {
+        "status": "fallback",
+        "default_profile": str(stats.get("package_profile_default") or ""),
+        "summary": {
+            "cache_private_bytes": int(stats.get("package_cache_private_bytes", 0) or 0),
+            "cache_public_bytes": int(stats.get("package_cache_public_bytes", 0) or 0),
+            "cache_max_bytes": int(stats.get("package_cache_max_bytes", 0) or 0),
+            "cache_over_limit": bool(stats.get("package_cache_over_limit", False)),
+            "venv_count": int(stats.get("package_venv_count", 0) or 0),
+            "profile_count": int(stats.get("package_profile_count", 0) or 0),
+            "ready_profile_count": int(stats.get("package_profiles_ready_count", 0) or 0),
+            "default_profile": str(stats.get("package_profile_default") or ""),
+            "last_prune_status": stats.get("package_cache_last_prune_status"),
+            "last_prune_reason": stats.get("package_cache_last_action_reason"),
+            "last_prune_removed": int(stats.get("package_cache_last_prune_removed", 0) or 0),
+        },
+        "cache": {
+            "private_bytes": int(stats.get("package_cache_private_bytes", 0) or 0),
+            "public_bytes": int(stats.get("package_cache_public_bytes", 0) or 0),
+            "package_cache_max_bytes": int(stats.get("package_cache_max_bytes", 0) or 0),
+            "over_limit": bool(stats.get("package_cache_over_limit", False)),
+            "venv_count": int(stats.get("package_venv_count", 0) or 0),
+            "last_prune_status": stats.get("package_cache_last_prune_status"),
+            "last_action_kind": stats.get("package_cache_last_action_kind"),
+            "last_action_reason": stats.get("package_cache_last_action_reason"),
+            "last_prune_removed": int(stats.get("package_cache_last_prune_removed", 0) or 0),
+        },
+        "profiles": {
+            "default_profile": str(stats.get("package_profile_default") or ""),
+            "profile_count": int(stats.get("package_profile_count", 0) or 0),
+            "ready_count": int(stats.get("package_profiles_ready_count", 0) or 0),
+            "profiles": [],
+        },
+    }
+
+
 class PythonistaRunnerCoordinator(DataUpdateCoordinator[dict]):
     """Poll add-on API endpoints and emit lifecycle events."""
 
@@ -45,10 +85,14 @@ class PythonistaRunnerCoordinator(DataUpdateCoordinator[dict]):
         try:
             health = await self.hass.async_add_executor_job(self.client.health)
             stats = await self.hass.async_add_executor_job(self.client.stats)
+            try:
+                package_summary = await self.hass.async_add_executor_job(self.client.package_summary)
+            except RunnerClientError:
+                package_summary = _build_package_summary_fallback(stats)
             jobs_payload = await self.hass.async_add_executor_job(self.client.jobs)
             jobs = jobs_payload.get("jobs", []) if isinstance(jobs_payload, dict) else []
             await self._emit_job_events(jobs)
-            return {"health": health, "stats": stats, "jobs": jobs}
+            return {"health": health, "stats": stats, "package_summary": package_summary, "jobs": jobs}
         except RunnerClientError as exc:
             raise UpdateFailed(str(exc)) from exc
 

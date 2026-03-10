@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.10 -->
+<!-- Version: 0.6.13-docs.7 -->
 # Screenshot placeholders and replacement guide
 
 This folder holds the screenshots embedded by the repository [`README.md`](../../README.md).
@@ -8,6 +8,8 @@ Approved screenshot filenames:
 1. [`01_addon_store.png`](01_addon_store.png): Home Assistant Add-on Store entry for Pythonista Job Runner, showing the install button and short description.
 2. [`02_config_token.png`](02_config_token.png): add-on configuration page showing the Access token field without a real token.
 3. [`03_webui_jobs.png`](03_webui_jobs.png): Ingress Web UI showing the jobs list and at least one completed job.
+4. [`04_packages_overview.png`](04_packages_overview.png): Advanced panel package cache and diagnostics overview, including cache size and reusable environment summary.
+5. [`05_package_profiles.png`](05_package_profiles.png): package profiles area showing the default profile, build action, and cache controls.
 
 The repo currently ships placeholder PNGs using those filenames so the root [`README.md`](../../README.md) can embed images immediately. Replace each placeholder with a real screenshot when you have a good capture.
 

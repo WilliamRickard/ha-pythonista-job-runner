@@ -1,3 +1,4 @@
+# Version: 0.6.13-tests-http-api-basic.2
 """Basic HTTP API behaviour tests.
 
 These tests focus on auth and request/response codes. They avoid running real
@@ -454,6 +455,60 @@ def test_run_runtime_error_code_is_sanitized(temp_data_dir, minimal_job_zip, mon
         )
         assert status == 400
         assert json.loads(data.decode("utf-8")) == {"error": "job_creation_failed"}
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def test_package_profiles_endpoints_require_token_and_return_payload(temp_data_dir, monkeypatch):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    monkeypatch.setattr(runner, "list_package_profiles", lambda: {"profiles": [], "profile_count": 0, "ready_count": 0, "enabled": True, "default_profile": ""})
+    monkeypatch.setattr(runner, "build_package_profile", lambda profile_name=None, rebuild=False, actor=None: {"status": "ready", "profile_name": profile_name or "demo", "rebuild": rebuild})
+
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, _data = _request("GET", host, port, "/package_profiles.json", None, {})
+        assert status == 401
+
+        status, _hdrs, data = _request("GET", host, port, "/package_profiles.json", None, {"X-Runner-Token": "t"})
+        assert status == 200
+        payload = json.loads(data.decode("utf-8"))
+        assert payload["profile_count"] == 0
+
+        body = json.dumps({"profile": "demo", "rebuild": True}).encode("utf-8")
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/package_profiles/build",
+            body,
+            {"X-Runner-Token": "t", "Content-Type": "application/json", "Content-Length": str(len(body))},
+        )
+        assert status == 200
+        payload = json.loads(data.decode("utf-8"))
+        assert payload["status"] == "ready"
+        assert payload["profile_name"] == "demo"
+        assert payload["rebuild"] is True
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
+
+def test_packages_summary_requires_token_and_returns_payload(temp_data_dir):
+    runner = runner_core.Runner({"token": "t", "bind_host": "127.0.0.1", "bind_port": 0})
+    httpd, host, port = _start_server(runner)
+    try:
+        status, _hdrs, _data = _request("GET", host, port, "/packages/summary.json", None, {})
+        assert status == 401
+
+        status, _hdrs, data = _request("GET", host, port, "/packages/summary.json", None, {"X-Runner-Token": "t"})
+        assert status == 200
+        payload = json.loads(data.decode("utf-8"))
+        assert payload["summary"]["cache_private_bytes"] >= 0
+        assert payload["summary"]["venv_count"] >= 0
+        assert "profiles" in payload
+        assert "cache" in payload
     finally:
         httpd.shutdown()
         httpd.server_close()

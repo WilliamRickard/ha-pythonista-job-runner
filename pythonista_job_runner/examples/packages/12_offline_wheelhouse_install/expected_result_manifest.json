@@ -1,0 +1,16 @@
+{
+  "files": [
+    {
+      "path": "outputs/offline_install_status.json"
+    },
+    {
+      "path": "outputs/summary.md"
+    },
+    {
+      "path": "stdout.txt"
+    },
+    {
+      "path": "stderr.txt"
+    }
+  ]
+}

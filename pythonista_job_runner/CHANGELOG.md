@@ -1,7 +1,14 @@
-<!-- Version: 0.6.12-docs.10 -->
+<!-- Version: 0.6.13-docs.8 -->
 # Changelog
 
 ## Unreleased
+
+### Package subsystem and release readiness
+
+- Add a persistent package subsystem covering pip cache reuse, offline-first wheelhouse imports, reusable keyed virtual environments, named package profiles, package cache pruning, and Home Assistant integration sensors and service actions.
+- Add package-focused examples for cached per-job requirements, offline wheelhouse installs, and named package profile runs.
+- Add release-readiness documentation covering regression validation, upgrade checks, backup and restore checks for package profiles, and native-host sign-off.
+
 
 ### Web UI and add-on usability
 

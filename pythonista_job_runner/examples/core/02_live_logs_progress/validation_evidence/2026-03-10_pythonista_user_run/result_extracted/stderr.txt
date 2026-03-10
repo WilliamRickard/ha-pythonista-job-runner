@@ -1,0 +1,2 @@
+warning at step 3: simulated stderr event
+warning at step 6: simulated stderr event

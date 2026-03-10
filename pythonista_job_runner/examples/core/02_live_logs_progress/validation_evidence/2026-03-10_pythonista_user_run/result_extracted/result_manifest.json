@@ -1,0 +1,21 @@
+{
+  "generated_utc": "2026-03-10T11:51:45Z",
+  "job_id": "e68d9d1fefed489e906f64308b43dbb2",
+  "outputs": [
+    {
+      "path": "outputs/progress_summary.json",
+      "size": 114
+    },
+    {
+      "path": "outputs/progress_timeline.txt",
+      "size": 235
+    }
+  ],
+  "outputs_limit_reason": null,
+  "outputs_max_bytes": 209715200,
+  "outputs_max_files": 2000,
+  "outputs_total_bytes": 349,
+  "outputs_total_files": 2,
+  "outputs_truncated": false,
+  "runner_version": "0.6.13"
+}

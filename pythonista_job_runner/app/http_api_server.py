@@ -1,3 +1,4 @@
+# Version: 0.6.13-http-api.3
 from __future__ import annotations
 
 """HTTP API server and request handlers for job runner endpoints."""
@@ -210,6 +211,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/stats.json":
             self._json(200, runner.stats_dict())
             return
+        if path == "/package_profiles.json":
+            self._json(200, runner.list_package_profiles())
+            return
+        if path == "/packages/cache.json":
+            self._json(200, runner.package_cache_summary())
+            return
+        if path == "/packages/summary.json":
+            self._json(200, runner.package_summary())
+            return
         if path == "/jobs.json":
             self._json(200, {"jobs": [j.status_dict() for j in runner.list_jobs()]})
             return
@@ -319,6 +329,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/run":
             self._handle_run_post()
             return
+        if path == "/package_profiles/build":
+            self._handle_package_profile_build_post()
+            return
+        if path == "/packages/cache/prune":
+            self._handle_package_cache_prune_post()
+            return
+        if path == "/packages/cache/purge":
+            self._handle_package_cache_purge_post()
+            return
         if path == "/backup/pause":
             self._handle_backup_pause_post()
             return
@@ -367,6 +386,85 @@ class Handler(BaseHTTPRequestHandler):
         older_hours_i = parse_int(str(older_hours) if older_hours is not None else None, 0)
         dry_run = bool(payload.get("dry_run", False))
         self._json(200, self.server.runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run, actor=self._request_actor()))
+
+    def _handle_package_profile_build_post(self) -> None:
+        if not self._require_auth():
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 32 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        profile_name = payload.get("profile")
+        rebuild = bool(payload.get("rebuild", False))
+        result = self.server.runner.build_package_profile(profile_name, rebuild=rebuild, actor=self._request_actor())
+        code = 200 if str(result.get("status") or "") == "ready" else 400
+        self._json(code, result)
+
+    def _handle_package_cache_prune_post(self) -> None:
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 32 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        reason = str(payload.get("reason") or "manual").strip() or "manual"
+        self._json(200, self.server.runner.prune_package_cache(actor=self._request_actor(), reason=reason))
+
+    def _handle_package_cache_purge_post(self) -> None:
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 32 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        reason = str(payload.get("reason") or "manual").strip() or "manual"
+        include_venvs = bool(payload.get("include_venvs", False))
+        include_imported_wheels = bool(payload.get("include_imported_wheels", False))
+        self._json(
+            200,
+            self.server.runner.purge_package_cache(
+                actor=self._request_actor(),
+                reason=reason,
+                include_venvs=include_venvs,
+                include_imported_wheels=include_imported_wheels,
+            ),
+        )
 
     def _handle_run_post(self) -> None:
         if not self._require_auth():

@@ -1,4 +1,4 @@
-<!-- Version: 0.6.12-docs.10 -->
+<!-- Version: 0.6.13-docs.8 -->
 # Pythonista Job Runner
 
 Pythonista Job Runner is a Home Assistant add-on that accepts a job zip, extracts it into an isolated working directory, runs `run.py`, streams logs while it runs, and returns a result zip when it finishes.
@@ -17,6 +17,11 @@ It supports two access paths:
 - [Ingress versus direct API access](#ingress-versus-direct-api-access)
 - [Job zip format](#job-zip-format)
 - [Result zip format](#result-zip-format)
+- [Package storage foundation](#package-storage-foundation)
+- [Choose the right package mode](#choose-the-right-package-mode)
+- [Migration from older `_deps`-only behaviour](#migration-from-older-_deps-only-behaviour)
+- [Release readiness and upgrade validation](#release-readiness-and-upgrade-validation)
+- [Package example catalogue](#package-example-catalogue)
 - [Pythonista client examples](#pythonista-client-examples)
 - [HTTP API reference](#http-api-reference)
 - [Troubleshooting](#troubleshooting)
@@ -189,6 +194,144 @@ When the job completes, the result zip includes:
 - Optional pip install logs when requirement installation was used
 - Your files under `outputs/`, if any
 
+## Package storage foundation
+
+The add-on now prepares a persistent package storage tree under `/data/pythonista_job_runner/`. This is private to the add-on and is used for pip cache files, wheelhouse data, reusable virtual environments, profile metadata, and package diagnostics.
+
+Phase 6 adds storage safety rails on top of the earlier cache, wheelhouse, reusable-venv, and profile layers. The runner now:
+
+- syncs validated wheel files from `/config/wheel_uploads/` into `/data/pythonista_job_runner/wheelhouse/imported/`
+- rejects suspicious wheel filenames, malformed wheel archives, and oversized public wheel imports before they enter the private store
+- passes internal wheelhouse directories to pip with `--find-links`
+- tries a local-only `--no-index` install first when **Prefer local packages before remote indexes** is enabled
+- creates a keyed venv under `/data/pythonista_job_runner/venvs/` for one unique requirements and policy combination
+- reuses that keyed venv on later runs with the same requirements and install policy
+- tracks reusable-venv metadata in `state/venv_index.json` and protects active environments from pruning while a job is running
+- enforces the configured private package storage target with least-recently-used pruning and startup pruning when enabled
+- records prune and purge activity in `state/eviction_log.jsonl` and `state/storage_stats.json`
+- supports manual cache prune and purge actions through the API and the Advanced Web UI panel
+- optionally enforces `--hash=` entries for `requirements.lock` files when **Require package hashes** is enabled
+- writes wheelhouse, reusable-venv, and prune diagnostics into the package report area
+
+The persistent directory layout is:
+
+```text
+/data/pythonista_job_runner/
+  cache/
+    pip/
+    http/
+  wheelhouse/
+    downloaded/
+    built/
+    imported/
+  venvs/
+  profiles/
+    manifests/
+    locks/
+  jobs/
+    package_reports/
+  state/
+    package_index.json
+    venv_index.json
+    eviction_log.json
+    storage_stats.json
+```
+
+The add-on also maps `addon_config:rw` and expects that public add-on files are available at `/config` inside the container. This is the user-visible side of the package system. The add-on uses it for uploaded wheels, package profile files, exported diagnostics, and other package-related files that users may want to inspect or back up.
+
+Reusable venv mode is now active when **Install requirements.txt automatically** and **Reuse prepared virtual environments** are enabled. The first matching run builds a keyed venv. Later runs with the same requirements and package policy reuse that venv by prepending its `bin/` directory to `PATH` and setting `VIRTUAL_ENV`.
+
+If venv creation fails, the add-on falls back to the older per-job `_deps` install flow so jobs still have a working dependency path. That fallback is recorded in the package diagnostics and result summary.
+
+### Package profiles
+
+Phase 5 adds named package profiles under `/config/package_profiles/`. Each profile is one folder, for example:
+
+```text
+/config/package_profiles/data_tools_basic/
+  manifest.json
+  requirements.lock
+  constraints.txt
+```
+
+The runner currently supports these files:
+
+- `manifest.json` or `profile.json` for optional metadata such as `display_name`
+- `requirements.lock`, `requirements.txt`, or `requirements.in` as the effective dependency source
+- `constraints.txt` as an optional constraints file
+
+When **Dependency handling mode** is set to `profile`, the add-on uses **Default package profile** to choose one of these folders, builds a keyed reusable venv for it, and attaches that environment to matching jobs.
+
+Profile build exports are written under the public add-on config area so they are easy to inspect and back up:
+
+```text
+/config/exports/package_profiles/<profile-name>/
+/config/diagnostics/package_profiles/<profile-name>/
+```
+
+Those exports include an effective requirements file, the latest profile status JSON, and a diagnostics zip bundle.
+
+### Package cache limits and safety rails
+
+The private package store now keeps usage accounting in `state/storage_stats.json` and enforces the configured **Package cache limit (MB)** target with best-effort least-recently-used pruning. Active reusable environments attached to running jobs are protected from pruning.
+
+The add-on exposes these authenticated package cache endpoints:
+
+- `GET /packages/cache.json`: current cache and storage summary.
+- `POST /packages/cache/prune`: best-effort prune to the configured cache target while preserving active environments.
+- `POST /packages/cache/purge`: clear cache areas and optionally remove reusable virtual environments and imported wheels.
+
+The Advanced Web UI panel now exposes the same refresh, prune, and purge actions.
+
+When **Require package hashes** is enabled, builds from `requirements.lock` now require `--hash=` entries on requirement lines. This is intended for locked dependency sets rather than loose `requirements.txt` files.
+
+## Choose the right package mode
+
+Use these rules:
+
+- **disabled**: use this when the job is fully self-contained and should not install or attach any dependency environment.
+- **per_job**: use this when the job zip carries its own `requirements.txt` and that definition is the source of truth for the run.
+- **profile**: use this when several jobs should share one named prepared dependency environment from `/config/package_profiles/`.
+
+A good default is still `per_job`. Switch to `profile` once the dependency set is stable and reused across multiple jobs.
+
+## Migration from older `_deps`-only behaviour
+
+Older versions of the add-on treated per-job dependencies as a one-shot install into a job-local `_deps` directory. That model still exists as a fallback, but it is no longer the main path.
+
+What changed:
+
+- repeated `per_job` runs can now reuse the persistent pip cache
+- local wheels can be imported once into the private wheelhouse
+- keyed reusable virtual environments can be attached across later matching runs
+- named package profiles can build and reuse one prepared dependency environment for many jobs
+- result bundles now include package diagnostics artefacts when the package subsystem was involved
+
+What stays the same:
+
+- the job contract is still `run.py` plus `outputs/`
+- job execution still happens in an isolated working directory
+- jobs can still run with no dependency handling at all
+
+How to migrate safely:
+
+1. Leave **Dependency handling mode** on `per_job` first.
+2. Re-run one known package-aware job twice and inspect `package/package_diagnostics.json` plus `summary.txt`.
+3. Import any shared wheels into `/config/wheel_uploads/` instead of bundling them into every job zip.
+4. Once the dependency set is stable, move it into `/config/package_profiles/<name>/` and switch matching jobs to `profile` mode.
+
+## Package example catalogue
+
+Package-focused examples now live under [`examples/packages/`](examples/packages/).
+
+Use them in this order:
+
+1. [`11_cached_per_job_requirements`](examples/packages/11_cached_per_job_requirements/README.md): run the same `per_job` dependency set twice and inspect reuse diagnostics.
+2. [`12_offline_wheelhouse_install`](examples/packages/12_offline_wheelhouse_install/README.md): copy a wheel into the public add-on config, import it into the private wheelhouse, and install it without bundling the wheel inside the job zip.
+3. [`13_named_package_profile_run`](examples/packages/13_named_package_profile_run/README.md): prepare a named package profile once, then run a job in `profile` mode with no job-local `requirements.txt`.
+
+For Pythonista runs, keep looking at the job's own `outputs/` files first. Then inspect add-on-generated files such as `package/package_diagnostics.json`, `result_manifest.json`, `summary.txt`, and any profile diagnostics bundle the add-on exported.
+
 ## API contract
 
 The machine-readable direct API contract lives at [`api/openapi.json`](api/openapi.json).
@@ -230,6 +373,8 @@ Endpoints:
 
 - `POST /run`: submit a job zip as raw bytes in the request body.
 - `GET /jobs.json`: list jobs.
+- `GET /package_profiles.json`: list discovered package profiles, default selection, and ready status.
+- `GET /packages/cache.json`: fetch private package cache and storage summary.
 - `GET /job/<job_id>.json`: fetch job status.
 - `GET /tail/<job_id>.json`: fetch status plus stdout and stderr tails.
 - `GET /result/<job_id>.zip`: download the result zip.
@@ -238,6 +383,9 @@ Endpoints:
 - `POST /cancel/<job_id>`: request cancellation.
 - `DELETE /job/<job_id>`: delete a job and its artefacts.
 - `POST /purge`: purge matching jobs.
+- `POST /package_profiles/build`: build or rebuild one named package profile from JSON such as `{ "profile": "data_tools_basic", "rebuild": true }`.
+- `POST /packages/cache/prune`: prune private package storage to the configured target.
+- `POST /packages/cache/purge`: purge private package cache areas, with optional flags to also remove reusable virtual environments and imported wheels.
 
 The full route contract is in [`api/openapi.json`](api/openapi.json).
 
@@ -272,6 +420,20 @@ print(response.json())
 ### Example 2: use the reusable client helper
 
 See [`app/pythonista_client.py`](app/pythonista_client.py) and [`examples/pythonista_run_job.py`](examples/pythonista_run_job.py).
+
+## Release readiness and upgrade validation
+
+The package subsystem is now implemented across cache reuse, offline wheelhouse imports, reusable virtual environments, named package profiles, Home Assistant entities, and package examples. Release readiness still depends on one final layer of validation that has to happen on real Home Assistant hosts, not just repository tests.
+
+Use [`../docs/RELEASE_READINESS.md`](../docs/RELEASE_READINESS.md) as the live sign-off sheet for:
+
+- regression runs across the core and package examples
+- upgrade testing from earlier `0.6.13` installs that only knew the `_deps` model
+- backup and restore checks for `/config/package_profiles/` and `/config/wheel_uploads/`
+- native-host smoke testing on `aarch64` and `armv7`
+- release notes and changelog completion
+
+The add-on should now degrade cleanly when package features are disabled. The expected fallback is the older job-local dependency path or, when dependency handling is fully disabled, a normal `run.py` job with no package attachment. If your release candidate does not meet that behaviour on a real host, treat it as a blocker before cutting a stable tag.
 
 ## Troubleshooting
 

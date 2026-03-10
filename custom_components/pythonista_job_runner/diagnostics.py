@@ -1,3 +1,4 @@
+# Version: 0.3.0-diagnostics.1
 """Diagnostics support for Pythonista Job Runner integration."""
 
 from __future__ import annotations
@@ -31,12 +32,27 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
     coordinator = entry_data.get("coordinator")
     client = entry_data.get("client")
 
-    support_bundle = {}
+    support_bundle: dict[str, Any] = {}
+    package_summary: dict[str, Any] = {}
+    package_cache: dict[str, Any] = {}
+    package_profiles: dict[str, Any] = {}
     if client is not None:
         try:
             support_bundle = await hass.async_add_executor_job(client.support_bundle)
         except Exception as exc:  # pragma: no cover - diagnostic failure should be non-fatal
             support_bundle = {"error": str(exc)}
+        try:
+            package_summary = await hass.async_add_executor_job(client.package_summary)
+        except Exception as exc:  # pragma: no cover - diagnostic failure should be non-fatal
+            package_summary = {"error": str(exc)}
+        try:
+            package_cache = await hass.async_add_executor_job(client.package_cache)
+        except Exception as exc:  # pragma: no cover - diagnostic failure should be non-fatal
+            package_cache = {"error": str(exc)}
+        try:
+            package_profiles = await hass.async_add_executor_job(client.package_profiles)
+        except Exception as exc:  # pragma: no cover - diagnostic failure should be non-fatal
+            package_profiles = {"error": str(exc)}
 
     return {
         "entry": {
@@ -46,6 +62,9 @@ async def async_get_config_entry_diagnostics(hass: HomeAssistant, entry: ConfigE
             "options": _redact(dict(entry.options or {})),
         },
         "coordinator": _redact(getattr(coordinator, "data", {}) or {}),
+        "package_summary": _redact(package_summary),
+        "package_cache": _redact(package_cache),
+        "package_profiles": _redact(package_profiles),
         "support_bundle": _redact(support_bundle),
     }
 

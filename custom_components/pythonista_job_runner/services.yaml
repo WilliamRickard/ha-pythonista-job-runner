@@ -1,3 +1,4 @@
+# Version: 0.3.0-services-yaml.1
 purge_jobs:
   name: Purge runner jobs
   description: Purge jobs from the add-on queue/history.
@@ -76,3 +77,48 @@ cancel_job:
       required: true
       selector:
         text:
+
+build_package_profile:
+  name: Build package profile
+  description: Build or rebuild one named package profile inside the add-on package store.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    profile_name:
+      selector:
+        text:
+    rebuild:
+      selector:
+        boolean:
+
+prune_package_cache:
+  name: Prune package cache
+  description: Trim private package storage down towards the configured cache limit.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    reason:
+      selector:
+        text:
+
+purge_package_cache:
+  name: Purge package cache
+  description: Remove cached package artefacts, with optional reusable environments and imported wheels.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
+    reason:
+      selector:
+        text:
+    include_venvs:
+      selector:
+        boolean:
+    include_imported_wheels:
+      selector:
+        boolean:

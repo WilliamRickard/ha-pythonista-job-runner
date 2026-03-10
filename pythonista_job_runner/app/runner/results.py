@@ -1,4 +1,4 @@
-# Version: 0.6.12-refactor.1
+# Version: 0.6.13-profile.2
 """Result packaging and outputs collection."""
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import json
 import os
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Tuple
 
 from utils import read_head_tail_text, sha256_file, utc_now
 
@@ -20,7 +20,6 @@ def iter_outputs(_runner: object, j: object) -> Iterable[Path]:
     out_dir = work_dir / "outputs"
     if not out_dir.exists() or not out_dir.is_dir() or out_dir.is_symlink():
         return
-    # Deterministic traversal to keep result zips stable across runs.
     for root, dirs, files in os.walk(str(out_dir)):
         dirs.sort()
         files.sort()
@@ -34,6 +33,29 @@ def iter_outputs(_runner: object, j: object) -> Iterable[Path]:
             yield p
 
 
+def iter_package_reports(j: object) -> Iterable[Tuple[Path, str]]:
+    """Yield package report files to include in the result zip."""
+    package_meta = getattr(j, "package", {}) or {}
+    report_dir_value = str(package_meta.get("report_dir") or "").strip()
+    if not report_dir_value:
+        return
+    report_dir = Path(report_dir_value)
+    if not report_dir.exists() or not report_dir.is_dir() or report_dir.is_symlink():
+        return
+    for root, dirs, files in os.walk(str(report_dir)):
+        dirs.sort()
+        files.sort()
+        for fn in files:
+            src = Path(root) / fn
+            try:
+                if not src.is_file() or src.is_symlink():
+                    continue
+            except OSError:
+                continue
+            rel = src.relative_to(report_dir).as_posix()
+            yield (src, f"package/{rel}")
+
+
 def make_result_zip(runner: object, j: object) -> None:
     """Create the result zip for a job."""
     addon_version = str(getattr(runner, "addon_version", ""))
@@ -41,6 +63,8 @@ def make_result_zip(runner: object, j: object) -> None:
     exit_code = getattr(j, "exit_code")
     exit_code_text = (str(exit_code) if exit_code is not None else "").encode("utf-8")
     status_json = json.dumps(getattr(j, "status_dict")(), indent=2, sort_keys=True).encode("utf-8")
+    package_meta = getattr(j, "package", {}) or {}
+    package_reports = list(iter_package_reports(j))
 
     manifest: Dict[str, Any] = {
         "job_id": getattr(j, "job_id"),
@@ -51,6 +75,8 @@ def make_result_zip(runner: object, j: object) -> None:
         "outputs_limit_reason": None,
         "outputs_max_files": int(getattr(runner, "outputs_max_files", 0)),
         "outputs_max_bytes": int(getattr(runner, "outputs_max_bytes", 0)),
+        "package": package_meta,
+        "package_reports": [arcname for _src, arcname in package_reports],
     }
 
     total_bytes = 0
@@ -115,6 +141,42 @@ def make_result_zip(runner: object, j: object) -> None:
     summary_lines.append(f"  threads: {getattr(j, 'threads')}")
     summary_lines.append(f"  timeout_seconds: {getattr(j, 'timeout_seconds')}")
     summary_lines.append("")
+    summary_lines.append("package:")
+    summary_lines.append(f"  enabled: {package_meta.get('enabled')}")
+    summary_lines.append(f"  mode: {package_meta.get('mode')}")
+    summary_lines.append(f"  profile_name: {package_meta.get('profile_name')}")
+    summary_lines.append(f"  profile_display_name: {package_meta.get('profile_display_name')}")
+    summary_lines.append(f"  profile_status: {package_meta.get('profile_status')}")
+    summary_lines.append(f"  profile_attached: {package_meta.get('profile_attached')}")
+    summary_lines.append(f"  profile_effective_requirements_path: {package_meta.get('profile_effective_requirements_path')}")
+    summary_lines.append(f"  profile_diagnostics_bundle_path: {package_meta.get('profile_diagnostics_bundle_path')}")
+    summary_lines.append(f"  status: {package_meta.get('status')}")
+    summary_lines.append(f"  cache_enabled: {package_meta.get('cache_enabled')}")
+    summary_lines.append(f"  cache_hit: {package_meta.get('cache_hit')}")
+    summary_lines.append(f"  wheelhouse_hit: {package_meta.get('wheelhouse_hit')}")
+    summary_lines.append(f"  install_source: {package_meta.get('install_source')}")
+    summary_lines.append(f"  install_duration_seconds: {package_meta.get('install_duration_seconds')}")
+    summary_lines.append(f"  inspect_duration_seconds: {package_meta.get('inspect_duration_seconds')}")
+    summary_lines.append(f"  inspect_status: {package_meta.get('inspect_status')}")
+    summary_lines.append(f"  environment_key: {package_meta.get('environment_key')}")
+    summary_lines.append(f"  venv_enabled: {package_meta.get('venv_enabled')}")
+    summary_lines.append(f"  venv_reused: {package_meta.get('venv_reused')}")
+    summary_lines.append(f"  venv_action: {package_meta.get('venv_action')}")
+    summary_lines.append(f"  venv_status: {package_meta.get('venv_status')}")
+    summary_lines.append(f"  venv_path: {package_meta.get('venv_path')}")
+    summary_lines.append(f"  venv_pruned_count: {package_meta.get('venv_pruned_count')}")
+    summary_lines.append(f"  wheelhouse_total_files: {package_meta.get('wheelhouse_total_files')}")
+    summary_lines.append(f"  wheelhouse_imported_files: {package_meta.get('wheelhouse_imported_files')}")
+    summary_lines.append(f"  public_wheel_sync_status: {package_meta.get('public_wheel_sync_status')}")
+    summary_lines.append(f"  prepare_download_status: {package_meta.get('prepare_download_status')}")
+    summary_lines.append(f"  prepare_wheel_status: {package_meta.get('prepare_wheel_status')}")
+    summary_lines.append(f"  hash_enforcement: {package_meta.get('hash_enforcement')}")
+    summary_lines.append(f"  package_cache_prune_status: {package_meta.get('package_cache_prune_status')}")
+    summary_lines.append(f"  package_cache_pruned_count: {package_meta.get('package_cache_pruned_count')}")
+    summary_lines.append(f"  package_cache_pruned_bytes: {package_meta.get('package_cache_pruned_bytes')}")
+    summary_lines.append(f"  package_cache_private_bytes: {package_meta.get('package_cache_private_bytes')}")
+    summary_lines.append(f"  package_reports: {len(package_reports)}")
+    summary_lines.append("")
     summary_lines.append(f"outputs_total_files: {manifest.get('outputs_total_files')}")
     summary_lines.append(f"outputs_total_bytes: {manifest.get('outputs_total_bytes')}")
     summary_lines.append(f"outputs_truncated: {manifest.get('outputs_truncated')}")
@@ -152,8 +214,11 @@ def make_result_zip(runner: object, j: object) -> None:
         zf.writestr("result_manifest.json", manifest_json)
 
         for extra_name in ("pip_install_stdout.txt", "pip_install_stderr.txt"):
-            p = work_dir / extra_name
-            safe_zip_write(zf, p, extra_name, work_dir)
+            p_extra = work_dir / extra_name
+            safe_zip_write(zf, p_extra, extra_name, work_dir)
+
+        for src, arcname in package_reports:
+            safe_zip_write(zf, src, arcname, src.parent)
 
         job_log_lines = [
             f"job_id={getattr(j, 'job_id')}",

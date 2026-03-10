@@ -1,0 +1,25 @@
+{
+  "generated_utc": "2026-03-10T11:54:00Z",
+  "job_id": "3f115886da9e4b62b45a31f19f5d45c9",
+  "outputs": [
+    {
+      "path": "outputs/completed_summary.json",
+      "size": 130
+    },
+    {
+      "path": "outputs/heartbeat_history.txt",
+      "size": 3141
+    },
+    {
+      "path": "outputs/last_known_progress.json",
+      "size": 175
+    }
+  ],
+  "outputs_limit_reason": null,
+  "outputs_max_bytes": 209715200,
+  "outputs_max_files": 2000,
+  "outputs_total_bytes": 3446,
+  "outputs_total_files": 3,
+  "outputs_truncated": false,
+  "runner_version": "0.6.13"
+}

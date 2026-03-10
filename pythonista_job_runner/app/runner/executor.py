@@ -1,4 +1,4 @@
-# Version: 0.6.13-live-logs.1
+# Version: 0.6.13-live-logs.2
 """Job execution helpers."""
 
 from __future__ import annotations
@@ -137,6 +137,7 @@ def run_job(runner: object, job_id: str) -> None:
         getattr(runner, "_write_status")(j)
 
         env = getattr(runner, "_build_job_env")(j.threads).copy()
+        active_package_environment_key = None
 
         pip_err = getattr(runner, "_maybe_install_requirements")(j, env)
         if pip_err:
@@ -153,6 +154,13 @@ def run_job(runner: object, job_id: str) -> None:
             getattr(runner, "_make_result_zip")(j)
             getattr(runner, "_notify_done")(j)
             return
+
+        active_package_environment_key = str((getattr(j, "package", {}) or {}).get("environment_key") or "").strip() or None
+        if active_package_environment_key:
+            try:
+                getattr(runner, "register_active_package_environment")(active_package_environment_key)
+            except Exception:
+                active_package_environment_key = None
 
         job_uid = getattr(runner, "_job_uid", None)
         job_gid = getattr(runner, "_job_gid", None)
@@ -279,6 +287,10 @@ def run_job(runner: object, job_id: str) -> None:
             pass
         getattr(runner, "_notify_done")(j)
     finally:
+        try:
+            getattr(runner, "release_active_package_environment")(locals().get("active_package_environment_key"))
+        except Exception:
+            pass
         try:
             sema.release()
         except Exception:

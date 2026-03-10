@@ -1,3 +1,4 @@
+# Version: 0.6.13-tests-webui-js-regressions.4
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -178,3 +179,30 @@ def test_shell_and_stats_expose_home_assistant_host_and_cidrs() -> None:
     assert 'id="meta_allowed_cidrs"' in overview
     assert 'function currentHomeAssistantHost()' in core
     assert 'const allowedCidrsText = ingressStrict' in render
+
+
+def test_detail_meta_renders_package_rows() -> None:
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "20_detail_meta.js")
+    assert "Package status" in detail
+    assert "Package cache hit" in detail
+    assert "Package wheelhouse hit" in detail
+    assert "Wheelhouse files" in detail
+    assert "Package env key" in detail
+    assert "Reusable venv" in detail
+    assert "Package install report" in detail
+
+
+def test_package_profiles_ui_and_actions_exist() -> None:
+    advanced = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "40_advanced.html")
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "20_detail_meta.js")
+
+    assert 'id="package_profiles_list"' in advanced
+    assert 'id="package_profiles_summary"' in advanced
+    assert 'function refreshPackageProfiles()' in refresh
+    assert 'function buildPackageProfile(' in refresh
+    assert 'data-action", "build-package-profile"' in refresh
+    assert 'refresh-package-profiles' in init
+    assert 'Package profile' in detail
+    assert 'Package profile bundle' in detail

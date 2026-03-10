@@ -1,4 +1,4 @@
-# Version: 0.6.12-supportbundle.2
+# Version: 0.6.13-supportbundle.1
 """Support-bundle builders with redaction-safe diagnostics content."""
 
 from __future__ import annotations
@@ -82,6 +82,18 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
         )
 
     audit_recent = _tail_jsonl(getattr(runner, "audit_log_path"), max_lines=50)
+    package_cache = {}
+    try:
+        if hasattr(runner, "package_cache_summary"):
+            package_cache = _redact_key_value("package_cache", runner.package_cache_summary())
+    except Exception:
+        package_cache = {"status": "error"}
+    eviction_log_path = None
+    try:
+        eviction_log_path = getattr(getattr(runner, "package_store_paths", None), "eviction_log_path", None)
+    except Exception:
+        eviction_log_path = None
+    package_evictions_recent = _tail_jsonl(Path(eviction_log_path), max_lines=20) if eviction_log_path else []
     return {
         "service": "pythonista_job_runner",
         "version": getattr(runner, "addon_version", "unknown"),
@@ -91,6 +103,8 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
             "recent_jobs_metadata",
             "recent_audit_events",
             "queue_state_summary",
+            "package_cache_summary",
+            "package_evictions_recent",
         ],
         "excluded": [
             "raw_job_payloads",
@@ -114,4 +128,6 @@ def build_support_bundle(runner: Any) -> dict[str, Any]:
         },
         "recent_jobs": jobs,
         "audit_recent": audit_recent,
+        "package_cache": package_cache,
+        "package_evictions_recent": package_evictions_recent,
     }

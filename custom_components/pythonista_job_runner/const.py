@@ -1,3 +1,4 @@
+# Version: 0.3.0-const.1
 """Constants for Pythonista Job Runner integration."""
 
 from __future__ import annotations
@@ -38,6 +39,9 @@ SERVICE_PURGE_DONE_JOBS = "purge_done_jobs"
 SERVICE_PURGE_FAILED_JOBS = "purge_failed_jobs"
 SERVICE_REFRESH = "refresh"
 SERVICE_CANCEL_JOB = "cancel_job"
+SERVICE_BUILD_PACKAGE_PROFILE = "build_package_profile"
+SERVICE_PRUNE_PACKAGE_CACHE = "prune_package_cache"
+SERVICE_PURGE_PACKAGE_CACHE = "purge_package_cache"
 
 RUNTIME_OPTION_KEYS = {
     CONF_SCAN_INTERVAL,

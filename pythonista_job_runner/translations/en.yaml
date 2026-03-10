@@ -1,4 +1,4 @@
-# Version: 0.6.13-config-help.1
+# Version: 0.6.13-config-help.5
 configuration:
   security:
     name: Security and access
@@ -73,11 +73,47 @@ configuration:
 
   python:
     name: Python package handling
-    description: Optional package installation and environment-variable allowlists for submitted jobs.
+    description: Optional package installation, persistent package storage, and environment-variable allowlists for submitted jobs.
     fields:
       install_requirements:
         name: Install requirements.txt automatically
-        description: Turn this on to install requirements.txt into a per-job folder before run.py starts.
+        description: Turn this on to install requirements.txt before run.py starts. Phase 1 keeps the current per-job install behaviour while the persistent package store is being introduced.
+      dependency_mode:
+        name: Dependency handling mode
+        description: disabled ignores requirements.txt, per_job uses the uploaded requirements.txt, and profile attaches the named default package profile from /config/package_profiles.
+      package_cache_enabled:
+        name: Enable persistent pip cache
+        description: Store pip download and wheel cache data under the add-on private /data area for reuse across jobs.
+      package_cache_max_mb:
+        name: Package cache limit (MB)
+        description: Soft target for private package storage size. The add-on now prunes least recently used cache content to stay near this limit while protecting active reusable environments.
+      package_cache_prune_on_start:
+        name: Prune package cache on add-on start
+        description: Run a best-effort package cache prune during add-on startup before new jobs begin.
+      package_profiles_enabled:
+        name: Enable package profiles
+        description: Allow named reusable package profiles stored in /config/package_profiles to be listed, built, and reused across jobs.
+      package_profile_default:
+        name: Default package profile
+        description: Optional profile name to use when dependency mode is set to profile. This should match a folder name under /config/package_profiles.
+      package_allow_public_wheelhouse:
+        name: Allow public wheel uploads
+        description: Allow the add-on to import validated wheel files from the public add-on config folder at /config into the private internal wheelhouse for reuse across jobs.
+      package_public_wheelhouse_subdir:
+        name: Public wheel uploads subfolder
+        description: Subfolder name created under /config for uploaded wheel files. Keep this to a simple folder name.
+      package_require_hashes:
+        name: Require package hashes
+        description: Require --hash entries when building from requirements.lock files. Leave this off unless you manage locked dependency sets with hashes.
+      package_offline_prefer_local:
+        name: Prefer local packages before remote indexes
+        description: Try local wheelhouse and uploaded wheel files first. If that does not satisfy requirements, pip can still fall back to remote indexes when configured.
+      venv_reuse_enabled:
+        name: Enable reusable virtual environments
+        description: Reuse keyed virtual environments under /data/pythonista_job_runner/venvs when the same dependency definition is seen again.
+      venv_max_count:
+        name: Maximum reusable virtual environments
+        description: Soft cap for how many cached virtual environments the add-on should keep once reuse is enabled.
       pip_timeout_seconds:
         name: pip install timeout (seconds)
         description: Maximum time allowed for each pip install step.

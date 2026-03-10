@@ -1,4 +1,4 @@
-# Version: 0.6.13-examples-tools.3
+# Version: 0.6.13-examples-tools.5
 """Validate the structure of the examples suite without third-party dependencies."""
 
 from __future__ import annotations
@@ -29,8 +29,24 @@ REQUIRED_ENTRY_KEYS = {
     "job_zip",
     "notes",
 }
-VALID_TRACKS = {"core", "toolchain"}
+VALID_TRACKS = {"core", "packages", "toolchain"}
 VALID_STATUSES = {"scaffold", "implemented", "validated"}
+
+IGNORED_REPO_PART_NAMES = {"__pycache__", ".DS_Store"}
+IGNORED_REPO_SUFFIXES = {".pyc", ".pyo"}
+
+
+def _find_ignored_repo_files(examples_root: Path) -> list[str]:
+    """Return ignored cache or compiled files that should not be checked into the examples tree."""
+    problems: list[str] = []
+    for path in sorted(examples_root.rglob("*")):
+        rel = path.relative_to(examples_root)
+        if any(part in IGNORED_REPO_PART_NAMES for part in rel.parts):
+            problems.append(rel.as_posix())
+            continue
+        if path.suffix.lower() in IGNORED_REPO_SUFFIXES:
+            problems.append(rel.as_posix())
+    return problems
 
 
 def zip_contains_root_run_py(zip_path: Path) -> bool:
@@ -151,6 +167,8 @@ def validate_examples_root(examples_root: Path, *, require_built_zips: bool = Tr
     """Return all validation errors for the examples suite."""
     manifest = load_manifest(examples_root)
     errors = validate_manifest_shape(manifest)
+    for rel_path in _find_ignored_repo_files(examples_root):
+        errors.append(f"checked-in cache or compiled file should be removed: {rel_path}")
     seen_ids: set[str] = set()
     for entry in manifest.get("examples", []):
         errors.extend(validate_entry(entry, examples_root, seen_ids, require_built_zips))

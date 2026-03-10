@@ -71,6 +71,18 @@
     "cancel_job": {
       "name": "Cancel job",
       "description": "Request cancellation of a queued or running job."
+    },
+    "build_package_profile": {
+      "name": "Build package profile",
+      "description": "Build or rebuild one named package profile inside the add-on package store."
+    },
+    "prune_package_cache": {
+      "name": "Prune package cache",
+      "description": "Trim private package storage down towards the configured cache limit."
+    },
+    "purge_package_cache": {
+      "name": "Purge package cache",
+      "description": "Remove cached package artefacts, with optional reusable environments and imported wheels."
     }
   }
 }

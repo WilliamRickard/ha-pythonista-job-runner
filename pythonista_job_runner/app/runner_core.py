@@ -1,4 +1,4 @@
-# Version: 0.6.13-core.1
+# Version: 0.6.13-core.6
 from __future__ import annotations
 
 import ipaddress
@@ -26,6 +26,9 @@ from runner import fs_safe as _fs_safe
 from runner import hashes as _hashes
 from runner import housekeeping as _housekeeping
 from runner import notify as _notify
+from runner import package_profiles as _package_profiles
+from runner import package_prune as _package_prune
+from runner import package_store as _package_store
 from runner import process as _process
 from runner import redact as _redact
 from runner import results as _results
@@ -90,6 +93,7 @@ def _normalise_options(data: Dict[str, Any]) -> Dict[str, Any]:
         "notifications",
         "artefacts",
         "housekeeping",
+        "telemetry",
     }
 
     flat: Dict[str, Any] = {}
@@ -169,6 +173,8 @@ class Job:
     tail_stdout: TailBuffer = dataclasses.field(default_factory=lambda: TailBuffer(8000))
     tail_stderr: TailBuffer = dataclasses.field(default_factory=lambda: TailBuffer(8000))
 
+    package: Dict[str, Any] = dataclasses.field(default_factory=dict)
+
     def duration_seconds(self) -> Optional[int]:
         if not self.started_utc:
             return None
@@ -210,6 +216,7 @@ class Job:
             "result_filename": self.result_zip.name,
             "input_sha256": self.input_sha256,
             "delete_requested": self.delete_requested,
+            "package": self.package,
         }
 
 
@@ -340,6 +347,22 @@ class Runner:
         self.pip_timeout_seconds = _opt_int("pip_timeout_seconds", 120, 10, 3600)
         self.pip_index_url = str(opts.get("pip_index_url") or "").strip()
         self.pip_extra_index_url = str(opts.get("pip_extra_index_url") or "").strip()
+        self.dependency_mode = str(opts.get("dependency_mode") or "per_job").strip() or "per_job"
+        if self.dependency_mode not in {"disabled", "per_job", "profile"}:
+            self.dependency_mode = "per_job"
+        self.package_cache_enabled = bool(opts.get("package_cache_enabled", True))
+        self.package_cache_max_mb = _opt_int("package_cache_max_mb", 2048, 256, 65536)
+        self.package_cache_prune_on_start = bool(opts.get("package_cache_prune_on_start", True))
+        self.package_profiles_enabled = bool(opts.get("package_profiles_enabled", True))
+        self.package_profile_default = str(opts.get("package_profile_default") or "").strip()
+        self.package_allow_public_wheelhouse = bool(opts.get("package_allow_public_wheelhouse", True))
+        self.package_public_wheelhouse_subdir = _package_store.sanitise_public_subdir(
+            str(opts.get("package_public_wheelhouse_subdir") or "wheel_uploads").strip() or "wheel_uploads"
+        )
+        self.package_require_hashes = bool(opts.get("package_require_hashes", False))
+        self.package_offline_prefer_local = bool(opts.get("package_offline_prefer_local", True))
+        self.venv_reuse_enabled = bool(opts.get("venv_reuse_enabled", True))
+        self.venv_max_count = _opt_int("venv_max_count", 20, 0, 500)
 
         trusted_hosts: List[str] = []
         for x in (opts.get("pip_trusted_hosts") or []):
@@ -422,6 +445,21 @@ class Runner:
         self._telemetry_thread: threading.Thread | None = None
 
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
+        self.package_store_paths = _package_store.build_package_store_paths(
+            self.data_dir,
+            public_root=_package_store.PUBLIC_CONFIG_ROOT,
+            public_wheelhouse_subdir=self.package_public_wheelhouse_subdir,
+        )
+        self.package_store_bootstrap = _package_store.bootstrap_package_store(self.package_store_paths)
+        self._active_package_env_lock = threading.Lock()
+        self._active_package_env_keys: set[str] = set()
+        if self.package_cache_prune_on_start:
+            try:
+                self.package_cache_startup_prune = _package_prune.prune_package_store(self, reason="startup")
+            except Exception as e:
+                self.package_cache_startup_prune = {"status": "error", "reason": "startup", "error": f"{type(e).__name__}: {e}"}
+        else:
+            self.package_cache_startup_prune = {"status": "skipped", "reason": "startup_disabled"}
         self._load_jobs_from_disk()
         if start_reaper:
             self._reaper_thread = threading.Thread(target=self._reaper, name="runner-reaper", daemon=True)
@@ -572,6 +610,142 @@ class Runner:
     def support_bundle_dict(self) -> Dict[str, Any]:
         """Return redacted support-bundle payload for troubleshooting."""
         return build_support_bundle(self)
+
+    def list_package_profiles(self) -> Dict[str, Any]:
+        """Return the current package profile inventory."""
+        return _package_profiles.list_profiles(self)
+
+    def build_package_profile(self, profile_name: str | None = None, *, rebuild: bool = False, actor: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        """Build or rebuild one named package profile and record an audit event."""
+        result = _package_profiles.build_profile(self, profile_name, rebuild=rebuild)
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "package_profile_build",
+                safe_actor,
+                details={
+                    "profile_name": str(profile_name or self.package_profile_default or ""),
+                    "rebuild": bool(rebuild),
+                    "status": str(result.get("status") or "unknown"),
+                    "error": result.get("error") or result.get("last_error"),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+    def register_active_package_environment(self, environment_key: str | None) -> None:
+        """Record that one reusable environment key is attached to a running job."""
+        key = str(environment_key or "").strip()
+        if not key:
+            return
+        with self._active_package_env_lock:
+            self._active_package_env_keys.add(key)
+
+    def release_active_package_environment(self, environment_key: str | None) -> None:
+        """Release one active reusable environment key after job completion."""
+        key = str(environment_key or "").strip()
+        if not key:
+            return
+        with self._active_package_env_lock:
+            self._active_package_env_keys.discard(key)
+
+    def active_package_environment_keys(self) -> List[str]:
+        """Return active reusable environment keys that must not be pruned."""
+        with self._active_package_env_lock:
+            return sorted(self._active_package_env_keys)
+
+    def package_summary(self) -> Dict[str, Any]:
+        """Return one combined package subsystem summary payload."""
+        cache = self.package_cache_summary()
+        profiles = self.list_package_profiles()
+        default_profile = str(getattr(self, "package_profile_default", "") or "")
+        summary = {
+            "cache_private_bytes": int(cache.get("private_bytes", 0) or 0),
+            "cache_public_bytes": int(cache.get("public_bytes", 0) or 0),
+            "cache_max_bytes": int(cache.get("package_cache_max_bytes", 0) or 0),
+            "cache_over_limit": bool(cache.get("over_limit", False)),
+            "venv_count": int(cache.get("venv_count", 0) or 0),
+            "wheel_count": int(cache.get("wheel_count", 0) or 0),
+            "profile_count": int(profiles.get("profile_count", 0) or 0),
+            "ready_profile_count": int(profiles.get("ready_count", 0) or 0),
+            "default_profile": default_profile,
+            "last_prune_status": cache.get("last_prune_status"),
+            "last_prune_reason": cache.get("last_prune_reason"),
+            "last_prune_removed": int(cache.get("last_prune_removed", 0) or 0),
+            "last_prune_utc": cache.get("last_prune_utc"),
+        }
+        return {
+            "status": str(cache.get("status") or "ok"),
+            "dependency_mode": str(getattr(self, "dependency_mode", "per_job") or "per_job"),
+            "package_profiles_enabled": bool(getattr(self, "package_profiles_enabled", True)),
+            "default_profile": default_profile,
+            "summary": summary,
+            "cache": cache,
+            "profiles": profiles,
+        }
+
+    def package_cache_summary(self) -> Dict[str, Any]:
+        """Return current package storage usage, limits, and recent actions."""
+        return _package_prune.package_cache_summary(self)
+
+    def prune_package_cache(self, *, actor: Dict[str, Any] | None = None, reason: str = "manual") -> Dict[str, Any]:
+        """Prune package storage to the configured soft cap and record audit."""
+        result = _package_prune.prune_package_store(self, reason=reason, actor=actor)
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "package_cache_prune",
+                safe_actor,
+                details={
+                    "reason": reason,
+                    "status": str(result.get("status") or "unknown"),
+                    "removed": int(result.get("removed", 0) or 0),
+                    "removed_bytes": int(result.get("removed_bytes", 0) or 0),
+                    "before_bytes": int(result.get("before_bytes", 0) or 0),
+                    "after_bytes": int(result.get("after_bytes", 0) or 0),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+    def purge_package_cache(
+        self,
+        *,
+        actor: Dict[str, Any] | None = None,
+        reason: str = "manual",
+        include_venvs: bool = False,
+        include_imported_wheels: bool = False,
+    ) -> Dict[str, Any]:
+        """Purge package caches and optional reusable environments, then record audit."""
+        result = _package_prune.purge_package_store(
+            self,
+            reason=reason,
+            actor=actor,
+            include_venvs=include_venvs,
+            include_imported_wheels=include_imported_wheels,
+        )
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "package_cache_purge",
+                safe_actor,
+                details={
+                    "reason": reason,
+                    "status": str(result.get("status") or "unknown"),
+                    "include_venvs": bool(include_venvs),
+                    "include_imported_wheels": bool(include_imported_wheels),
+                    "removed": int(result.get("removed", 0) or 0),
+                    "removed_bytes": int(result.get("removed_bytes", 0) or 0),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
 
     def _start_telemetry_worker_if_needed(self) -> None:
         """Start the telemetry worker lazily when telemetry publication is enabled."""
