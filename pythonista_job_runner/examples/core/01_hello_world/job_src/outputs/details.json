@@ -1,0 +1,11 @@
+{
+  "example_id": "01_hello_world",
+  "files_written": [
+    "outputs/hello.txt"
+  ],
+  "greeting": "Hello from Pythonista Job Runner example 01.",
+  "requires_toolchain": false,
+  "status": "implemented",
+  "title": "Hello world",
+  "track": "core"
+}

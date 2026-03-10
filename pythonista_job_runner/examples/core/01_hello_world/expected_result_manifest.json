@@ -1,0 +1,33 @@
+{
+  "_version": "0.6.13-examples.2",
+  "compare_files": [
+    "outputs/details.json",
+    "outputs/hello.txt",
+    "stderr.txt",
+    "stdout.txt"
+  ],
+  "description": "Deterministic reference files for the stable subset of the hello-world result.",
+  "example_id": "01_hello_world",
+  "files": [
+    {
+      "path": "outputs/details.json",
+      "sha256": "fa0c518603b217f2487813793e2e0ada462da213f81a01ac3c4d6e2759be15d5",
+      "size": 252
+    },
+    {
+      "path": "outputs/hello.txt",
+      "sha256": "1753e5aab2f9c81deae4d3ba4c83d4be3f50081765d6e9fc59ed0cc30a029b77",
+      "size": 45
+    },
+    {
+      "path": "stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "stdout.txt",
+      "sha256": "bdbd82fab19f51c01e65970d83dc6659bd35bce1b9e7336c0cf1fd6098417279",
+      "size": 129
+    }
+  ]
+}

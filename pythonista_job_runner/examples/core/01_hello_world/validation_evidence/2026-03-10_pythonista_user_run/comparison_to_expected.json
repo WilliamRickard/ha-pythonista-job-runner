@@ -1,0 +1,47 @@
+{
+  "_version": "0.6.13-examples.3",
+  "example_id": "01_hello_world",
+  "validated_run": {
+    "job_id": "423d3e4f94864c37abbd9aa81bb2d07a",
+    "created_utc": "2026-03-10T08:59:10Z",
+    "finished_utc": "2026-03-10T08:59:11Z",
+    "duration_seconds": 1,
+    "state": "done",
+    "exit_code": 0
+  },
+  "compare_files": [
+    {
+      "path": "outputs/details.json",
+      "matched": true,
+      "actual_sha256": "fa0c518603b217f2487813793e2e0ada462da213f81a01ac3c4d6e2759be15d5",
+      "expected_sha256": "fa0c518603b217f2487813793e2e0ada462da213f81a01ac3c4d6e2759be15d5",
+      "actual_size": 252,
+      "expected_size": 252
+    },
+    {
+      "path": "outputs/hello.txt",
+      "matched": true,
+      "actual_sha256": "1753e5aab2f9c81deae4d3ba4c83d4be3f50081765d6e9fc59ed0cc30a029b77",
+      "expected_sha256": "1753e5aab2f9c81deae4d3ba4c83d4be3f50081765d6e9fc59ed0cc30a029b77",
+      "actual_size": 45,
+      "expected_size": 45
+    },
+    {
+      "path": "stderr.txt",
+      "matched": true,
+      "actual_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual_size": 0,
+      "expected_size": 0
+    },
+    {
+      "path": "stdout.txt",
+      "matched": true,
+      "actual_sha256": "bdbd82fab19f51c01e65970d83dc6659bd35bce1b9e7336c0cf1fd6098417279",
+      "expected_sha256": "bdbd82fab19f51c01e65970d83dc6659bd35bce1b9e7336c0cf1fd6098417279",
+      "actual_size": 129,
+      "expected_size": 129
+    }
+  ],
+  "all_compared_files_matched": true
+}

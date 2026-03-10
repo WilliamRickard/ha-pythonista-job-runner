@@ -1,0 +1,149 @@
+{
+  "_version": "0.6.13-examples.4",
+  "schema_version": 1,
+  "examples_version": 2,
+  "tracks": [
+    {
+      "id": "core",
+      "title": "Core examples",
+      "requires_toolchain": false
+    },
+    {
+      "id": "toolchain",
+      "title": "Toolchain examples",
+      "requires_toolchain": true
+    }
+  ],
+  "examples": [
+    {
+      "id": "01_hello_world",
+      "order": 1,
+      "track": "core",
+      "title": "Hello world",
+      "status": "validated",
+      "requires_toolchain": false,
+      "folder": "core/01_hello_world",
+      "readme": "core/01_hello_world/README.md",
+      "job_src": "core/01_hello_world/job_src",
+      "job_zip": "core/01_hello_world/job.zip",
+      "notes": "Implemented hello-world example with deterministic reference artefacts and checked-in user validation evidence from a successful Pythonista runner run."
+    },
+    {
+      "id": "02_live_logs_progress",
+      "order": 2,
+      "track": "core",
+      "title": "Live logs and progress",
+      "status": "scaffold",
+      "requires_toolchain": false,
+      "folder": "core/02_live_logs_progress",
+      "readme": "core/02_live_logs_progress/README.md",
+      "job_src": "core/02_live_logs_progress/job_src",
+      "job_zip": "core/02_live_logs_progress/job.zip",
+      "notes": "Scaffold placeholder for the live log streaming example."
+    },
+    {
+      "id": "03_process_input_files",
+      "order": 3,
+      "track": "core",
+      "title": "Process input files",
+      "status": "scaffold",
+      "requires_toolchain": false,
+      "folder": "core/03_process_input_files",
+      "readme": "core/03_process_input_files/README.md",
+      "job_src": "core/03_process_input_files/job_src",
+      "job_zip": "core/03_process_input_files/job.zip",
+      "notes": "Scaffold placeholder for the bundled input processing example."
+    },
+    {
+      "id": "04_cancel_long_running_job",
+      "order": 4,
+      "track": "core",
+      "title": "Cancel long-running job",
+      "status": "scaffold",
+      "requires_toolchain": false,
+      "folder": "core/04_cancel_long_running_job",
+      "readme": "core/04_cancel_long_running_job/README.md",
+      "job_src": "core/04_cancel_long_running_job/job_src",
+      "job_zip": "core/04_cancel_long_running_job/job.zip",
+      "notes": "Scaffold placeholder for the cancellation workflow example."
+    },
+    {
+      "id": "05_requirements_optional",
+      "order": 5,
+      "track": "core",
+      "title": "Optional requirements install",
+      "status": "scaffold",
+      "requires_toolchain": false,
+      "folder": "core/05_requirements_optional",
+      "readme": "core/05_requirements_optional/README.md",
+      "job_src": "core/05_requirements_optional/job_src",
+      "job_zip": "core/05_requirements_optional/job.zip",
+      "notes": "Scaffold placeholder for the optional requirements example."
+    },
+    {
+      "id": "06_python_package_and_tests",
+      "order": 6,
+      "track": "toolchain",
+      "title": "Python package and tests",
+      "status": "scaffold",
+      "requires_toolchain": true,
+      "folder": "toolchain/06_python_package_and_tests",
+      "readme": "toolchain/06_python_package_and_tests/README.md",
+      "job_src": "toolchain/06_python_package_and_tests/job_src",
+      "job_zip": "toolchain/06_python_package_and_tests/job.zip",
+      "notes": "Scaffold placeholder for the richer Python project example."
+    },
+    {
+      "id": "07_cpp_compile_and_run",
+      "order": 7,
+      "track": "toolchain",
+      "title": "C++ compile and run",
+      "status": "scaffold",
+      "requires_toolchain": true,
+      "folder": "toolchain/07_cpp_compile_and_run",
+      "readme": "toolchain/07_cpp_compile_and_run/README.md",
+      "job_src": "toolchain/07_cpp_compile_and_run/job_src",
+      "job_zip": "toolchain/07_cpp_compile_and_run/job.zip",
+      "notes": "Scaffold placeholder for the native C++ example."
+    },
+    {
+      "id": "08_rust_cargo_cli",
+      "order": 8,
+      "track": "toolchain",
+      "title": "Rust Cargo CLI",
+      "status": "scaffold",
+      "requires_toolchain": true,
+      "folder": "toolchain/08_rust_cargo_cli",
+      "readme": "toolchain/08_rust_cargo_cli/README.md",
+      "job_src": "toolchain/08_rust_cargo_cli/job_src",
+      "job_zip": "toolchain/08_rust_cargo_cli/job.zip",
+      "notes": "Scaffold placeholder for the Rust Cargo example."
+    },
+    {
+      "id": "09_polyglot_same_task_benchmark",
+      "order": 9,
+      "track": "toolchain",
+      "title": "Polyglot same-task benchmark",
+      "status": "scaffold",
+      "requires_toolchain": true,
+      "folder": "toolchain/09_polyglot_same_task_benchmark",
+      "readme": "toolchain/09_polyglot_same_task_benchmark/README.md",
+      "job_src": "toolchain/09_polyglot_same_task_benchmark/job_src",
+      "job_zip": "toolchain/09_polyglot_same_task_benchmark/job.zip",
+      "notes": "Scaffold placeholder for the benchmark example."
+    },
+    {
+      "id": "10_python_orchestrates_native_binary",
+      "order": 10,
+      "track": "toolchain",
+      "title": "Python orchestrates native binary",
+      "status": "scaffold",
+      "requires_toolchain": true,
+      "folder": "toolchain/10_python_orchestrates_native_binary",
+      "readme": "toolchain/10_python_orchestrates_native_binary/README.md",
+      "job_src": "toolchain/10_python_orchestrates_native_binary/job_src",
+      "job_zip": "toolchain/10_python_orchestrates_native_binary/job.zip",
+      "notes": "Scaffold placeholder for the mixed-language orchestration example."
+    }
+  ]
+}
