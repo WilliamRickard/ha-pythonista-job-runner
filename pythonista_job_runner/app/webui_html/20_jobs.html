@@ -48,8 +48,8 @@
                     <button type="button" class="small sort-option" data-action="set-sort" data-sort="errors" role="menuitemradio" aria-checked="false">Errors first</button>
                   </div>
                 </details>
-                <details class="secondary-panel filters-sheet-trigger">
-                  <summary><span class="summary-label">Filters</span><span>By user, date, and artifacts</span></summary>
+                <details class="secondary-panel filters-sheet-trigger" id="filters_menu">
+                  <summary><span class="summary-label">Filters</span><span id="filters_summary">User, date, and artifacts</span></summary>
                   <div class="secondary-panel-body filters-sheet-body">
                     <div class="field-shell filters-field-group">
                       <div class="field adv-field combobox-field">
@@ -73,6 +73,9 @@
                       </div>
                       <div class="separator" role="separator" aria-hidden="true"></div>
                       <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                      <div class="filters-footer-row">
+                        <button type="button" class="small tertiary" data-action="close-filters-panel">Done</button>
+                      </div>
                     </div>
                   </div>
                 </details>

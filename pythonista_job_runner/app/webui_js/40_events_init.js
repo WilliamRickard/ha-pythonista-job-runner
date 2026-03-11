@@ -15,6 +15,27 @@ function toggleAuto() {
   }
 
 
+
+  function updateFiltersSummaryUi() {
+    const summary = document.getElementById("filters_summary");
+    if (!summary) return;
+    const parts = [];
+    if (String(filterUser || "").trim()) parts.push(`User: ${String(filterUser).trim()}`);
+    if (String(filterSince || "").trim()) parts.push(`From: ${filterSince}`);
+    if (filterHasResult) parts.push("Has result zip");
+    summary.textContent = parts.length ? parts.join(" · ") : "User, date, and artifacts";
+  }
+
+  function closeJobsFiltersPanel(options) {
+    const returnFocus = !!(options && options.returnFocus);
+    const panel = document.getElementById("filters_menu");
+    if (!panel) return;
+    panel.open = false;
+    if (!returnFocus) return;
+    const summary = panel.querySelector("summary");
+    if (summary && typeof summary.focus === "function") summary.focus();
+  }
+
   function isHeaderMoreElement(el) {
     return !!(el && el.closest && el.closest("#header_more_toggle, #header_more_panel button[data-action], #header_more_panel"));
   }
@@ -106,6 +127,7 @@ function toggleAuto() {
           storageSet("pjr_filter_user", "");
           applyFilters();
           updateClearButtonVisibility();
+          updateFiltersSummaryUi();
         }
         if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
@@ -113,6 +135,7 @@ function toggleAuto() {
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
         if (action === "set-date-preset") setDatePreset(btn.getAttribute("data-preset") || "clear");
+        if (action === "close-filters-panel") closeJobsFiltersPanel({ returnFocus: true });
         if (action === "page-prev") goToNextPage(-1);
         if (action === "page-next") goToNextPage(1);
         if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
@@ -288,6 +311,11 @@ function toggleAuto() {
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
+        const filtersPanel = document.getElementById("filters_menu");
+        if (filtersPanel && filtersPanel.open) {
+          closeJobsFiltersPanel({ returnFocus: true });
+          return;
+        }
         if (els.header_more_panel && !els.header_more_panel.hidden) closeHeaderMoreMenu({ returnFocus: true });
         if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
         if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
@@ -333,6 +361,7 @@ function toggleAuto() {
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
         applyFilters();
         updateClearButtonVisibility();
+        updateFiltersSummaryUi();
       });
     }
 
@@ -343,6 +372,7 @@ function toggleAuto() {
         storageSet("pjr_filter_user", filterUser);
         applyFilters();
         updateClearButtonVisibility();
+        updateFiltersSummaryUi();
       });
     }
 
@@ -353,6 +383,7 @@ function toggleAuto() {
         storageSet("pjr_filter_since", filterSince);
         applyFilters();
         updateClearButtonVisibility();
+        updateFiltersSummaryUi();
       });
     }
     if (els.auto) {
@@ -732,6 +763,7 @@ function toggleAuto() {
     const savedSinceFilter = storageGet("pjr_filter_since");
     if (savedSinceFilter !== null) filterSince = savedSinceFilter;
     if (els.filter_since) els.filter_since.value = filterSince;
+    updateFiltersSummaryUi();
 
     const savedDensity = storageGet("pjr_density");
     if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";

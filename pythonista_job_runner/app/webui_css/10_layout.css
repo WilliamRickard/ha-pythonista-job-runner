@@ -812,6 +812,11 @@ label{
 .secondary-panel summary{list-style:none;cursor:pointer;padding:8px 12px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:12px;background:color-mix(in srgb, var(--panel2) 40%, transparent);font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:8px;min-height:42px;}
 .filters-sheet-trigger .summary-label{font-weight:700;color:var(--muted);}
 .secondary-panel[open] .secondary-panel-body{margin-top:8px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:12px;padding:10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
+
+.filters-footer-row{display:flex;justify-content:flex-end;padding-top:6px;}
+.filters-footer-row .small{min-height:42px;min-width:88px;}
+.secondary-panel summary:focus-visible{outline:2px solid rgba(138,180,255,0.72);outline-offset:2px;}
+.toggle-group .toggle-item:focus-visible{position:relative;z-index:1;outline:2px solid rgba(138,180,255,0.72);outline-offset:-2px;}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
