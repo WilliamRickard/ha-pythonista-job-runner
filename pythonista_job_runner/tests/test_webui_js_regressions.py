@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-webui-js-regressions.8
+# Version: 0.6.13-tests-webui-js-regressions.9
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -208,23 +208,29 @@ def test_package_profiles_ui_and_actions_exist() -> None:
     assert 'Package profile bundle' in detail
 
 
-def test_header_more_menu_buttons_have_touch_fallback() -> None:
-    """Header more-menu actions should work on touch devices such as iPhone Ingress."""
+def test_header_more_menu_buttons_have_direct_touch_and_pointer_handlers() -> None:
+    """Header more-menu actions should not rely only on delegated document clicks."""
 
     init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
     built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+    css = _read(Path(__file__).resolve().parent.parent / "app" / "webui.css")
 
-    assert 'function bindHeaderMoreTouchActions()' in init
-    assert 'document.querySelectorAll(".header-more-panel button[data-action]")' in init
-    assert 'btn.addEventListener("touchend",' in init
-    assert 'btn.click();' in init
-    assert 'bindHeaderMoreTouchActions();' in init
+    for source in (init, built):
+        assert 'function runHeaderMoreAction(btn)' in source
+        assert 'function bindHeaderMoreTouchActions()' in source
+        assert 'bindHeaderMoreEvent(btn, "pointerup", true);' in source
+        assert 'bindHeaderMoreEvent(btn, "touchend", true);' in source
+        assert 'bindHeaderMoreEvent(btn, "click", false);' in source
+        assert '_headerMoreTouchLockUntil = Date.now() + 700;' in source
+        assert 'if (action === "open-command")' in source
+        assert 'if (action === "open-settings")' in source
+        assert 'if (action === "open-about")' in source
+        assert 'bindHeaderMoreTouchActions();' in source
 
-    assert 'function bindHeaderMoreTouchActions()' in built
-    assert 'document.querySelectorAll(".header-more-panel button[data-action]")' in built
-    assert 'btn.addEventListener("touchend",' in built
-    assert 'btn.click();' in built
-    assert 'bindHeaderMoreTouchActions();' in built
+    assert '.header-more-menu summary{' in css
+    assert 'touch-action:manipulation;' in css
+    assert '.header-more-panel .menu-item{' in css
+    assert 'cursor:pointer;' in css
 
 
 def test_setup_ui_and_actions_exist() -> None:

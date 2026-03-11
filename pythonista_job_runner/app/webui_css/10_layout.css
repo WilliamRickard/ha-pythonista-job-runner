@@ -250,6 +250,9 @@
 
 .header-more-menu summary{
   list-style:none;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 
 .header-more-menu summary::-webkit-details-marker{display:none;}
@@ -277,6 +280,9 @@
 .header-more-panel .menu-item{
   width:100%;
   justify-content:flex-start;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 
 button.tertiary, .linkbtn.tertiary{
