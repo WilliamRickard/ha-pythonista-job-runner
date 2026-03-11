@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.15
+# Version: 0.6.12-webui.16
 """Regression tests for mobile UX, accessibility, and detail-lifecycle Web UI improvements."""
 
 from __future__ import annotations
@@ -149,7 +149,8 @@ def test_single_primary_refresh_and_secondary_header_actions() -> None:
     html = build_webui()
 
     assert html.count('data-action="refresh"') == 1
-    assert 'class="header-more-menu"' in html
+    assert 'id="header_more_toggle"' in html
+    assert 'id="header_more_panel"' in html
     assert 'data-action="open-settings"' in html
     assert 'data-action="open-about"' in html
     assert 'data-action="open-advanced"' in html

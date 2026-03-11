@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-webui-js-regressions.9
+# Version: 0.6.13-tests-webui-js-regressions.8
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -208,31 +208,6 @@ def test_package_profiles_ui_and_actions_exist() -> None:
     assert 'Package profile bundle' in detail
 
 
-def test_header_more_menu_buttons_have_direct_touch_and_pointer_handlers() -> None:
-    """Header more-menu actions should not rely only on delegated document clicks."""
-
-    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
-    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
-    css = _read(Path(__file__).resolve().parent.parent / "app" / "webui.css")
-
-    for source in (init, built):
-        assert 'function runHeaderMoreAction(btn)' in source
-        assert 'function bindHeaderMoreTouchActions()' in source
-        assert 'bindHeaderMoreEvent(btn, "pointerup", true);' in source
-        assert 'bindHeaderMoreEvent(btn, "touchend", true);' in source
-        assert 'bindHeaderMoreEvent(btn, "click", false);' in source
-        assert '_headerMoreTouchLockUntil = Date.now() + 700;' in source
-        assert 'if (action === "open-command")' in source
-        assert 'if (action === "open-settings")' in source
-        assert 'if (action === "open-about")' in source
-        assert 'bindHeaderMoreTouchActions();' in source
-
-    assert '.header-more-menu summary{' in css
-    assert 'touch-action:manipulation;' in css
-    assert '.header-more-panel .menu-item{' in css
-    assert 'cursor:pointer;' in css
-
-
 def test_setup_ui_and_actions_exist() -> None:
     setup_html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "42_setup.html")
     settings = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "45_settings.html")
@@ -264,3 +239,24 @@ def test_setup_ui_and_actions_exist() -> None:
     assert 'setup-copy-config-snippet' in init
     assert 'setup-delete-profile' in init
     assert 'function openSetup()' in render
+
+
+def test_header_more_menu_uses_plain_button_panel_and_direct_handlers() -> None:
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    layout = _read(Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css")
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+
+    assert 'id="header_more_toggle"' in shell
+    assert 'id="header_more_panel"' in shell
+    assert 'class="header-more-menu"' not in shell
+    assert '<details class="header-more-menu">' not in shell
+    assert 'function bindHeaderMoreDirectActions()' in init
+    assert 'function runHeaderMoreAction(action)' in init
+    assert 'consumeHeaderMoreSyntheticClick(ev)' in init
+    assert 'headerMoreClickLockUntil' in init
+    assert 'pointerup' in init
+    assert 'touchend' in init
+    assert '.header-more-wrap{' in layout
+    assert 'touch-action:manipulation;' in layout
+    assert 'function bindHeaderMoreDirectActions()' in built
