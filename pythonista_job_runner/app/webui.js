@@ -1,4 +1,4 @@
-/* VERSION: 0.6.13-webui.9 */
+/* VERSION: 0.6.13-webui.8 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -3396,152 +3396,197 @@ function toggleAuto() {
     if (sourceBtn && typeof sourceBtn.focus === "function") sourceBtn.focus();
   }
 
-  let _headerMoreTouchLockUntil = 0;
 
-  function closeHeaderMoreMenu(btn) {
-    const moreMenu = btn ? btn.closest(".header-more-menu") : null;
-    if (moreMenu) moreMenu.open = false;
+  let headerMoreClickLockUntil = 0;
+  let headerMoreClickLockTarget = null;
+
+  function isHeaderMoreElement(el) {
+    return !!(el && el.closest && el.closest("#header_more_toggle, #header_more_panel button[data-action], #header_more_panel"));
   }
 
-  async function runHeaderMoreAction(btn) {
-    const action = btn ? btn.getAttribute("data-action") : "";
+  function lockHeaderMoreSyntheticClick(target) {
+    headerMoreClickLockUntil = Date.now() + 700;
+    headerMoreClickLockTarget = target || null;
+  }
+
+  function consumeHeaderMoreSyntheticClick(ev) {
+    if (!ev || ev.type !== "click") return false;
+    const target = (ev.target instanceof Element) ? ev.target.closest("#header_more_toggle, #header_more_panel button[data-action]") : null;
+    if (!target) return false;
+    if (Date.now() > headerMoreClickLockUntil) return false;
+    if (headerMoreClickLockTarget && target !== headerMoreClickLockTarget) return false;
+    ev.preventDefault();
+    ev.stopPropagation();
+    return true;
+  }
+
+  function closeHeaderMoreMenu(options) {
+    const returnFocus = !!(options && options.returnFocus);
+    if (!els.header_more_panel || !els.header_more_toggle) return;
+    els.header_more_panel.hidden = true;
+    els.header_more_toggle.setAttribute("aria-expanded", "false");
+    if (returnFocus && typeof els.header_more_toggle.focus === "function") {
+      els.header_more_toggle.focus();
+    }
+  }
+
+  function openHeaderMoreMenu() {
+    if (!els.header_more_panel || !els.header_more_toggle) return;
+    els.header_more_panel.hidden = false;
+    els.header_more_toggle.setAttribute("aria-expanded", "true");
+  }
+
+  function toggleHeaderMoreMenu() {
+    if (!els.header_more_panel || !els.header_more_toggle) return;
+    if (els.header_more_panel.hidden) {
+      openHeaderMoreMenu();
+    } else {
+      closeHeaderMoreMenu({ returnFocus: true });
+    }
+  }
+
+  async function runHeaderMoreAction(action) {
+    closeHeaderMoreMenu();
     if (action === "open-command") {
-      closeHeaderMoreMenu(btn);
       openCommand();
-      return true;
+      return;
     }
     if (action === "open-settings") {
-      closeHeaderMoreMenu(btn);
       openSettings();
-      return true;
+      return;
     }
     if (action === "open-about") {
-      closeHeaderMoreMenu(btn);
       await openAbout();
-      return true;
     }
-    return false;
   }
 
-  function bindHeaderMoreTouchActions() {
-    const buttons = Array.from(document.querySelectorAll(".header-more-panel button[data-action]"));
-    const bindHeaderMoreEvent = (btn, eventName, delaySyntheticClick) => {
-      btn.addEventListener(eventName, async (ev) => {
-        if (eventName === "click" && Date.now() < _headerMoreTouchLockUntil) return;
+  function bindHeaderMoreDirectActions() {
+    if (!els.header_more_toggle || !els.header_more_panel) return;
+
+    const onToggleActivate = (ev) => {
+      if (ev.type === "touchend" || ev.type === "pointerup") {
+        lockHeaderMoreSyntheticClick(els.header_more_toggle);
+      }
+      ev.preventDefault();
+      ev.stopPropagation();
+      toggleHeaderMoreMenu();
+    };
+
+    els.header_more_toggle.addEventListener("click", onToggleActivate);
+    els.header_more_toggle.addEventListener("pointerup", onToggleActivate);
+    els.header_more_toggle.addEventListener("touchend", onToggleActivate, { passive: false });
+
+    els.header_more_panel.querySelectorAll("button[data-action]").forEach((btn) => {
+      const onActionActivate = async (ev) => {
+        if (ev.type === "touchend" || ev.type === "pointerup") {
+          lockHeaderMoreSyntheticClick(btn);
+        }
         ev.preventDefault();
         ev.stopPropagation();
-        if (delaySyntheticClick) _headerMoreTouchLockUntil = Date.now() + 700;
         try {
-          const handled = await runHeaderMoreAction(btn);
-          if (!handled && eventName !== "click") btn.click();
+          await runHeaderMoreAction(btn.getAttribute("data-action") || "");
         } catch (e) {
           toast("err", "Action failed", e && e.message ? e.message : String(e));
         }
-      }, { passive: false });
-    };
-
-    for (const btn of buttons) {
-      bindHeaderMoreEvent(btn, "pointerup", true);
-      bindHeaderMoreEvent(btn, "touchend", true);
-      bindHeaderMoreEvent(btn, "click", false);
-    }
-  }
-
-  async function dispatchButtonAction(btn) {
-    const action = btn.getAttribute("data-action");
-    if (await runHeaderMoreAction(btn)) return;
-    if (action === "refresh") await refreshAll();
-    if (action === "close-command") closeCommand();
-    if (action === "command-run") await runCommand(btn.getAttribute("data-command") || "");
-    if (action === "close-settings") closeSettings();
-    if (action === "open-setup") openSetup();
-    if (action === "open-advanced") openAdvanced();
-    if (action === "refresh-setup-status") await refreshSetupStatus();
-    if (action === "setup-apply-persistent-mode") await applySetupPersistentMode();
-    if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
-    if (action === "setup-clear-wheel-file") clearSetupSelectedFile("wheel");
-    if (action === "setup-upload-profile-zip") await uploadSetupBinary("profile", false);
-    if (action === "setup-clear-profile-file") clearSetupSelectedFile("profile");
-    if (action === "setup-build-target-profile") await buildSetupTargetProfile(false);
-    if (action === "setup-rebuild-target-profile") await buildSetupTargetProfile(true);
-    if (action === "setup-copy-config-snippet") await copySetupConfigSnippet();
-    if (action === "setup-delete-wheel") deleteSetupWheel(btn.getAttribute("data-filename") || "");
-    if (action === "setup-delete-profile") deleteSetupProfile(btn.getAttribute("data-profile") || "");
-    if (action === "refresh-package-cache") await refreshPackageCache();
-    if (action === "prune-package-cache") await prunePackageCache();
-    if (action === "purge-package-cache") await purgePackageCache();
-    if (action === "refresh-package-profiles") await refreshPackageProfiles();
-    if (action === "build-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", false);
-    if (action === "rebuild-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", true);
-    if (action === "close-setup") closeSetup();
-    if (action === "close-advanced") closeAdvanced();
-    if (action === "back-to-jobs") setPane("jobs");
-    if (action === "clear-filters") clearFilters();
-    if (action === "clear-user-filter") {
-      filterUser = "";
-      currentPage = 1;
-      if (els.filter_user) els.filter_user.value = "";
-      storageSet("pjr_filter_user", "");
-      applyFilters();
-      updateClearButtonVisibility();
-    }
-    if (action === "focus-search" && els.search) els.search.focus();
-    if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
-    if (action === "jump-error") jumpToNextError();
-    if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
-    if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
-    if (action === "set-date-preset") setDatePreset(btn.getAttribute("data-preset") || "clear");
-    if (action === "page-prev") goToNextPage(-1);
-    if (action === "page-next") goToNextPage(1);
-    if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
-    if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
-    if (action === "find-next") findNext();
-    if (action === "find-prev") findPrev();
-    if (action === "clear-search") clearSearch();
-    if (action === "copy-curl") await copyCurl();
-    if (action === "copy-sample-task") await copySampleTask();
-    if (action === "copy-about-curl") await copyAboutCurl();
-    if (action === "close-about") closeAbout();
-    if (action === "close-confirm") closeConfirm();
-    if (action === "confirm-accept") await acceptConfirm();
-    if (action === "row-popover-view") await runRowPopoverAction("view");
-    if (action === "row-menu-view") await runRowMenuAction("view");
-    if (action === "row-menu-copy-id") await runRowMenuAction("copy-id");
-    if (action === "row-menu-stdout") await runRowMenuAction("stdout");
-    if (action === "row-menu-stderr") await runRowMenuAction("stderr");
-    if (action === "row-menu-curl") await runRowMenuAction("curl");
-    if (action === "copy-base") await copyBase();
-    if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
-    if (action === "copy-endpoint") await copyEndpoint(btn);
-    if (action === "download-zip") await downloadZip();
-    if (action === "download-text") await downloadText(btn.getAttribute("data-which") || "stdout");
-    if (action === "cancel") await cancelJob();
-    if (action === "delete") await deleteJob();
-    if (action === "go-live") await goLive();
-    if (action === "toggle-pause") await togglePauseResume();
-    if (action === "jump-latest") await jumpLatest();
-    if (action === "clear-log") clearCurrentLog();
-    if (action === "toggle-hterm") toggleHighlightTerm(btn.getAttribute("data-term") || "");
-    if (action === "add-hterm") addHighlightTermFromInput();
-    if (action === "clear-hterms") clearHighlightTerms();
+      };
+      btn.addEventListener("click", onActionActivate);
+      btn.addEventListener("pointerup", onActionActivate);
+      btn.addEventListener("touchend", onActionActivate, { passive: false });
+    });
   }
 
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
+      if (consumeHeaderMoreSyntheticClick(ev)) return;
       const t = ev.target;
       const el = (t instanceof Element) ? t : (t && t.parentElement);
       if (!el) return;
       const btn = el.closest("button[data-action]");
       if (!btn) return;
 
+      const action = btn.getAttribute("data-action");
       try {
-        await dispatchButtonAction(btn);
+        if (action === "refresh") await refreshAll();
+        if (action === "open-command") openCommand();
+        if (action === "close-command") closeCommand();
+        if (action === "command-run") await runCommand(btn.getAttribute("data-command") || "");
+        if (action === "open-settings") openSettings();
+        if (action === "close-settings") closeSettings();
+        if (action === "open-setup") openSetup();
+        if (action === "open-advanced") openAdvanced();
+        if (action === "refresh-setup-status") await refreshSetupStatus();
+        if (action === "setup-apply-persistent-mode") await applySetupPersistentMode();
+        if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
+        if (action === "setup-clear-wheel-file") clearSetupSelectedFile("wheel");
+        if (action === "setup-upload-profile-zip") await uploadSetupBinary("profile", false);
+        if (action === "setup-clear-profile-file") clearSetupSelectedFile("profile");
+        if (action === "setup-build-target-profile") await buildSetupTargetProfile(false);
+        if (action === "setup-rebuild-target-profile") await buildSetupTargetProfile(true);
+        if (action === "setup-copy-config-snippet") await copySetupConfigSnippet();
+        if (action === "setup-delete-wheel") deleteSetupWheel(btn.getAttribute("data-filename") || "");
+        if (action === "setup-delete-profile") deleteSetupProfile(btn.getAttribute("data-profile") || "");
+        if (action === "refresh-package-cache") await refreshPackageCache();
+        if (action === "prune-package-cache") await prunePackageCache();
+        if (action === "purge-package-cache") await purgePackageCache();
+        if (action === "refresh-package-profiles") await refreshPackageProfiles();
+        if (action === "build-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", false);
+        if (action === "rebuild-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", true);
+        if (action === "close-setup") closeSetup();
+        if (action === "close-advanced") closeAdvanced();
+        if (action === "back-to-jobs") setPane("jobs");
+        if (action === "clear-filters") clearFilters();
+        if (action === "clear-user-filter") {
+          filterUser = "";
+          currentPage = 1;
+          if (els.filter_user) els.filter_user.value = "";
+          storageSet("pjr_filter_user", "");
+          applyFilters();
+          updateClearButtonVisibility();
+        }
+        if (action === "focus-search" && els.search) els.search.focus();
+        if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
+        if (action === "jump-error") jumpToNextError();
+        if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
+        if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
+        if (action === "set-date-preset") setDatePreset(btn.getAttribute("data-preset") || "clear");
+        if (action === "page-prev") goToNextPage(-1);
+        if (action === "page-next") goToNextPage(1);
+        if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
+        if (action === "set-tab") setTab(btn.getAttribute("data-tab") || "stdout");
+        if (action === "find-next") findNext();
+        if (action === "find-prev") findPrev();
+        if (action === "clear-search") clearSearch();
+        if (action === "copy-curl") await copyCurl();
+        if (action === "copy-sample-task") await copySampleTask();
+        if (action === "copy-about-curl") await copyAboutCurl();
+        if (action === "open-about") await openAbout();
+        if (action === "close-about") closeAbout();
+        if (action === "close-confirm") closeConfirm();
+        if (action === "confirm-accept") await acceptConfirm();
+        if (action === "row-popover-view") await runRowPopoverAction("view");
+        if (action === "row-menu-view") await runRowMenuAction("view");
+        if (action === "row-menu-copy-id") await runRowMenuAction("copy-id");
+        if (action === "row-menu-stdout") await runRowMenuAction("stdout");
+        if (action === "row-menu-stderr") await runRowMenuAction("stderr");
+        if (action === "row-menu-curl") await runRowMenuAction("curl");
+        if (action === "copy-base") await copyBase();
+        if (action === "open-info") window.open(apiUrl("info.json"), "_blank", "noopener,noreferrer");
+        if (action === "copy-endpoint") await copyEndpoint(btn);
+        if (action === "download-zip") await downloadZip();
+        if (action === "download-text") await downloadText(btn.getAttribute("data-which") || "stdout");
+        if (action === "cancel") await cancelJob();
+        if (action === "delete") await deleteJob();
+        if (action === "go-live") await goLive();
+        if (action === "toggle-pause") await togglePauseResume();
+        if (action === "jump-latest") await jumpLatest();
+        if (action === "clear-log") clearCurrentLog();
+        if (action === "toggle-hterm") toggleHighlightTerm(btn.getAttribute("data-term") || "");
+        if (action === "add-hterm") addHighlightTermFromInput();
+        if (action === "clear-hterms") clearHighlightTerms();
       } catch (e) {
         toast("err", "Action failed", e && e.message ? e.message : String(e));
       }
     });
-
-    bindHeaderMoreTouchActions();
 
     if (els.about_overlay) {
       els.about_overlay.addEventListener("click", (ev) => {
@@ -3578,6 +3623,14 @@ function toggleAuto() {
         if (ev.target === els.confirm_overlay) closeConfirm();
       });
     }
+
+    document.addEventListener("click", (ev) => {
+      if (!els.header_more_panel || !els.header_more_toggle || els.header_more_panel.hidden) return;
+      const target = ev.target;
+      if (!(target instanceof Element)) return;
+      if (isHeaderMoreElement(target)) return;
+      closeHeaderMoreMenu();
+    });
 
     document.addEventListener("click", (ev) => {
       if (!els.row_menu || els.row_menu.hidden) return;
@@ -3668,6 +3721,7 @@ function toggleAuto() {
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
+        if (els.header_more_panel && !els.header_more_panel.hidden) closeHeaderMoreMenu({ returnFocus: true });
         if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
         if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
         if (els.row_menu && !els.row_menu.hidden) closeRowMenu();
@@ -3925,6 +3979,8 @@ function toggleAuto() {
     els.page_next = document.getElementById("page_next");
     els.page_summary = document.getElementById("page_summary");
     els.main_header = document.getElementById("main_header");
+    els.header_more_toggle = document.getElementById("header_more_toggle");
+    els.header_more_panel = document.getElementById("header_more_panel");
     els.desktop_splitter = document.getElementById("desktop_splitter");
 
     els.detail = document.getElementById("detail");
@@ -4072,6 +4128,7 @@ function toggleAuto() {
   async function init() {
     cacheEls();
     bindEvents();
+    bindHeaderMoreDirectActions();
 
     const savedView = storageGet("pjr_view");
     if (savedView) view = savedView;

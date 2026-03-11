@@ -17,14 +17,14 @@
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
         <button type="button" class="linkbtn primary tooltip-target" data-tooltip="Reload stats and jobs" data-action="refresh" aria-label="Refresh now">Refresh</button>
-        <details class="header-more-menu">
-          <summary class="linkbtn tertiary tooltip-target" data-tooltip="Settings, help, and commands" aria-haspopup="menu" aria-label="More actions">More</summary>
-          <div class="header-more-panel" role="menu" aria-label="Secondary actions">
-            <button type="button" class="small tertiary menu-item" data-action="open-command" aria-haspopup="dialog" aria-label="Open command menu">Command</button>
-            <button type="button" class="small tertiary menu-item" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
-            <button type="button" class="small tertiary menu-item" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+        <div class="header-more-wrap">
+          <button type="button" id="header_more_toggle" class="linkbtn tertiary tooltip-target header-more-toggle" data-tooltip="Settings, help, and commands" aria-haspopup="menu" aria-controls="header_more_panel" aria-expanded="false" aria-label="More actions">More</button>
+          <div id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden>
+            <button type="button" id="header_more_command" class="small tertiary menu-item" data-action="open-command" aria-haspopup="dialog" aria-label="Open command menu">Command</button>
+            <button type="button" id="header_more_settings" class="small tertiary menu-item" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
+            <button type="button" id="header_more_help" class="small tertiary menu-item" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
           </div>
-        </details>
+        </div>
       </div>
     </header>
 

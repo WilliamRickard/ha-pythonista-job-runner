@@ -244,20 +244,11 @@
   background: transparent;
 }
 
-.header-more-menu{
+.header-more-wrap{
   position:relative;
 }
 
-.header-more-menu summary{
-  list-style:none;
-  cursor:pointer;
-  touch-action:manipulation;
-  -webkit-tap-highlight-color:transparent;
-}
-
-.header-more-menu summary::-webkit-details-marker{display:none;}
-
-.header-more-menu[open] > summary{
+.header-more-toggle[aria-expanded="true"]{
   border-color: color-mix(in srgb, var(--line) 95%, transparent);
   background: color-mix(in srgb, var(--panel2) 66%, transparent);
 }
@@ -282,13 +273,13 @@
   justify-content:flex-start;
   cursor:pointer;
   touch-action:manipulation;
-  -webkit-tap-highlight-color:transparent;
 }
 
 button.tertiary, .linkbtn.tertiary{
   background: transparent;
   color: var(--muted);
   border-color: color-mix(in srgb, var(--line) 82%, transparent);
+  touch-action:manipulation;
 }
 
 .card{
