@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.8 -->
+<!-- Version: 0.6.13-docs.9 -->
 # Pythonista Job Runner
 
 Pythonista Job Runner is a Home Assistant add-on for the "phone as controller, Home Assistant as worker" workflow.
@@ -10,7 +10,7 @@ This file stays short on purpose. The full user guide lives in [DOCS.md](DOCS.md
 ## What it gives you
 
 - A direct HTTP API for Pythonista and other scripts.
-- An Ingress Web UI for jobs, logs, package cache, package profiles, and downloads inside Home Assistant.
+- An Ingress Web UI for jobs, logs, package cache, package profiles, setup uploads, and downloads inside Home Assistant.
 - A predictable job contract built around `run.py` and `outputs/`.
 - Result bundles that include logs, status files, and package diagnostics when dependency handling is active.
 - A persistent package subsystem with pip cache reuse, offline wheelhouse imports, reusable virtual environments, and named package profiles.
@@ -23,7 +23,7 @@ This file stays short on purpose. The full user guide lives in [DOCS.md](DOCS.md
 4. Open **Open Web UI** and confirm the jobs list loads.
 5. Upload a tiny job zip from Pythonista.
 
-If you want to use the direct API from Pythonista, keep **Ingress only** off. Setup detail, package-mode guidance, migration notes, and examples are in [DOCS.md](DOCS.md).
+If you want to use the direct API from Pythonista, keep **Ingress only** off. Setup detail, including the guided Setup flow for wheel and profile uploads in the Web UI, package-mode guidance, migration notes, and examples are in [DOCS.md](DOCS.md).
 
 ## Pick the right path
 

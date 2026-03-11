@@ -381,7 +381,7 @@ button.chip.active{
   border-color: rgba(138,180,255,0.45);
 }
 
-input[type="text"], input[type="search"], input[type="number"], textarea, select{
+input[type="text"], input[type="search"], input[type="number"], input[type="file"], textarea, select{
   width: 100%;
   padding: 11px 12px;
   min-height: 44px;
@@ -399,6 +399,23 @@ textarea{
 }
 
 input[type="number"]{ width: 110px; }
+
+.setup-upload-panel{
+  display:grid;
+  gap:8px;
+  padding:10px 12px;
+  border:1px solid color-mix(in srgb, var(--line) 58%, transparent);
+  border-radius:12px;
+  background:color-mix(in srgb, var(--panel2) 46%, transparent);
+}
+
+.setup-file-input{
+  padding:10px 12px;
+}
+
+.setup-file-input::file-selector-button{
+  margin-right:10px;
+}
 
 .fieldrow{
   display:flex;

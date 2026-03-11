@@ -1,10 +1,11 @@
-# Version: 0.6.13-http-api.3
+# Version: 0.6.13-http-api.6
 from __future__ import annotations
 
 """HTTP API server and request handlers for job runner endpoints."""
 
 import hashlib
 import json
+import os
 import tempfile
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -66,7 +67,7 @@ class Handler(BaseHTTPRequestHandler):
             pass
         return self.server.runner.actor_from_request(self.headers, client_addr)
 
-    def _read_body_to_tempfile(self, length: int, max_bytes: int) -> tuple[str | None, Path | None, str | None]:
+    def _read_body_to_tempfile(self, length: int, max_bytes: int, *, suffix: str = ".zip") -> tuple[str | None, Path | None, str | None]:
         """Stream request body to temporary file with length and size guardrails."""
         if length <= 0:
             return "bad_content_length", None, None
@@ -74,7 +75,7 @@ class Handler(BaseHTTPRequestHandler):
             self._drain_request_body(length)
             return "upload_too_large", None, None
 
-        fd, temp_name = tempfile.mkstemp(prefix="upload_", suffix=".zip", dir="/tmp")
+        fd, temp_name = tempfile.mkstemp(prefix="upload_", suffix=str(suffix or ".bin"), dir="/tmp")
         os_path = Path(temp_name)
         hasher = hashlib.sha256()
         received = 0
@@ -100,11 +101,10 @@ class Handler(BaseHTTPRequestHandler):
             raise
         finally:
             try:
-                import os
-
                 os.close(fd)
             except Exception:
                 pass
+
     def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -181,6 +181,35 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             return
 
+    def _truthy_query_flag(self, query: dict[str, list[str]], key: str) -> bool:
+        """Return whether one query-string flag is present and truthy."""
+        values = query.get(key) or []
+        if not values:
+            return False
+        return str(values[0] or "").strip().lower() in {"1", "true", "yes", "on"}
+
+    def _setup_upload_code(self, payload: dict[str, Any]) -> int:
+        """Return the HTTP status code for one setup-upload result payload."""
+        if str(payload.get("status") or "") == "ok":
+            return 200
+        error = str(payload.get("error") or "")
+        if error in {"already_exists"}:
+            return 409
+        if error in {"upload_too_large", "archive_unpacked_too_large"}:
+            return 413
+        return 400
+
+    def _setup_delete_code(self, payload: dict[str, Any]) -> int:
+        """Return the HTTP status code for one setup-delete result payload."""
+        if str(payload.get("status") or "") == "ok":
+            return 200
+        error = str(payload.get("error") or "")
+        if error in {"not_found"}:
+            return 404
+        if error in {"profile_in_use"}:
+            return 409
+        return 400
+
     def _handle_root_get(self, path: str) -> bool:
         if path not in {"/", "/index.html"}:
             return False
@@ -213,6 +242,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/package_profiles.json":
             self._json(200, runner.list_package_profiles())
+            return
+        if path == "/setup/status.json":
+            self._json(200, runner.package_setup_status())
             return
         if path == "/packages/cache.json":
             self._json(200, runner.package_cache_summary())
@@ -332,6 +364,18 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/package_profiles/build":
             self._handle_package_profile_build_post()
             return
+        if path == "/setup/upload-wheel":
+            self._handle_setup_upload_wheel_post()
+            return
+        if path == "/setup/upload-profile-zip":
+            self._handle_setup_upload_profile_zip_post()
+            return
+        if path == "/setup/delete-wheel":
+            self._handle_setup_delete_wheel_post()
+            return
+        if path == "/setup/delete-profile":
+            self._handle_setup_delete_profile_post()
+            return
         if path == "/packages/cache/prune":
             self._handle_package_cache_prune_post()
             return
@@ -411,6 +455,131 @@ class Handler(BaseHTTPRequestHandler):
         result = self.server.runner.build_package_profile(profile_name, rebuild=rebuild, actor=self._request_actor())
         code = 200 if str(result.get("status") or "") == "ready" else 400
         self._json(code, result)
+
+    def _handle_setup_upload_wheel_post(self) -> None:
+        """Upload one wheel file into the public setup wheel directory."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/octet-stream", "application/zip", "application/x-zip-compressed"}, optional=True):
+            return
+        query = parse_qs(urlparse(self.path).query)
+        filename = str((query.get("filename") or [self.headers.get("X-Upload-Filename") or ""])[0] or "").strip()
+        overwrite = self._truthy_query_flag(query, "overwrite") or str(self.headers.get("X-Upload-Overwrite") or "").strip().lower() in {"1", "true", "yes", "on"}
+        cl = self.headers.get("Content-Length")
+        if not cl:
+            self._json(411, {"error": "length_required"})
+            return
+        ln = parse_int(cl, -1)
+        max_bytes = int(self.server.runner.max_upload_mb) * 1024 * 1024
+        err, upload_path, _sha256 = self._read_body_to_tempfile(ln, max_bytes, suffix='.whl')
+        if err:
+            code = 413 if err == "upload_too_large" else 400
+            self._json(code, {"error": err})
+            return
+        if upload_path is None:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+        try:
+            payload = self.server.runner.upload_package_setup_wheel(
+                upload_path,
+                filename=filename,
+                overwrite=overwrite,
+                actor=self._request_actor(),
+            )
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        self._json(self._setup_upload_code(payload), payload)
+
+    def _handle_setup_upload_profile_zip_post(self) -> None:
+        """Upload one profile archive into the public setup profile directory."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/octet-stream", "application/zip", "application/x-zip-compressed"}, optional=True):
+            return
+        query = parse_qs(urlparse(self.path).query)
+        filename = str((query.get("filename") or [self.headers.get("X-Upload-Filename") or ""])[0] or "").strip()
+        overwrite = self._truthy_query_flag(query, "overwrite") or str(self.headers.get("X-Upload-Overwrite") or "").strip().lower() in {"1", "true", "yes", "on"}
+        cl = self.headers.get("Content-Length")
+        if not cl:
+            self._json(411, {"error": "length_required"})
+            return
+        ln = parse_int(cl, -1)
+        max_bytes = int(self.server.runner.max_upload_mb) * 1024 * 1024
+        err, upload_path, _sha256 = self._read_body_to_tempfile(ln, max_bytes, suffix='.zip')
+        if err:
+            code = 413 if err == "upload_too_large" else 400
+            self._json(code, {"error": err})
+            return
+        if upload_path is None:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+        try:
+            payload = self.server.runner.upload_package_setup_profile_zip(
+                upload_path,
+                filename=filename,
+                overwrite=overwrite,
+                actor=self._request_actor(),
+            )
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        self._json(self._setup_upload_code(payload), payload)
+
+    def _handle_setup_delete_wheel_post(self) -> None:
+        """Delete one uploaded setup wheel file."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        filename = payload.get("filename")
+        result = self.server.runner.delete_package_setup_wheel(str(filename or ""), actor=self._request_actor())
+        self._json(self._setup_delete_code(result), result)
+
+    def _handle_setup_delete_profile_post(self) -> None:
+        """Delete one uploaded setup profile directory."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        profile_name = payload.get("profile")
+        if profile_name is None:
+            profile_name = payload.get("name")
+        result = self.server.runner.delete_package_setup_profile(str(profile_name or ""), actor=self._request_actor())
+        self._json(self._setup_delete_code(result), result)
+
 
     def _handle_package_cache_prune_post(self) -> None:
         if not self._require_auth():

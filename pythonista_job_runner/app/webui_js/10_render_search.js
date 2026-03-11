@@ -869,6 +869,7 @@ function applyFilters() {
 
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
+  let _setupReturnFocus = null;
   let _settingsReturnFocus = null;
   let _commandReturnFocus = null;
   let _confirmReturnFocus = null;
@@ -933,6 +934,7 @@ function applyFilters() {
       { key: "search", title: "Focus search", description: "Jump straight to the Jobs search field.", hint: "/", action: async () => { if (els.search) els.search.focus(); } },
       { key: "settings", title: "Open settings", description: "Change runtime and UI preferences.", hint: "Panel", action: async () => openSettings() },
       { key: "help", title: "Open help", description: "See quick start, samples, and troubleshooting.", hint: "Panel", action: async () => openAbout() },
+      { key: "setup", title: "Open setup", description: "Check package setup readiness for example 5.", hint: "Panel", action: async () => openSetup() },
       { key: "maintenance", title: "Open maintenance tools", description: "Open advanced cleanup and reset actions.", hint: "Panel", action: async () => openAdvanced() },
       { key: "sample", title: "Copy sample Python task", description: "Copy the quick-start Python task to the clipboard.", hint: "Copy", action: async () => copySampleTask() },
     ];
@@ -1233,6 +1235,33 @@ function applyFilters() {
       try { _advReturnFocus.focus(); } catch (e) {}
     }
     _advReturnFocus = null;
+  }
+
+  function openSetup() {
+    _setupReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.setup_overlay.hidden = false;
+    els.setup_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.setup_close) els.setup_close.focus();
+    else if (els.setup_modal) els.setup_modal.focus();
+    refreshSetupStatus().catch((_err) => {});
+  }
+
+  function closeSetup() {
+    if (!els.setup_overlay) return;
+    els.setup_overlay.hidden = true;
+    els.setup_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_setupReturnFocus && (document.contains(_setupReturnFocus))) {
+      try { _setupReturnFocus.focus(); } catch (e) {}
+    }
+    _setupReturnFocus = null;
   }
 
   function openSettings() {

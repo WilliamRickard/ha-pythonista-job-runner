@@ -1,4 +1,4 @@
-# Version: 0.6.13-package-profiles.2
+# Version: 0.6.13-package-profiles.6
 """Package profile discovery, build, and export helpers."""
 
 from __future__ import annotations
@@ -7,11 +7,13 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from runner import package_envs
@@ -23,6 +25,24 @@ from utils import utc_now
 
 
 _PROFILE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+DEFAULT_SETUP_TARGET_PROFILE = "demo_formatsize_profile"
+DEFAULT_SETUP_TARGET_WHEEL = "pjr_demo_formatsize-0.1.0-py3-none-any.whl"
+
+
+def _setup_config_snippet(target_profile: str) -> str:
+    """Return the suggested add-on configuration snippet for profile-mode setup."""
+    safe_target = _safe_profile_name(target_profile) or DEFAULT_SETUP_TARGET_PROFILE
+    return "\n".join([
+        "python:",
+        "  install_requirements: true",
+        "  dependency_mode: profile",
+        "  package_profiles_enabled: true",
+        f"  package_profile_default: {safe_target}",
+        "  package_allow_public_wheelhouse: true",
+        "  package_offline_prefer_local: true",
+        "  venv_reuse_enabled: true",
+    ])
 
 
 def _read_json(path: Path, fallback: dict[str, Any]) -> dict[str, Any]:
@@ -271,6 +291,590 @@ def _profile_summary_from_dir(runner: object, profile_dir: Path) -> dict[str, An
         summary["manifest"] = manifest
     return summary
 
+
+
+def setup_status(
+    runner: object,
+    *,
+    target_profile: str = DEFAULT_SETUP_TARGET_PROFILE,
+    target_wheel: str = DEFAULT_SETUP_TARGET_WHEEL,
+) -> dict[str, Any]:
+    """Return read-only readiness for the guided profile-setup flow."""
+    paths = getattr(runner, "package_store_paths", None)
+    if paths is None:
+        return {
+            "status": "error",
+            "error": "package_store_unavailable",
+            "target_profile": str(target_profile or DEFAULT_SETUP_TARGET_PROFILE),
+            "target_wheel": str(target_wheel or DEFAULT_SETUP_TARGET_WHEEL),
+            "wheel_present": False,
+            "wheel_files": [],
+            "profile_present": False,
+            "profile_names": [],
+            "default_profile": str(getattr(runner, "package_profile_default", "") or ""),
+            "default_profile_exists": False,
+            "install_requirements_enabled": bool(getattr(runner, "install_requirements", False)),
+            "dependency_mode": str(getattr(runner, "dependency_mode", "per_job") or "per_job"),
+            "package_profiles_enabled": bool(getattr(runner, "package_profiles_enabled", True)),
+            "package_allow_public_wheelhouse": bool(getattr(runner, "package_allow_public_wheelhouse", True)),
+            "package_offline_prefer_local": bool(getattr(runner, "package_offline_prefer_local", True)),
+            "profile_built": False,
+            "profile_build_available": False,
+            "ready_for_example_5": False,
+            "blockers": ["Package storage is unavailable."],
+            "warnings": [],
+            "next_steps": ["Restart the add-on and check package storage initialisation."],
+        }
+
+    inventory = list_profiles(runner)
+    profiles = list(inventory.get("profiles") or [])
+    profile_names = [str(item.get("name") or "") for item in profiles if str(item.get("name") or "")]
+    default_profile = str(getattr(runner, "package_profile_default", "") or "").strip()
+    dependency_mode = str(getattr(runner, "dependency_mode", "per_job") or "per_job")
+    install_requirements = bool(getattr(runner, "install_requirements", False))
+    package_profiles_enabled = bool(getattr(runner, "package_profiles_enabled", True))
+    package_allow_public_wheelhouse = bool(getattr(runner, "package_allow_public_wheelhouse", True))
+    package_offline_prefer_local = bool(getattr(runner, "package_offline_prefer_local", True))
+
+    wheel_dir = Path(getattr(paths, "public_wheel_uploads_dir"))
+    wheel_files: list[str] = []
+    if wheel_dir.exists() and wheel_dir.is_dir() and not wheel_dir.is_symlink():
+        for child in sorted(wheel_dir.iterdir(), key=lambda item: item.name.lower()):
+            try:
+                if child.is_file() and not child.is_symlink() and child.name.endswith('.whl'):
+                    wheel_files.append(child.name)
+            except OSError:
+                continue
+
+    safe_target_profile = _safe_profile_name(target_profile) or DEFAULT_SETUP_TARGET_PROFILE
+    target_wheel_name = str(target_wheel or DEFAULT_SETUP_TARGET_WHEEL).strip() or DEFAULT_SETUP_TARGET_WHEEL
+    selected_profile = next((item for item in profiles if str(item.get("name") or "") == safe_target_profile), None)
+    default_profile_exists = bool(default_profile and default_profile in profile_names)
+    wheel_present = target_wheel_name in wheel_files
+    profile_present = selected_profile is not None
+    profile_built = bool(selected_profile and selected_profile.get("ready") is True)
+    profile_build_available = bool(profile_present and package_profiles_enabled)
+
+    blockers: list[str] = []
+    warnings: list[str] = []
+    next_steps: list[str] = []
+
+    if not install_requirements:
+        blockers.append("Enable Install requirements.txt automatically in the add-on config.")
+        next_steps.append("Turn on Install requirements.txt automatically, save the config, and restart the add-on.")
+    if not package_profiles_enabled:
+        blockers.append("Enable package profiles in the add-on config.")
+        next_steps.append("Turn on package profile support, save the config, and restart the add-on.")
+    if dependency_mode != 'profile':
+        blockers.append("Switch Dependency handling mode to profile for example 5.")
+        next_steps.append("Set Dependency handling mode to profile, save the config, and restart the add-on.")
+    if default_profile != safe_target_profile:
+        blockers.append(f"Set the default package profile to {safe_target_profile}.")
+        next_steps.append(f"Set package_profile_default to {safe_target_profile}, save the config, and restart the add-on.")
+    elif not default_profile_exists:
+        blockers.append(f"The configured default package profile {safe_target_profile} was not found under /config/package_profiles.")
+    if not wheel_present:
+        blockers.append(f"Upload {target_wheel_name} into {wheel_dir}.")
+        next_steps.append(f"Add {target_wheel_name} to {wheel_dir} so the demo profile can build locally.")
+    if not profile_present:
+        blockers.append(f"Create the profile folder {safe_target_profile} under {Path(getattr(paths, 'public_profiles_dir'))}.")
+        next_steps.append(f"Add /config/package_profiles/{safe_target_profile}/requirements.txt and manifest.json.")
+
+    target_profile_status = str(selected_profile.get("status") or "not_built") if selected_profile is not None else "missing"
+    target_profile_last_error = str(selected_profile.get("last_error") or "").strip() if selected_profile is not None else ""
+    build_available = bool(profile_present and package_profiles_enabled)
+    rebuild_available = build_available
+    build_recommended = bool(profile_present and package_profiles_enabled and not profile_built)
+
+    if profile_present and not profile_built:
+        warnings.append(f"Profile {safe_target_profile} exists but has not been built yet.")
+        next_steps.append(f"Build {safe_target_profile} from this Setup page, or let example 5 build it on first use.")
+    if wheel_present and not package_allow_public_wheelhouse:
+        blockers.append("Enable public wheelhouse support so uploaded wheels are available during profile builds.")
+        next_steps.append("Turn on public wheelhouse support, save the config, and restart the add-on.")
+    if wheel_present and not package_offline_prefer_local:
+        warnings.append("Offline prefer local is disabled, so pip may use the remote index before local wheels.")
+    if profile_present and selected_profile is not None and str(selected_profile.get('status') or '') == 'error':
+        if target_profile_last_error:
+            warnings.append(f"The last profile build failed: {target_profile_last_error}")
+        next_steps.append(f"Rebuild {safe_target_profile} from this Setup page and inspect the diagnostics bundle if it fails again.")
+
+    config_restart_required = bool(
+        (not install_requirements)
+        or (not package_profiles_enabled)
+        or dependency_mode != 'profile'
+        or default_profile != safe_target_profile
+        or (wheel_present and not package_allow_public_wheelhouse)
+    )
+
+    if config_restart_required:
+        next_steps.append("After saving the add-on config, restart the add-on and refresh Setup.")
+
+    ready_for_example_5 = bool(
+        wheel_present
+        and profile_present
+        and install_requirements
+        and package_profiles_enabled
+        and dependency_mode == 'profile'
+        and default_profile == safe_target_profile
+        and package_allow_public_wheelhouse
+        and target_profile_status != "error"
+    )
+
+    if profile_present and target_profile_status == "error":
+        ready_state = "build_failed"
+    elif config_restart_required:
+        ready_state = "restart_required"
+    elif not wheel_present or not profile_present:
+        ready_state = "content_missing"
+    elif build_recommended:
+        ready_state = "build_recommended"
+    elif ready_for_example_5:
+        ready_state = "ready"
+    else:
+        ready_state = "not_ready"
+
+    if not next_steps:
+        if ready_state == "ready":
+            next_steps.append("Example 5 is ready to run.")
+        elif ready_state == "build_recommended":
+            next_steps.append(f"Build {safe_target_profile} now for a cleaner example 5 run.")
+        else:
+            next_steps.append("Refresh Setup after the next change to confirm the current state.")
+
+    restart_guidance = (
+        "Save the add-on config, restart the add-on, then refresh Setup."
+        if config_restart_required
+        else (
+            f"Build {safe_target_profile} now, or let example 5 build it on first use."
+            if build_recommended
+            else (
+                "Example 5 is ready to run from Pythonista."
+                if ready_for_example_5
+                else "Refresh Setup after the next change to confirm the current state."
+            )
+        )
+    )
+
+    # Deduplicate while preserving order.
+    next_steps = list(dict.fromkeys(step for step in next_steps if step))
+    blockers = list(dict.fromkeys(blockers))
+    warnings = list(dict.fromkeys(warnings))
+
+    payload: dict[str, Any] = {
+        "status": "ok",
+        "target_profile": safe_target_profile,
+        "target_wheel": target_wheel_name,
+        "wheel_present": wheel_present,
+        "wheel_files": wheel_files,
+        "profile_present": profile_present,
+        "profile_names": profile_names,
+        "default_profile": default_profile,
+        "default_profile_exists": default_profile_exists,
+        "install_requirements_enabled": install_requirements,
+        "dependency_mode": dependency_mode,
+        "package_profiles_enabled": package_profiles_enabled,
+        "package_allow_public_wheelhouse": package_allow_public_wheelhouse,
+        "package_offline_prefer_local": package_offline_prefer_local,
+        "profile_built": profile_built,
+        "profile_build_available": profile_build_available,
+        "build_available": build_available,
+        "rebuild_available": rebuild_available,
+        "build_recommended": build_recommended,
+        "target_profile_status": target_profile_status,
+        "target_profile_last_error": target_profile_last_error,
+        "restart_required": config_restart_required,
+        "restart_guidance": restart_guidance,
+        "ready_state": ready_state,
+        "config_snippet": _setup_config_snippet(safe_target_profile),
+        "ready_for_example_5": ready_for_example_5,
+        "blockers": blockers,
+        "warnings": warnings,
+        "next_steps": next_steps,
+        "paths": {
+            "wheel_uploads_dir": str(wheel_dir),
+            "profiles_dir": str(getattr(paths, "public_profiles_dir")),
+        },
+        "inventory": {
+            "profile_count": int(inventory.get("profile_count", 0) or 0),
+            "ready_count": int(inventory.get("ready_count", 0) or 0),
+        },
+    }
+    if selected_profile is not None:
+        payload["target_profile_summary"] = selected_profile
+    return payload
+
+
+def _profile_upload_max_bytes(runner: object) -> int:
+    """Return the maximum accepted profile archive size for one upload."""
+    max_upload_mb = max(1, int(getattr(runner, "max_upload_mb", 50) or 50))
+    return max_upload_mb * 1024 * 1024
+
+
+def _safe_upload_filename(name: str, *, expected_suffix: str) -> str:
+    """Return a safe single upload filename or an empty string."""
+    value = str(name or "").strip()
+    if not value:
+        return ""
+    basename = Path(value).name
+    if value != basename:
+        return ""
+    suffix = str(expected_suffix or "").lower()
+    if suffix and not basename.lower().endswith(suffix):
+        return ""
+    if any(part in {"", ".", ".."} for part in PurePosixPath(basename).parts):
+        return ""
+    return basename
+
+
+def _zip_info_is_symlink(info: zipfile.ZipInfo) -> bool:
+    """Return whether one zip entry encodes a symbolic link."""
+    mode = (int(info.external_attr) >> 16) & 0xFFFF
+    return stat.S_ISLNK(mode)
+
+
+def _safe_archive_parts(name: str) -> list[str]:
+    """Return validated archive path parts or an empty list when invalid."""
+    value = str(name or "").replace('\\', '/')
+    parts = [part for part in PurePosixPath(value).parts if part not in {"", "."}]
+    if not parts:
+        return []
+    if parts[0].startswith('/'):
+        return []
+    if any(part == '..' for part in parts):
+        return []
+    return list(parts)
+
+
+def _profile_name_from_manifest(manifest_path: Path, fallback_filename: str) -> str:
+    """Return one safe profile name derived from manifest content or filename."""
+    manifest_payload = _read_json(manifest_path, {})
+    candidates = [
+        manifest_payload.get('profile_name') if isinstance(manifest_payload, dict) else None,
+        manifest_payload.get('name') if isinstance(manifest_payload, dict) else None,
+        Path(str(fallback_filename or '')).stem,
+    ]
+    for candidate in candidates:
+        safe_name = _safe_profile_name(str(candidate or ''))
+        if safe_name:
+            return safe_name
+    return ''
+
+
+def _extract_profile_zip_to_temp(upload_path: Path, temp_root: Path, upload_filename: str) -> tuple[str | None, Path | None, dict[str, Any]]:
+    """Inspect and extract one profile archive into a temporary directory tree."""
+    summary: dict[str, Any] = {
+        'entry_count': 0,
+        'file_count': 0,
+        'dir_count': 0,
+        'total_uncompressed_bytes': 0,
+        'archive_layout': None,
+    }
+    max_entries = 512
+    max_uncompressed_bytes = 128 * 1024 * 1024
+    try:
+        with zipfile.ZipFile(upload_path, 'r') as zf:
+            infos = zf.infolist()
+            if not infos:
+                return ('empty_archive', None, summary)
+            summary['entry_count'] = len(infos)
+            if len(infos) > max_entries:
+                return ('too_many_entries', None, summary)
+
+            root_names: set[str] = set()
+            has_top_level_files = False
+            for info in infos:
+                if _zip_info_is_symlink(info):
+                    return ('symlink_member_rejected', None, summary)
+                parts = _safe_archive_parts(info.filename)
+                if not parts:
+                    return ('suspicious_archive_path', None, summary)
+                if info.is_dir():
+                    summary['dir_count'] += 1
+                    continue
+                summary['file_count'] += 1
+                summary['total_uncompressed_bytes'] = int(summary['total_uncompressed_bytes']) + int(info.file_size)
+                if int(summary['total_uncompressed_bytes']) > max_uncompressed_bytes:
+                    return ('archive_unpacked_too_large', None, summary)
+                if len(parts) == 1:
+                    has_top_level_files = True
+                else:
+                    root_names.add(parts[0])
+
+            if int(summary['file_count']) <= 0:
+                return ('empty_archive', None, summary)
+            if not has_top_level_files and len(root_names) > 1:
+                return ('ambiguous_profile_root', None, summary)
+
+            if has_top_level_files:
+                summary['archive_layout'] = 'flat'
+                scratch_dir = temp_root / '__profile_flat__'
+                scratch_dir.mkdir(parents=True, exist_ok=True)
+                for info in infos:
+                    parts = _safe_archive_parts(info.filename)
+                    target_path = scratch_dir.joinpath(*parts)
+                    if info.is_dir():
+                        target_path.mkdir(parents=True, exist_ok=True)
+                        continue
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    with zf.open(info, 'r') as src, target_path.open('wb') as dst:
+                        shutil.copyfileobj(src, dst, length=1024 * 1024)
+                manifest_path = scratch_dir / 'manifest.json'
+                if not manifest_path.exists() or not manifest_path.is_file() or manifest_path.is_symlink():
+                    return ('profile_manifest_missing', None, summary)
+                profile_name = _profile_name_from_manifest(manifest_path, upload_filename)
+                if not profile_name:
+                    return ('invalid_profile_name', None, summary)
+                final_dir = temp_root / profile_name
+                scratch_dir.rename(final_dir)
+                return (None, final_dir, summary)
+
+            summary['archive_layout'] = 'rooted'
+            root_name = next(iter(root_names)) if root_names else ''
+            profile_name = _safe_profile_name(root_name)
+            if not profile_name:
+                return ('invalid_profile_name', None, summary)
+            for info in infos:
+                parts = _safe_archive_parts(info.filename)
+                target_path = temp_root.joinpath(*parts)
+                if info.is_dir():
+                    target_path.mkdir(parents=True, exist_ok=True)
+                    continue
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(info, 'r') as src, target_path.open('wb') as dst:
+                    shutil.copyfileobj(src, dst, length=1024 * 1024)
+            return (None, temp_root / profile_name, summary)
+    except zipfile.BadZipFile:
+        return ('invalid_zip', None, summary)
+
+
+def upload_profile_zip(
+    runner: object,
+    upload_path: Path,
+    *,
+    filename: str,
+    overwrite: bool = False,
+) -> dict[str, Any]:
+    """Validate and store one uploaded package profile archive."""
+    paths = getattr(runner, 'package_store_paths', None)
+    requested_filename = str(filename or '').strip()
+    safe_filename = _safe_upload_filename(requested_filename, expected_suffix='.zip')
+    result: dict[str, Any] = {
+        'status': 'error',
+        'requested_filename': requested_filename,
+        'filename': safe_filename,
+        'overwrite': bool(overwrite),
+        'profiles_dir': str(getattr(paths, 'public_profiles_dir', '')) if paths is not None else '',
+    }
+    if paths is None:
+        result['error'] = 'package_store_unavailable'
+        return result
+    if not safe_filename:
+        result['error'] = 'invalid_profile_zip_filename'
+        return result
+    try:
+        if not upload_path.exists() or not upload_path.is_file() or upload_path.is_symlink():
+            result['error'] = 'upload_missing'
+            return result
+    except OSError:
+        result['error'] = 'upload_missing'
+        return result
+
+    max_upload_bytes = _profile_upload_max_bytes(runner)
+    try:
+        size_bytes = int(upload_path.stat().st_size)
+    except OSError:
+        result['error'] = 'upload_missing'
+        return result
+    result['size_bytes'] = size_bytes
+    result['max_upload_bytes'] = max_upload_bytes
+    if size_bytes <= 0:
+        result['error'] = 'empty_upload'
+        return result
+    if size_bytes > max_upload_bytes:
+        result['error'] = 'upload_too_large'
+        return result
+
+    public_profiles_dir = Path(getattr(paths, 'public_profiles_dir'))
+    try:
+        public_profiles_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        result['error'] = 'profiles_dir_unavailable'
+        return result
+    if not public_profiles_dir.exists() or not public_profiles_dir.is_dir() or public_profiles_dir.is_symlink():
+        result['error'] = 'profiles_dir_unavailable'
+        return result
+
+    temp_root = Path(tempfile.mkdtemp(prefix='.profile_upload_', dir=str(public_profiles_dir)))
+    backup_dir: Path | None = None
+    try:
+        extract_error, extracted_dir, extract_summary = _extract_profile_zip_to_temp(upload_path, temp_root, safe_filename)
+        result['archive'] = extract_summary
+        if extract_error:
+            result['error'] = extract_error
+            return result
+        if extracted_dir is None:
+            result['error'] = 'profile_extract_failed'
+            return result
+        manifest_path = extracted_dir / 'manifest.json'
+        requirements_path = _requirements_path(extracted_dir)
+        if not manifest_path.exists() or not manifest_path.is_file() or manifest_path.is_symlink():
+            result['error'] = 'profile_manifest_missing'
+            return result
+        if requirements_path is None:
+            result['error'] = 'profile_requirements_missing'
+            return result
+        profile_name = _safe_profile_name(extracted_dir.name)
+        if not profile_name:
+            result['error'] = 'invalid_profile_name'
+            return result
+
+        dest_dir = public_profiles_dir / profile_name
+        result['profile_name'] = profile_name
+        result['dest_path'] = str(dest_dir)
+        existed_before = dest_dir.exists()
+        if existed_before:
+            try:
+                if dest_dir.is_symlink() or not dest_dir.is_dir():
+                    result['error'] = 'existing_profile_path_invalid'
+                    return result
+            except OSError:
+                result['error'] = 'existing_profile_path_invalid'
+                return result
+            if not overwrite:
+                result['error'] = 'already_exists'
+                return result
+            backup_dir = public_profiles_dir / f'.{profile_name}.backup'
+            counter = 0
+            while backup_dir.exists():
+                counter += 1
+                backup_dir = public_profiles_dir / f'.{profile_name}.backup.{counter}'
+            dest_dir.rename(backup_dir)
+
+        extracted_dir.rename(dest_dir)
+        if backup_dir is not None:
+            shutil.rmtree(backup_dir, ignore_errors=True)
+        shutil.rmtree(temp_root, ignore_errors=True)
+        manifest_payload = _read_json(dest_dir / 'manifest.json', {})
+        result.update({
+            'status': 'ok',
+            'action': 'overwritten' if existed_before else 'uploaded',
+            'manifest': manifest_payload if isinstance(manifest_payload, dict) else {},
+            'requirements_kind': str(Path(requirements_path).name),
+            'inventory': list_profiles(runner),
+            'setup_status': setup_status(runner, target_profile=profile_name),
+        })
+        return result
+    except Exception:
+        if backup_dir is not None and not (public_profiles_dir / str(result.get('profile_name') or '')).exists():
+            try:
+                backup_dir.rename(public_profiles_dir / str(result.get('profile_name') or ''))
+            except Exception:
+                pass
+        raise
+    finally:
+        shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def delete_uploaded_profile(runner: object, profile_name: str) -> dict[str, Any]:
+    """Delete one uploaded public package profile and its cached build artefacts."""
+    paths = getattr(runner, 'package_store_paths', None)
+    requested_name = str(profile_name or '').strip()
+    safe_name = _safe_profile_name(requested_name)
+    result: dict[str, Any] = {
+        'status': 'error',
+        'requested_profile_name': requested_name,
+        'profile_name': safe_name,
+        'profiles_dir': str(getattr(paths, 'public_profiles_dir', '')) if paths is not None else '',
+    }
+    if paths is None:
+        result['error'] = 'package_store_unavailable'
+        return result
+    if not safe_name:
+        result['error'] = 'invalid_profile_name'
+        return result
+
+    public_profiles_dir = Path(getattr(paths, 'public_profiles_dir'))
+    dest_dir = public_profiles_dir / safe_name
+    result['dest_path'] = str(dest_dir)
+    try:
+        if not dest_dir.exists():
+            result['error'] = 'not_found'
+            return result
+        if dest_dir.is_symlink() or not dest_dir.is_dir():
+            result['error'] = 'existing_profile_path_invalid'
+            return result
+    except OSError:
+        result['error'] = 'existing_profile_path_invalid'
+        return result
+
+    summary = _profile_summary_from_dir(runner, dest_dir) or {}
+    environment_key = str(summary.get('environment_key') or '')
+    active_keys_fn = getattr(runner, 'active_package_environment_keys', None)
+    active_keys = []
+    if callable(active_keys_fn):
+        try:
+            active_keys = list(active_keys_fn() or [])
+        except Exception:
+            active_keys = []
+    if environment_key and environment_key in active_keys:
+        result['error'] = 'profile_in_use'
+        result['environment_key'] = environment_key
+        return result
+
+    removed_paths: list[str] = []
+    package_envs.remove_tree(dest_dir)
+    removed_paths.append(str(dest_dir))
+
+    state_path = _profile_state_path(paths, safe_name)
+    try:
+        if state_path.exists() and state_path.is_file() and not state_path.is_symlink():
+            state_path.unlink()
+            removed_paths.append(str(state_path))
+    except Exception:
+        pass
+
+    exports_dir = _profile_exports_dir(paths, safe_name)
+    if exports_dir.exists() and exports_dir.is_dir() and not exports_dir.is_symlink():
+        package_envs.remove_tree(exports_dir)
+        removed_paths.append(str(exports_dir))
+
+    diagnostics_dir = _profile_diagnostics_dir(paths, safe_name)
+    if diagnostics_dir.exists() and diagnostics_dir.is_dir() and not diagnostics_dir.is_symlink():
+        package_envs.remove_tree(diagnostics_dir)
+        removed_paths.append(str(diagnostics_dir))
+
+    removed_venv = False
+    if environment_key:
+        venv_path = package_envs.venv_dir(paths, environment_key)
+        if venv_path.exists() and venv_path.is_dir() and not venv_path.is_symlink():
+            package_envs.remove_tree(venv_path)
+            removed_paths.append(str(venv_path))
+            removed_venv = True
+        staging_path = package_envs.staging_venv_dir(paths, environment_key)
+        if staging_path.exists() and staging_path.is_dir() and not staging_path.is_symlink():
+            package_envs.remove_tree(staging_path)
+            removed_paths.append(str(staging_path))
+        try:
+            payload = package_envs.read_venv_index(paths)
+            items = payload.get('items') if isinstance(payload, dict) else []
+            if isinstance(items, list):
+                payload['items'] = [item for item in items if str((item or {}).get('environment_key') or '') != environment_key]
+                package_envs.write_venv_index(paths, payload)
+        except Exception:
+            pass
+
+    result.update({
+        'status': 'ok',
+        'action': 'deleted',
+        'removed_paths': removed_paths,
+        'removed_cached_venv': bool(removed_venv),
+        'inventory': list_profiles(runner),
+        'setup_status': setup_status(runner, target_profile=safe_name),
+    })
+    if environment_key:
+        result['environment_key'] = environment_key
+    return result
 
 
 def list_profiles(runner: object) -> dict[str, Any]:

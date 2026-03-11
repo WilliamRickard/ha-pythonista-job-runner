@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-webui-js-regressions.4
+# Version: 0.6.13-tests-webui-js-regressions.6
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -206,3 +206,32 @@ def test_package_profiles_ui_and_actions_exist() -> None:
     assert 'refresh-package-profiles' in init
     assert 'Package profile' in detail
     assert 'Package profile bundle' in detail
+
+
+def test_setup_ui_and_actions_exist() -> None:
+    setup_html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "42_setup.html")
+    settings = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "45_settings.html")
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'id="setup_overlay"' in setup_html
+    assert 'id="setup_status_banner"' in setup_html
+    assert 'id="setup_wheel_file"' in setup_html
+    assert 'id="setup_profile_zip_file"' in setup_html
+    assert 'id="setup_build_target_profile"' in setup_html
+    assert 'id="setup_config_snippet"' in setup_html
+    assert 'data-action="setup-upload-wheel"' in setup_html
+    assert 'data-action="setup-upload-profile-zip"' in setup_html
+    assert 'data-action="open-setup"' in settings
+    assert 'function refreshSetupStatus()' in refresh
+    assert 'function renderSetupStatus(payload)' in refresh
+    assert 'function uploadSetupBinary(kind, overwrite)' in refresh
+    assert 'function buildSetupTargetProfile(rebuild)' in refresh
+    assert 'function copySetupConfigSnippet()' in refresh
+    assert 'function deleteSetupWheel(filename)' in refresh
+    assert 'function deleteSetupProfile(profileName)' in refresh
+    assert 'setup-build-target-profile' in init
+    assert 'setup-copy-config-snippet' in init
+    assert 'setup-delete-profile' in init
+    assert 'function openSetup()' in render

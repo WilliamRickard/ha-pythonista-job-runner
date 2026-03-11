@@ -48,6 +48,7 @@
   let toastActionHandler = null;
 
   let infoCache = null;
+  let setupStatusCache = null;
   let rowPopoverMode = "manual";
   let hoverPopoverTimer = null;
   let hoverPopoverCloseTimer = null;

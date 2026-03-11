@@ -1,4 +1,4 @@
-Version: 0.6.13-examples.1
+Version: 0.6.13-examples.2
 
 # 13_named_package_profile_run - Named package profile run
 
@@ -35,11 +35,16 @@ This example works on the default lightweight add-on image.
 
 ## Setup before running
 
-Copy:
-- `public_config/package_profiles/demo_formatsize_profile/` into the add-on public config `package_profiles/`
-- `public_config/wheel_uploads/pjr_demo_formatsize-0.1.0-py3-none-any.whl` into `wheel_uploads/`
+Recommended path:
 
-Then either build the profile from the Packages view or let the first run build it on demand.
+1. Open the add-on Web UI.
+2. Open **Setup**.
+3. Upload the wheel file `public_config/wheel_uploads/pjr_demo_formatsize-0.1.0-py3-none-any.whl`.
+4. Upload the profile archive or place `public_config/package_profiles/demo_formatsize_profile/` under `/config/package_profiles/`.
+5. Use **Build target profile** in Setup, or let the first run build it on demand.
+6. Save the add-on settings listed above and restart the add-on if Setup says restart is required.
+
+Manual placement still works. The guided Setup flow is just easier on iPhone because it avoids shell access and manual file copying.
 
 ## How to run
 
