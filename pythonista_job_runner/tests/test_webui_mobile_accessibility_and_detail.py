@@ -1,4 +1,4 @@
-# Version: 0.6.15-webui.1
+# Version: 0.6.17-webui.1
 """Regression tests for mobile UX, accessibility, and detail-lifecycle Web UI improvements."""
 
 from __future__ import annotations
@@ -235,4 +235,18 @@ def test_header_more_panel_is_hidden_by_default_in_mobile_bundle() -> None:
     css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
 
     assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in html
+    assert '.header-more-panel[hidden]{display:none !important;}' in css
+
+
+def test_bundle_header_more_toggle_uses_button_and_panel_contract() -> None:
+    """The header More menu should remain a button-plus-panel contract."""
+
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert 'id="header_more_toggle"' in html
+    assert 'data-action="toggle-header-more"' in html
+    assert 'id="header_more_panel"' in html
+    assert 'class="header-more-panel"' in html
+    assert '<details class="header-more-menu"' not in html
     assert '.header-more-panel[hidden]{display:none !important;}' in css

@@ -1,4 +1,4 @@
-# Version: 0.6.12-docs.1
+# Version: 0.6.17-docs.1
 # Python
 __pycache__/
 *.pyc
@@ -21,3 +21,8 @@ pr_metadata.json
 
 CHANGES_MANIFEST.json
 changes_manifest.json
+
+# JavaScript / Playwright
+node_modules/
+playwright-report/
+test-results/

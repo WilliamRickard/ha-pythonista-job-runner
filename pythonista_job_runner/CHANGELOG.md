@@ -1,5 +1,10 @@
-<!-- Version: 0.6.16-docs.1 -->
+<!-- Version: 0.6.17-docs.1 -->
 # Changelog
+
+## 0.6.17
+
+- Simplified the header More menu event handling to a single delegated click path so the toggle works reliably again on iPhone and Home Assistant ingress WebViews.
+- Added Playwright end-to-end coverage for the header More menu using WebKit mobile emulation and Chromium desktop, plus static regression guards for the new button-plus-panel contract.
 
 ## 0.6.16
 
