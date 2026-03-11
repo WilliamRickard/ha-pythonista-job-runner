@@ -1,4 +1,4 @@
-# Version: 0.6.14-tests-webui-js-regressions.1
+# Version: 0.6.15-tests-webui-js-regressions.1
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -282,3 +282,23 @@ def test_header_more_menu_uses_plain_button_panel_and_direct_handlers() -> None:
     assert '.header-more-wrap{' in layout
     assert 'touch-action:manipulation;' in layout
     assert 'function bindHeaderMoreDirectActions()' in built
+
+
+def test_header_more_menu_respects_hidden_attribute_in_source_assets() -> None:
+    """Header menu must explicitly restore hidden display state in CSS."""
+
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    css = _read(Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css")
+
+    assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in shell
+    assert '.header-more-panel[hidden]{display:none !important;}' in css
+
+
+def test_header_more_menu_respects_hidden_attribute_in_built_assets() -> None:
+    """Built Web UI outputs must preserve the header-menu hidden-state guard."""
+
+    built_html = _read(Path(__file__).resolve().parent.parent / "app" / "webui.html")
+    built_css = _read(Path(__file__).resolve().parent.parent / "app" / "webui.css")
+
+    assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in built_html
+    assert '.header-more-panel[hidden]{display:none !important;}' in built_css

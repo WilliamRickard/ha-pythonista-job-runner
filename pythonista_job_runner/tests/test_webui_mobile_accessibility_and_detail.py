@@ -1,4 +1,4 @@
-# Version: 0.6.12-webui.16
+# Version: 0.6.15-webui.1
 """Regression tests for mobile UX, accessibility, and detail-lifecycle Web UI improvements."""
 
 from __future__ import annotations
@@ -226,3 +226,13 @@ def test_bundle_hover_preview_and_pagination_helpers_exist() -> None:
     assert 'goToNextPage(' in js
     assert 'rowPopoverMode = mode || "manual"' in js
     assert 'Preview ${jobId}' in js
+
+
+def test_header_more_panel_is_hidden_by_default_in_mobile_bundle() -> None:
+    """Mobile bundle should keep the More panel hidden until activated."""
+
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in html
+    assert '.header-more-panel[hidden]{display:none !important;}' in css

@@ -1,4 +1,4 @@
-# Version: 0.6.14-core.1
+# Version: 0.6.15-core.1
 from __future__ import annotations
 
 import ipaddress
@@ -49,7 +49,7 @@ from utils import (
     utc_now,
 )
 
-ADDON_VERSION = "0.6.14"
+ADDON_VERSION = "0.6.15"
 print(f"[pythonista_job_runner] runner_core {ADDON_VERSION} loaded")
 
 DATA_DIR = Path("/data")

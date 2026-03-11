@@ -453,7 +453,7 @@
   "info": {
     "description": "Machine-readable contract for the direct HTTP API exposed by pythonista_job_runner. This contract is derived from app/http_api_server.py and validated by tests.",
     "title": "Pythonista Job Runner Direct API",
-    "version": "0.6.14"
+    "version": "0.6.15"
   },
   "openapi": "3.0.3",
   "paths": {
