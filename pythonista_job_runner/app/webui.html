@@ -23,8 +23,8 @@
   --warn: #f1c40f;
   --err: #ff5c5c;
 
-  --radius: 14px;
-  --shadow: 0 6px 24px rgba(0,0,0,0.20);
+  --radius: 16px;
+  --shadow: 0 12px 28px rgba(0,0,0,0.22);
 
   --tableHeaderBg: rgba(20,24,36,0.92);
   --toastBg: rgba(20,24,36,0.96);
@@ -32,11 +32,11 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Typography */
-  --fs-xs: 13px;
-  --fs-sm: 14px;
+  --fs-xs: 12px;
+  --fs-sm: 15px;
   --fs-md: 16px;
-  --fs-lg: 18px;
-  --fs-xl: 22px;
+  --fs-lg: 19px;
+  --fs-xl: 24px;
 }
 
 @media (prefers-color-scheme: light){
@@ -52,7 +52,7 @@
     --chip: #eef2ff;
     --chip2: rgba(29,78,216,0.12);
 
-    --shadow: 0 10px 30px rgba(17,24,39,0.10);
+    --shadow: 0 14px 32px rgba(17,24,39,0.11);
     --tableHeaderBg: rgba(255,255,255,0.92);
     --toastBg: rgba(255,255,255,0.96);
   }
@@ -189,20 +189,28 @@ a:hover{ text-decoration: underline; }
 .container{
   max-width: 1100px;
   margin: 0 auto;
+  padding-bottom: 18px;
 }
 
 .page-header{
   display:flex;
   align-items:center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .brand h1{
   margin: 0;
-  font-size: 20px;
+  font-size: 23px;
   letter-spacing: 0.1px;
+}
+
+.brand-support{
+  margin: 4px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  max-width: 52ch;
 }
 
 .subline{
@@ -210,7 +218,7 @@ a:hover{ text-decoration: underline; }
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: var(--fs-sm);
 }
@@ -838,6 +846,12 @@ label{
   letter-spacing: 0.1px;
 }
 
+.jobs-support{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:var(--fs-xs);
+}
+
 .jobs-count{
   color: var(--muted);
   font-size: 12px;
@@ -849,11 +863,11 @@ label{
   padding-top: 4px;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;padding:2px 0 0;}
-.searchbar-row{display:flex;align-items:center;gap:6px;}
+.jobs-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;padding:2px 0 0;}
+.searchbar-row{display:flex;align-items:center;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;font-size:16px;}
 .searchbar-row .input-group{width:100%;}
-.input-group{display:flex;align-items:center;gap:0;border:1px solid color-mix(in srgb, var(--line) 74%, transparent);background:color-mix(in srgb, var(--panel2) 78%, transparent);border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);}
+.input-group{display:flex;align-items:center;gap:0;border:1px solid color-mix(in srgb, var(--line) 74%, transparent);background:color-mix(in srgb, var(--panel2) 78%, transparent);border-radius:14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);min-height:46px;}
 .input-group:focus-within{border-color:rgba(138,180,255,0.42);box-shadow:0 0 0 3px rgba(138,180,255,0.12);}
 .input-group-icon{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;padding:0 10px 0 12px;color:var(--muted);font-size:14px;}
 .search-group input{border:0;background:transparent;box-shadow:none;padding-left:0;}
@@ -863,7 +877,7 @@ label{
 .clear-inline{min-width:72px;}
 .state-filters{display:flex;gap:0;overflow-x:auto;padding:2px 0 4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
 .toggle-group{display:inline-flex;border:1px solid color-mix(in srgb, var(--line) 68%, transparent);border-radius:14px;background:color-mix(in srgb, var(--panel2) 68%, transparent);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);}
-.toggle-group .toggle-item{flex:1 1 auto;min-height:40px;padding:10px 14px;border:0;border-right:1px solid color-mix(in srgb, var(--line) 68%, transparent);border-radius:0;background:transparent;color:var(--muted);font-weight:650;white-space:nowrap;}
+.toggle-group .toggle-item{flex:1 1 auto;min-height:42px;padding:10px 14px;border:0;border-right:1px solid color-mix(in srgb, var(--line) 68%, transparent);border-radius:0;background:transparent;color:var(--muted);font-weight:650;white-space:nowrap;}
 .toggle-group .toggle-item:last-child{border-right:0;}
 .toggle-group .toggle-item.active{background:color-mix(in srgb, var(--chip2) 78%, transparent);color:var(--text);box-shadow:inset 0 -2px 0 rgba(138,180,255,0.38);}
 .toggle-group .toggle-item:hover{background:color-mix(in srgb, var(--panel) 55%, transparent);}
@@ -881,13 +895,18 @@ label{
 .sort-option{justify-content:flex-start;text-align:left;}
 .sort-option.active{border-color:rgba(138,180,255,0.42);background:color-mix(in srgb, var(--chip2) 70%, transparent);color:var(--text);}
 .secondary-panel{position:relative;border:0;padding:0;background:transparent;}
-.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 12px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:12px;background:color-mix(in srgb, var(--panel2) 40%, transparent);font-size:12px;color:var(--muted);display:inline-flex;align-items:center;min-height:40px;}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 12px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:12px;background:color-mix(in srgb, var(--panel2) 40%, transparent);font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:8px;min-height:42px;}
+.filters-sheet-trigger .summary-label{font-weight:700;color:var(--muted);}
 .secondary-panel[open] .secondary-panel-body{margin-top:8px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:12px;padding:10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
 .jobs-skeleton .sk:not(.sk-lg){width:62%;}
 @keyframes sk-pulse{0%{opacity:0.45}50%{opacity:1}100%{opacity:0.45}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important;}
+}
 
 body[data-density="compact"] .card-body{padding:8px;}
 body[data-density="compact"] button, body[data-density="compact"] .linkbtn{min-height:40px;padding:8px 11px;}
@@ -1164,7 +1183,7 @@ body.splitter-dragging{
 
 .tablewrap{
   overflow-x: auto;
-  border-radius: 10px;
+  border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
   background: color-mix(in srgb, var(--panel2) 70%, transparent);
 }
@@ -1177,7 +1196,7 @@ table{
 }
 
 th, td{
-  padding: 10px 12px;
+  padding: 12px;
   font-size: 13px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
@@ -1228,6 +1247,7 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-height: 40px;
 }
 
 
@@ -1322,7 +1342,7 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
 .badge.queued{ border-color: rgba(241,196,15,0.55); }
 .badge.queued::before{ background: var(--warn); }
 
-.job-actions-inline{display:flex;gap:8px;align-items:center;justify-content:flex-start;margin-top:10px;}
+.job-actions-inline{display:flex;gap:8px;align-items:center;justify-content:flex-start;margin-top:10px;flex-wrap:wrap;}
 
 .actionsbar{
   min-height: 44px;
@@ -1372,6 +1392,10 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
 .empty-body{margin-top:6px;max-width:36ch;line-height:1.45;}
 .empty-actions{margin-top:12px;}
 .empty-action{margin-top:10px;font-size:12px;max-width:44ch;color:var(--muted);}
+
+.table-region{
+  gap: 10px;
+}
 
 .meta-items{margin-top:10px;}
 
@@ -1929,7 +1953,9 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 720px){
   .monitor-header{gap:8px;margin-bottom:6px;}
+  .brand-support{max-width:none;}
   .header-actions{width:100%;justify-content:flex-start;gap:6px;}
+  .header-actions .linkbtn{flex:1 1 auto;}
   .header-more-wrap{margin-left:auto;}
   .header-more-panel{left:auto;right:0;min-width:150px;}
   .header-meta{padding:6px 9px;}
@@ -1981,6 +2007,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
+  .jobs-support{max-width:30ch;}
   .jobs-primary-row{gap:8px;}
   .jobs-secondary-row{gap:6px;}
   .sort-menu{width:auto;}
@@ -2044,6 +2071,7 @@ details[open] summary::after{ transform: rotate(0deg); }
     <header class="page-header monitor-header" id="main_header">
       <div class="brand">
         <h1>Pythonista Job Runner</h1>
+        <p class="brand-support">Monitor job health, open results quickly, and troubleshoot runs from one place.</p>
         <div class="subline monitor-subline">
           <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
@@ -2056,7 +2084,7 @@ details[open] summary::after{ transform: rotate(0deg); }
         </div>
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
-        <button type="button" class="linkbtn primary tooltip-target" data-tooltip="Reload stats and jobs" data-action="refresh" aria-label="Refresh now">Refresh</button>
+        <button type="button" class="linkbtn primary tooltip-target" data-tooltip="Reload queue, jobs, and selected details" data-action="refresh" aria-label="Refresh queue and jobs">Refresh jobs</button>
         <div class="header-more-wrap">
           <button type="button" id="header_more_toggle" class="linkbtn tertiary tooltip-target header-more-toggle" data-action="toggle-header-more" data-tooltip="Settings, help, and commands" aria-haspopup="menu" aria-controls="header_more_panel" aria-expanded="false" aria-label="More actions">More</button>
           <div id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden>
@@ -2072,7 +2100,10 @@ details[open] summary::after{ transform: rotate(0deg); }
 <!-- Section: Jobs list and filters -->
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
-          <h2>Jobs</h2>
+          <div>
+            <h2>Jobs</h2>
+            <p class="jobs-support">Use search, filters, and states to narrow jobs, then open one for details.</p>
+          </div>
         </div>
         <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
@@ -2117,7 +2148,7 @@ details[open] summary::after{ transform: rotate(0deg); }
                   </div>
                 </details>
                 <details class="secondary-panel filters-sheet-trigger">
-                  <summary>Filters</summary>
+                  <summary><span class="summary-label">Filters</span><span>By user, date, and artifacts</span></summary>
                   <div class="secondary-panel-body filters-sheet-body">
                     <div class="field-shell filters-field-group">
                       <div class="field adv-field combobox-field">
@@ -2191,7 +2222,7 @@ details[open] summary::after{ transform: rotate(0deg); }
       <section id="stats" class="card card-quiet queue-compact queue-collapsible" hidden>
         <details id="queue_details" class="queue-details-shell">
           <summary>
-            <span class="queue-summary-title">Queue</span>
+            <span class="queue-summary-title">Queue overview</span>
             <span class="queue-summary-inline" id="queue_summary_text">0 total</span>
           </summary>
           <div class="card-body compact queue-details-body">

@@ -12,7 +12,9 @@
 
 @media (max-width: 720px){
   .monitor-header{gap:8px;margin-bottom:6px;}
+  .brand-support{max-width:none;}
   .header-actions{width:100%;justify-content:flex-start;gap:6px;}
+  .header-actions .linkbtn{flex:1 1 auto;}
   .header-more-wrap{margin-left:auto;}
   .header-more-panel{left:auto;right:0;min-width:150px;}
   .header-meta{padding:6px 9px;}
@@ -64,6 +66,7 @@
 
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
+  .jobs-support{max-width:30ch;}
   .jobs-primary-row{gap:8px;}
   .jobs-secondary-row{gap:6px;}
   .sort-menu{width:auto;}
