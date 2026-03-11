@@ -1,5 +1,10 @@
-<!-- Version: 0.6.15-docs.1 -->
+<!-- Version: 0.6.16-docs.1 -->
 # Changelog
+
+## 0.6.16
+
+- Fixed the header More menu on iPhone and Home Assistant WebView so a touch no longer opens and then immediately closes the menu because of a follow-up synthetic click.
+- Added Web UI regression coverage for the touch or pointer activation path to keep the More menu from regressing again.
 
 ## Unreleased
 
