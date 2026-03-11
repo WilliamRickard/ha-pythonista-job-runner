@@ -1,4 +1,4 @@
-# Version: 0.6.16-core.1
+# Version: 0.6.17-core.1
 from __future__ import annotations
 
 import ipaddress

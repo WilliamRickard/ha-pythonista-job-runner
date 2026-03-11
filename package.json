@@ -1,0 +1,15 @@
+{
+  "name": "ha-pythonista-job-runner-e2e",
+  "version": "0.6.17-e2e.1",
+  "private": true,
+  "description": "Playwright end-to-end tests for the Pythonista Job Runner Web UI.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:webkit": "playwright test --project=webkit-mobile",
+    "test:e2e:chromium": "playwright test --project=chromium-desktop",
+    "test:e2e:install": "playwright install --with-deps webkit chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "latest"
+  }
+}

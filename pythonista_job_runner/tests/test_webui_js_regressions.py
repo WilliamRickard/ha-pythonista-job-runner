@@ -1,4 +1,4 @@
-# Version: 0.6.16-tests-webui-js-regressions.1
+# Version: 0.6.17-tests-webui-js-regressions.1
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -263,41 +263,39 @@ def test_built_webui_javascript_parses_cleanly() -> None:
         )
         assert proc.returncode == 0, proc.stderr
 
-def test_header_more_menu_uses_plain_button_panel_and_direct_handlers() -> None:
+def test_header_more_menu_uses_plain_button_panel_and_delegated_click_handlers() -> None:
     shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
     init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
     layout = _read(Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css")
     built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
 
     assert 'id="header_more_toggle"' in shell
+    assert 'data-action="toggle-header-more"' in shell
     assert 'id="header_more_panel"' in shell
     assert 'class="header-more-menu"' not in shell
     assert '<details class="header-more-menu">' not in shell
-    assert 'function bindHeaderMoreDirectActions()' in init
-    assert 'function runHeaderMoreAction(action)' in init
-    assert 'consumeHeaderMoreSyntheticClick(ev)' in init
-    assert 'headerMoreClickLockUntil' in init
-    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in init
-    assert 'target.addEventListener("click", onActivate);' in init
-    assert 'target.addEventListener(lowLevelEvent, onActivate, lowLevelListenerOptions);' in init
+    assert 'function bindHeaderMoreDirectActions()' not in init
+    assert 'function runHeaderMoreAction(action)' not in init
+    assert 'headerMoreClickLockUntil' not in init
+    assert 'if (action === "toggle-header-more") {' in init
     assert '.header-more-wrap{' in layout
     assert 'touch-action:manipulation;' in layout
-    assert 'function bindHeaderMoreDirectActions()' in built
-    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in built
+    assert 'function bindHeaderMoreDirectActions()' not in built
+    assert 'if (action === "toggle-header-more") {' in built
 
 
-def test_header_more_menu_ignores_synthetic_click_after_touch_or_pointer_activation() -> None:
-    """Header-menu activations should not toggle twice on touch devices."""
+def test_header_more_menu_avoids_touch_specific_double_bindings() -> None:
+    """Header-menu toggling should not rely on extra touch or pointer bindings."""
 
     init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
     built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
 
-    assert 'if (consumeHeaderMoreSyntheticClick(ev)) return;' in init
-    assert 'lockHeaderMoreSyntheticClick(target);' in init
-    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in init
-    assert 'if (consumeHeaderMoreSyntheticClick(ev)) return;' in built
-    assert 'lockHeaderMoreSyntheticClick(target);' in built
-    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in built
+    assert 'consumeHeaderMoreSyntheticClick' not in init
+    assert 'lockHeaderMoreSyntheticClick' not in init
+    assert 'window.PointerEvent ? "pointerup" : "touchend"' not in init
+    assert 'consumeHeaderMoreSyntheticClick' not in built
+    assert 'lockHeaderMoreSyntheticClick' not in built
+    assert 'window.PointerEvent ? "pointerup" : "touchend"' not in built
 
 
 def test_header_more_menu_respects_hidden_attribute_in_source_assets() -> None:
@@ -318,3 +316,30 @@ def test_header_more_menu_respects_hidden_attribute_in_built_assets() -> None:
 
     assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in built_html
     assert '.header-more-panel[hidden]{display:none !important;}' in built_css
+
+
+def test_header_more_toggle_uses_delegated_click_contract() -> None:
+    """The header More toggle should use the shared click handler contract only."""
+
+    html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    js = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+
+    assert 'id="header_more_toggle"' in html
+    assert 'data-action="toggle-header-more"' in html
+    assert 'function bindHeaderMoreDirectActions()' not in js
+    assert 'function bindHeaderMoreDirectActions()' not in built
+    assert 'let headerMoreClickLockUntil = 0;' not in js
+    assert 'let headerMoreClickLockUntil = 0;' not in built
+    assert 'if (action === "toggle-header-more") {' in js
+    assert 'if (action === "toggle-header-more") {' in built
+
+
+def test_built_webui_javascript_is_valid() -> None:
+    """The built Web UI JavaScript should parse cleanly in Node."""
+
+    webui_js = Path(__file__).resolve().parent.parent / "app" / "webui.js"
+    node = shutil.which("node")
+    assert node, "node is required for JS syntax validation"
+    result = subprocess.run([node, "--check", str(webui_js)], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr

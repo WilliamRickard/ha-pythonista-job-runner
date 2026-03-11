@@ -1,4 +1,4 @@
-/* VERSION: 0.6.16-webui.1 */
+/* VERSION: 0.6.17-webui.1 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -3396,27 +3396,8 @@ function toggleAuto() {
   }
 
 
-  let headerMoreClickLockUntil = 0;
-  let headerMoreClickLockTarget = null;
-
   function isHeaderMoreElement(el) {
     return !!(el && el.closest && el.closest("#header_more_toggle, #header_more_panel button[data-action], #header_more_panel"));
-  }
-
-  function lockHeaderMoreSyntheticClick(target) {
-    headerMoreClickLockUntil = Date.now() + 700;
-    headerMoreClickLockTarget = target || null;
-  }
-
-  function consumeHeaderMoreSyntheticClick(ev) {
-    if (!ev || ev.type !== "click") return false;
-    const target = (ev.target instanceof Element) ? ev.target.closest("#header_more_toggle, #header_more_panel button[data-action]") : null;
-    if (!target) return false;
-    if (Date.now() > headerMoreClickLockUntil) return false;
-    if (headerMoreClickLockTarget && target !== headerMoreClickLockTarget) return false;
-    ev.preventDefault();
-    ev.stopPropagation();
-    return true;
   }
 
   function closeHeaderMoreMenu(options) {
@@ -3444,59 +3425,8 @@ function toggleAuto() {
     }
   }
 
-  async function runHeaderMoreAction(action) {
-    closeHeaderMoreMenu();
-    if (action === "open-command") {
-      openCommand();
-      return;
-    }
-    if (action === "open-settings") {
-      openSettings();
-      return;
-    }
-    if (action === "open-about") {
-      await openAbout();
-    }
-  }
-
-  function bindHeaderMoreDirectActions() {
-    if (!els.header_more_toggle || !els.header_more_panel) return;
-
-    const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";
-    const lowLevelListenerOptions = lowLevelEvent === "touchend" ? { passive: false } : false;
-
-    const bindHeaderMoreActivator = (target, handler) => {
-      const onActivate = async (ev) => {
-        if (consumeHeaderMoreSyntheticClick(ev)) return;
-        if (ev.type === lowLevelEvent) {
-          lockHeaderMoreSyntheticClick(target);
-        }
-        ev.preventDefault();
-        ev.stopPropagation();
-        await handler(ev);
-      };
-      target.addEventListener("click", onActivate);
-      target.addEventListener(lowLevelEvent, onActivate, lowLevelListenerOptions);
-    };
-
-    bindHeaderMoreActivator(els.header_more_toggle, async () => {
-      toggleHeaderMoreMenu();
-    });
-
-    els.header_more_panel.querySelectorAll("button[data-action]").forEach((btn) => {
-      bindHeaderMoreActivator(btn, async () => {
-        try {
-          await runHeaderMoreAction(btn.getAttribute("data-action") || "");
-        } catch (e) {
-          toast("err", "Action failed", e && e.message ? e.message : String(e));
-        }
-      });
-    });
-  }
-
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
-      if (consumeHeaderMoreSyntheticClick(ev)) return;
       const t = ev.target;
       const el = (t instanceof Element) ? t : (t && t.parentElement);
       if (!el) return;
@@ -3505,14 +3435,30 @@ function toggleAuto() {
 
       const action = btn.getAttribute("data-action");
       try {
+        if (action === "toggle-header-more") {
+          toggleHeaderMoreMenu();
+          return;
+        }
         if (action === "refresh") await refreshAll();
-        if (action === "open-command") openCommand();
+        if (action === "open-command") {
+          closeHeaderMoreMenu();
+          openCommand();
+        }
         if (action === "close-command") closeCommand();
         if (action === "command-run") await runCommand(btn.getAttribute("data-command") || "");
-        if (action === "open-settings") openSettings();
+        if (action === "open-settings") {
+          closeHeaderMoreMenu();
+          openSettings();
+        }
         if (action === "close-settings") closeSettings();
-        if (action === "open-setup") openSetup();
-        if (action === "open-advanced") openAdvanced();
+        if (action === "open-setup") {
+          closeHeaderMoreMenu();
+          openSetup();
+        }
+        if (action === "open-advanced") {
+          closeHeaderMoreMenu();
+          openAdvanced();
+        }
         if (action === "refresh-setup-status") await refreshSetupStatus();
         if (action === "setup-apply-persistent-mode") await applySetupPersistentMode();
         if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
@@ -3558,7 +3504,10 @@ function toggleAuto() {
         if (action === "copy-curl") await copyCurl();
         if (action === "copy-sample-task") await copySampleTask();
         if (action === "copy-about-curl") await copyAboutCurl();
-        if (action === "open-about") await openAbout();
+        if (action === "open-about") {
+          closeHeaderMoreMenu();
+          await openAbout();
+        }
         if (action === "close-about") closeAbout();
         if (action === "close-confirm") closeConfirm();
         if (action === "confirm-accept") await acceptConfirm();
@@ -4127,7 +4076,6 @@ function toggleAuto() {
   async function init() {
     cacheEls();
     bindEvents();
-    bindHeaderMoreDirectActions();
 
     const savedView = storageGet("pjr_view");
     if (savedView) view = savedView;
