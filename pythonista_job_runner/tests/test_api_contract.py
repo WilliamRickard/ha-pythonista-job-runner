@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-api-contract.1
+# Version: 0.6.13-tests-api-contract.2
 """Tests for machine-readable direct API contract."""
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ def test_openapi_contract_has_expected_routes() -> None:
         "/job/{job_id}",
         "/setup/status.json",
         "/setup/upload-wheel",
+        "/setup/apply-persistent-mode",
         "/setup/upload-profile-zip",
         "/setup/delete-wheel",
         "/setup/delete-profile",

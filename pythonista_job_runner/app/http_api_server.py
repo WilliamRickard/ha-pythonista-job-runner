@@ -1,4 +1,4 @@
-# Version: 0.6.13-http-api.6
+# Version: 0.6.13-http-api.7
 from __future__ import annotations
 
 """HTTP API server and request handlers for job runner endpoints."""
@@ -367,6 +367,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/setup/upload-wheel":
             self._handle_setup_upload_wheel_post()
             return
+        if path == "/setup/apply-persistent-mode":
+            self._handle_setup_apply_persistent_mode_post()
+            return
         if path == "/setup/upload-profile-zip":
             self._handle_setup_upload_profile_zip_post()
             return
@@ -529,6 +532,30 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
         self._json(self._setup_upload_code(payload), payload)
+
+    def _handle_setup_apply_persistent_mode_post(self) -> None:
+        """Save the recommended persistent-package settings through Supervisor."""
+        if not self._require_auth():
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        result = self.server.runner.apply_persistent_package_mode(payload.get("target_profile"), actor=self._request_actor())
+        code = 200 if str(result.get("status") or "") == "ok" else safe_runtime_error_code(str(result.get("error") or ""))
+        self._json(code, result)
 
     def _handle_setup_delete_wheel_post(self) -> None:
         """Delete one uploaded setup wheel file."""

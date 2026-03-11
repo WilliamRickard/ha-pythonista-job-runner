@@ -1,4 +1,4 @@
-# Version: 0.6.13-package-profiles.6
+# Version: 0.6.13-package-profiles.7
 """Package profile discovery, build, and export helpers."""
 
 from __future__ import annotations
@@ -248,6 +248,38 @@ def build_profile_environment_key(runner: object, profile_name: str, requirement
 
 
 
+
+
+def _normalise_options_payload(data: dict[str, Any]) -> dict[str, Any]:
+    """Normalise grouped add-on options into the flat runtime shape."""
+    if not isinstance(data, dict):
+        return {}
+    groups = {
+        "security",
+        "runner",
+        "jobs",
+        "resources",
+        "python",
+        "notifications",
+        "artefacts",
+        "housekeeping",
+        "telemetry",
+    }
+    flat: dict[str, Any] = {}
+    for key, value in data.items():
+        if key in groups and isinstance(value, dict):
+            continue
+        flat[key] = value
+    for group in groups:
+        value = data.get(group)
+        if not isinstance(value, dict):
+            continue
+        for key, item in value.items():
+            if key not in flat:
+                flat[key] = item
+    return flat
+
+
 def _profile_summary_from_dir(runner: object, profile_dir: Path) -> dict[str, Any] | None:
     """Return the discovered metadata for one public package profile directory."""
     if not profile_dir.exists() or not profile_dir.is_dir() or profile_dir.is_symlink():
@@ -281,7 +313,7 @@ def _profile_summary_from_dir(runner: object, profile_dir: Path) -> dict[str, An
         "environment_key": environment_key,
         "venv_path": str(venv_path) if venv_path is not None else None,
         "ready": ready,
-        "status": "ready" if ready else str(state_payload.get("status") or "not_built"),
+        "status": "ready" if ready else ("needs_rebuild" if str(state_payload.get("status") or "") == "ready" else str(state_payload.get("status") or "not_built")),
         "last_build_utc": state_payload.get("last_build_utc"),
         "last_error": state_payload.get("last_error"),
         "exports_dir": str(_profile_exports_dir(paths, profile_name)) if paths is not None else None,
@@ -318,6 +350,7 @@ def setup_status(
             "package_profiles_enabled": bool(getattr(runner, "package_profiles_enabled", True)),
             "package_allow_public_wheelhouse": bool(getattr(runner, "package_allow_public_wheelhouse", True)),
             "package_offline_prefer_local": bool(getattr(runner, "package_offline_prefer_local", True)),
+            "venv_reuse_enabled": bool(getattr(runner, "venv_reuse_enabled", True)),
             "profile_built": False,
             "profile_build_available": False,
             "ready_for_example_5": False,
@@ -329,12 +362,64 @@ def setup_status(
     inventory = list_profiles(runner)
     profiles = list(inventory.get("profiles") or [])
     profile_names = [str(item.get("name") or "") for item in profiles if str(item.get("name") or "")]
-    default_profile = str(getattr(runner, "package_profile_default", "") or "").strip()
-    dependency_mode = str(getattr(runner, "dependency_mode", "per_job") or "per_job")
-    install_requirements = bool(getattr(runner, "install_requirements", False))
-    package_profiles_enabled = bool(getattr(runner, "package_profiles_enabled", True))
-    package_allow_public_wheelhouse = bool(getattr(runner, "package_allow_public_wheelhouse", True))
-    package_offline_prefer_local = bool(getattr(runner, "package_offline_prefer_local", True))
+    safe_target_profile = _safe_profile_name(target_profile) or DEFAULT_SETUP_TARGET_PROFILE
+    target_wheel_name = str(target_wheel or DEFAULT_SETUP_TARGET_WHEEL).strip() or DEFAULT_SETUP_TARGET_WHEEL
+
+    runtime_default_profile = str(getattr(runner, "package_profile_default", "") or "").strip()
+    runtime_dependency_mode = str(getattr(runner, "dependency_mode", "per_job") or "per_job")
+    runtime_install_requirements = bool(getattr(runner, "install_requirements", False))
+    runtime_package_profiles_enabled = bool(getattr(runner, "package_profiles_enabled", True))
+    runtime_package_allow_public_wheelhouse = bool(getattr(runner, "package_allow_public_wheelhouse", True))
+    runtime_package_offline_prefer_local = bool(getattr(runner, "package_offline_prefer_local", True))
+    runtime_venv_reuse_enabled = bool(getattr(runner, "venv_reuse_enabled", True))
+
+    raw_options_path = Path(getattr(runner, "options_path", Path("/data/options.json")))
+    stored_flat = _normalise_options_payload(_read_json(raw_options_path, {})) if raw_options_path else {}
+    stored_default_profile = str(stored_flat.get("package_profile_default") or runtime_default_profile).strip()
+    stored_dependency_mode = str(stored_flat.get("dependency_mode") or runtime_dependency_mode or "per_job")
+    stored_install_requirements = bool(stored_flat.get("install_requirements", runtime_install_requirements))
+    stored_package_profiles_enabled = bool(stored_flat.get("package_profiles_enabled", runtime_package_profiles_enabled))
+    stored_package_allow_public_wheelhouse = bool(stored_flat.get("package_allow_public_wheelhouse", runtime_package_allow_public_wheelhouse))
+    stored_package_offline_prefer_local = bool(stored_flat.get("package_offline_prefer_local", runtime_package_offline_prefer_local))
+    stored_venv_reuse_enabled = bool(stored_flat.get("venv_reuse_enabled", runtime_venv_reuse_enabled))
+
+    def _persistent_mode_matches(
+        install_requirements: bool,
+        dependency_mode: str,
+        package_profiles_enabled: bool,
+        default_profile: str,
+        package_allow_public_wheelhouse: bool,
+        package_offline_prefer_local: bool,
+        venv_reuse_enabled: bool,
+    ) -> bool:
+        return bool(
+            install_requirements
+            and dependency_mode == "profile"
+            and package_profiles_enabled
+            and default_profile == safe_target_profile
+            and package_allow_public_wheelhouse
+            and package_offline_prefer_local
+            and venv_reuse_enabled
+        )
+
+    persistent_packages_running = _persistent_mode_matches(
+        runtime_install_requirements,
+        runtime_dependency_mode,
+        runtime_package_profiles_enabled,
+        runtime_default_profile,
+        runtime_package_allow_public_wheelhouse,
+        runtime_package_offline_prefer_local,
+        runtime_venv_reuse_enabled,
+    )
+    persistent_packages_saved = _persistent_mode_matches(
+        stored_install_requirements,
+        stored_dependency_mode,
+        stored_package_profiles_enabled,
+        stored_default_profile,
+        stored_package_allow_public_wheelhouse,
+        stored_package_offline_prefer_local,
+        stored_venv_reuse_enabled,
+    )
 
     wheel_dir = Path(getattr(paths, "public_wheel_uploads_dir"))
     wheel_files: list[str] = []
@@ -346,33 +431,35 @@ def setup_status(
             except OSError:
                 continue
 
-    safe_target_profile = _safe_profile_name(target_profile) or DEFAULT_SETUP_TARGET_PROFILE
-    target_wheel_name = str(target_wheel or DEFAULT_SETUP_TARGET_WHEEL).strip() or DEFAULT_SETUP_TARGET_WHEEL
     selected_profile = next((item for item in profiles if str(item.get("name") or "") == safe_target_profile), None)
-    default_profile_exists = bool(default_profile and default_profile in profile_names)
+    default_profile_exists = bool(runtime_default_profile and runtime_default_profile in profile_names)
     wheel_present = target_wheel_name in wheel_files
     profile_present = selected_profile is not None
     profile_built = bool(selected_profile and selected_profile.get("ready") is True)
-    profile_build_available = bool(profile_present and package_profiles_enabled)
+    profile_build_available = bool(profile_present and runtime_package_profiles_enabled)
 
     blockers: list[str] = []
     warnings: list[str] = []
     next_steps: list[str] = []
 
-    if not install_requirements:
-        blockers.append("Enable Install requirements.txt automatically in the add-on config.")
-        next_steps.append("Turn on Install requirements.txt automatically, save the config, and restart the add-on.")
-    if not package_profiles_enabled:
-        blockers.append("Enable package profiles in the add-on config.")
-        next_steps.append("Turn on package profile support, save the config, and restart the add-on.")
-    if dependency_mode != 'profile':
-        blockers.append("Switch Dependency handling mode to profile for example 5.")
-        next_steps.append("Set Dependency handling mode to profile, save the config, and restart the add-on.")
-    if default_profile != safe_target_profile:
-        blockers.append(f"Set the default package profile to {safe_target_profile}.")
-        next_steps.append(f"Set package_profile_default to {safe_target_profile}, save the config, and restart the add-on.")
-    elif not default_profile_exists:
-        blockers.append(f"The configured default package profile {safe_target_profile} was not found under /config/package_profiles.")
+    if persistent_packages_saved and not persistent_packages_running:
+        blockers.append("Persistent package defaults are saved but the running add-on has not loaded them yet.")
+        next_steps.append("Restart the add-on, then refresh Setup.")
+    else:
+        if not runtime_install_requirements:
+            blockers.append("Enable Install requirements.txt automatically in the add-on config.")
+            next_steps.append("Use Enable persistent packages to save the recommended settings, or turn on Install requirements.txt automatically manually.")
+        if not runtime_package_profiles_enabled:
+            blockers.append("Enable package profiles in the add-on config.")
+            next_steps.append("Use Enable persistent packages to save the recommended settings, or turn on package profile support manually.")
+        if runtime_dependency_mode != 'profile':
+            blockers.append("Switch Dependency handling mode to profile for persistent packages.")
+            next_steps.append("Use Enable persistent packages to save the recommended settings, or set Dependency handling mode to profile manually.")
+        if runtime_default_profile != safe_target_profile:
+            blockers.append(f"Set the default package profile to {safe_target_profile}.")
+            next_steps.append(f"Use Enable persistent packages to save the recommended settings, or set package_profile_default to {safe_target_profile} manually.")
+        elif not default_profile_exists:
+            blockers.append(f"The configured default package profile {safe_target_profile} was not found under /config/package_profiles.")
     if not wheel_present:
         blockers.append(f"Upload {target_wheel_name} into {wheel_dir}.")
         next_steps.append(f"Add {target_wheel_name} to {wheel_dir} so the demo profile can build locally.")
@@ -382,48 +469,36 @@ def setup_status(
 
     target_profile_status = str(selected_profile.get("status") or "not_built") if selected_profile is not None else "missing"
     target_profile_last_error = str(selected_profile.get("last_error") or "").strip() if selected_profile is not None else ""
-    build_available = bool(profile_present and package_profiles_enabled)
+    build_available = bool(profile_present and runtime_package_profiles_enabled)
     rebuild_available = build_available
-    build_recommended = bool(profile_present and package_profiles_enabled and not profile_built)
+    build_recommended = bool(profile_present and runtime_package_profiles_enabled and not profile_built)
 
     if profile_present and not profile_built:
         warnings.append(f"Profile {safe_target_profile} exists but has not been built yet.")
         next_steps.append(f"Build {safe_target_profile} from this Setup page, or let example 5 build it on first use.")
-    if wheel_present and not package_allow_public_wheelhouse:
+    if wheel_present and not runtime_package_allow_public_wheelhouse:
         blockers.append("Enable public wheelhouse support so uploaded wheels are available during profile builds.")
-        next_steps.append("Turn on public wheelhouse support, save the config, and restart the add-on.")
-    if wheel_present and not package_offline_prefer_local:
+        next_steps.append("Use Enable persistent packages to save the recommended settings, or turn on public wheelhouse support manually.")
+    if wheel_present and not runtime_package_offline_prefer_local:
         warnings.append("Offline prefer local is disabled, so pip may use the remote index before local wheels.")
-    if profile_present and selected_profile is not None and str(selected_profile.get('status') or '') == 'error':
+    if profile_present and selected_profile is not None and str(selected_profile.get('status') or '') in {'error', 'needs_rebuild'}:
         if target_profile_last_error:
             warnings.append(f"The last profile build failed: {target_profile_last_error}")
         next_steps.append(f"Rebuild {safe_target_profile} from this Setup page and inspect the diagnostics bundle if it fails again.")
 
-    config_restart_required = bool(
-        (not install_requirements)
-        or (not package_profiles_enabled)
-        or dependency_mode != 'profile'
-        or default_profile != safe_target_profile
-        or (wheel_present and not package_allow_public_wheelhouse)
-    )
-
-    if config_restart_required:
-        next_steps.append("After saving the add-on config, restart the add-on and refresh Setup.")
+    restart_required = bool(persistent_packages_saved and not persistent_packages_running)
 
     ready_for_example_5 = bool(
         wheel_present
         and profile_present
-        and install_requirements
-        and package_profiles_enabled
-        and dependency_mode == 'profile'
-        and default_profile == safe_target_profile
-        and package_allow_public_wheelhouse
-        and target_profile_status != "error"
+        and profile_built
+        and persistent_packages_running
+        and target_profile_status == "ready"
     )
 
-    if profile_present and target_profile_status == "error":
+    if profile_present and target_profile_status in {"error", "needs_rebuild"}:
         ready_state = "build_failed"
-    elif config_restart_required:
+    elif restart_required:
         ready_state = "restart_required"
     elif not wheel_present or not profile_present:
         ready_state = "content_missing"
@@ -436,27 +511,36 @@ def setup_status(
 
     if not next_steps:
         if ready_state == "ready":
-            next_steps.append("Example 5 is ready to run.")
+            next_steps.append("Persistent packages are ready to use.")
         elif ready_state == "build_recommended":
-            next_steps.append(f"Build {safe_target_profile} now for a cleaner example 5 run.")
+            next_steps.append(f"Build {safe_target_profile} now for a cleaner first persistent-package run.")
         else:
             next_steps.append("Refresh Setup after the next change to confirm the current state.")
 
     restart_guidance = (
-        "Save the add-on config, restart the add-on, then refresh Setup."
-        if config_restart_required
+        "Persistent package defaults are saved. Restart the add-on, then refresh Setup."
+        if restart_required
         else (
-            f"Build {safe_target_profile} now, or let example 5 build it on first use."
+            f"Build {safe_target_profile} now, or let the first persistent-package run build it on demand."
             if build_recommended
             else (
-                "Example 5 is ready to run from Pythonista."
+                "Persistent packages are ready to use from Pythonista."
                 if ready_for_example_5
                 else "Refresh Setup after the next change to confirm the current state."
             )
         )
     )
 
-    # Deduplicate while preserving order.
+    persistent_mode_summary = (
+        "Persistent packages are enabled in the running add-on."
+        if persistent_packages_running
+        else (
+            "Persistent package defaults are saved and will apply after the next add-on restart."
+            if persistent_packages_saved
+            else "Use Enable persistent packages to save the recommended settings in one step."
+        )
+    )
+
     next_steps = list(dict.fromkeys(step for step in next_steps if step))
     blockers = list(dict.fromkeys(blockers))
     warnings = list(dict.fromkeys(warnings))
@@ -469,13 +553,25 @@ def setup_status(
         "wheel_files": wheel_files,
         "profile_present": profile_present,
         "profile_names": profile_names,
-        "default_profile": default_profile,
+        "default_profile": runtime_default_profile,
         "default_profile_exists": default_profile_exists,
-        "install_requirements_enabled": install_requirements,
-        "dependency_mode": dependency_mode,
-        "package_profiles_enabled": package_profiles_enabled,
-        "package_allow_public_wheelhouse": package_allow_public_wheelhouse,
-        "package_offline_prefer_local": package_offline_prefer_local,
+        "install_requirements_enabled": runtime_install_requirements,
+        "dependency_mode": runtime_dependency_mode,
+        "package_profiles_enabled": runtime_package_profiles_enabled,
+        "package_allow_public_wheelhouse": runtime_package_allow_public_wheelhouse,
+        "package_offline_prefer_local": runtime_package_offline_prefer_local,
+        "venv_reuse_enabled": runtime_venv_reuse_enabled,
+        "stored_default_profile": stored_default_profile,
+        "stored_install_requirements_enabled": stored_install_requirements,
+        "stored_dependency_mode": stored_dependency_mode,
+        "stored_package_profiles_enabled": stored_package_profiles_enabled,
+        "stored_package_allow_public_wheelhouse": stored_package_allow_public_wheelhouse,
+        "stored_package_offline_prefer_local": stored_package_offline_prefer_local,
+        "stored_venv_reuse_enabled": stored_venv_reuse_enabled,
+        "persistent_packages_running": persistent_packages_running,
+        "persistent_packages_saved": persistent_packages_saved,
+        "persistent_packages_apply_available": not persistent_packages_saved,
+        "persistent_mode_summary": persistent_mode_summary,
         "profile_built": profile_built,
         "profile_build_available": profile_build_available,
         "build_available": build_available,
@@ -483,7 +579,7 @@ def setup_status(
         "build_recommended": build_recommended,
         "target_profile_status": target_profile_status,
         "target_profile_last_error": target_profile_last_error,
-        "restart_required": config_restart_required,
+        "restart_required": restart_required,
         "restart_guidance": restart_guidance,
         "ready_state": ready_state,
         "config_snippet": _setup_config_snippet(safe_target_profile),

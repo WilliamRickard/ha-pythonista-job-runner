@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-webui-js-regressions.6
+# Version: 0.6.13-tests-webui-js-regressions.7
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -217,6 +217,8 @@ def test_setup_ui_and_actions_exist() -> None:
 
     assert 'id="setup_overlay"' in setup_html
     assert 'id="setup_status_banner"' in setup_html
+    assert 'id="setup_apply_persistent_mode"' in setup_html
+    assert 'id="setup_persistent_mode_summary"' in setup_html
     assert 'id="setup_wheel_file"' in setup_html
     assert 'id="setup_profile_zip_file"' in setup_html
     assert 'id="setup_build_target_profile"' in setup_html
@@ -225,12 +227,14 @@ def test_setup_ui_and_actions_exist() -> None:
     assert 'data-action="setup-upload-profile-zip"' in setup_html
     assert 'data-action="open-setup"' in settings
     assert 'function refreshSetupStatus()' in refresh
+    assert 'function applySetupPersistentMode()' in refresh
     assert 'function renderSetupStatus(payload)' in refresh
     assert 'function uploadSetupBinary(kind, overwrite)' in refresh
     assert 'function buildSetupTargetProfile(rebuild)' in refresh
     assert 'function copySetupConfigSnippet()' in refresh
     assert 'function deleteSetupWheel(filename)' in refresh
     assert 'function deleteSetupProfile(profileName)' in refresh
+    assert 'setup-apply-persistent-mode' in init
     assert 'setup-build-target-profile' in init
     assert 'setup-copy-config-snippet' in init
     assert 'setup-delete-profile' in init
