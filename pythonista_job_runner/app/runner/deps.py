@@ -1,4 +1,4 @@
-# Version: 0.6.13-profile.2
+# Version: 0.6.13-profile.3
 """Dependency installation support with persistent cache, wheelhouse reuse, and diagnostics."""
 
 from __future__ import annotations
@@ -32,6 +32,12 @@ def _package_report_dir(runner: object, j: object) -> Path:
     else:
         report_dir = Path(getattr(j, "work_dir")) / "_package_reports"
     report_dir.mkdir(parents=True, exist_ok=True)
+    package_store.ensure_path_owner_mode(
+        report_dir,
+        uid=getattr(runner, "_job_uid", None),
+        gid=getattr(runner, "_job_gid", None),
+        recursive=False,
+    )
     return report_dir
 
 
@@ -814,6 +820,11 @@ def maybe_install_requirements(runner: object, j: object, env: Dict[str, str]) -
         )
     )
     if has_wheelhouse_paths:
+        package_store.ensure_job_user_private_write_access(
+            paths,
+            uid=job_uid,
+            gid=job_gid,
+        )
         if bool(getattr(runner, "package_allow_public_wheelhouse", True)):
             sync_result = package_store.sync_public_wheel_uploads(
                 paths,

@@ -1,4 +1,4 @@
-# Version: 0.6.13-core.6
+# Version: 0.6.13-core.7
 from __future__ import annotations
 
 import ipaddress
@@ -451,6 +451,11 @@ class Runner:
             public_wheelhouse_subdir=self.package_public_wheelhouse_subdir,
         )
         self.package_store_bootstrap = _package_store.bootstrap_package_store(self.package_store_paths)
+        self.package_store_permissions = _package_store.ensure_job_user_private_write_access(
+            self.package_store_paths,
+            uid=self._job_uid,
+            gid=self._job_gid,
+        )
         self._active_package_env_lock = threading.Lock()
         self._active_package_env_keys: set[str] = set()
         if self.package_cache_prune_on_start:
