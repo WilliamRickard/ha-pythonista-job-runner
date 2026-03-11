@@ -1,0 +1,199 @@
+# Version: 0.6.13-config-help.5
+configuration:
+  security:
+    name: Security and access
+    description: Choose how Pythonista is allowed to connect to the runner.
+    fields:
+      token:
+        name: Runner access token
+        description: Required. Create a long random token and use the same value in Pythonista as the X-Runner-Token header.
+      ingress_strict:
+        name: Home Assistant Ingress only
+        description: Recommended. Turn this on to block direct LAN requests and only allow requests that come through the Home Assistant sidebar or Ingress proxy.
+      api_allow_cidrs:
+        name: Allowed IP ranges for direct API access
+        description: Optional. Limit direct non-Ingress access to specific IP ranges. Example: if your iPhone IP is 192.168.1.196, use 192.168.1.196/32 for just that iPhone, or 192.168.1.0/24 for all devices on your LAN.
+
+  runner:
+    name: Runner service
+    description: Internal web server settings for the add-on container.
+    fields:
+      bind_host:
+        name: Listen address inside the add-on
+        description: Usually leave this as 0.0.0.0 so the web server listens on the container network as expected.
+      job_user:
+        name: Linux user for submitted jobs
+        description: Linux account used to run uploaded jobs. Leave the default unless you deliberately manage users inside the add-on.
+
+  jobs:
+    name: Job limits and retention
+    description: Control queue size, upload limits, runtime limits, and how long jobs stay available.
+    fields:
+      timeout_seconds:
+        name: Maximum runtime per job (seconds)
+        description: Hard timeout for each job. Jobs still running after this limit are stopped.
+      max_upload_mb:
+        name: Maximum upload size (MB)
+        description: Largest zip file Pythonista is allowed to upload for one job.
+      max_concurrent_jobs:
+        name: Jobs allowed to run at the same time
+        description: Increase this only if your hardware has enough CPU and memory for multiple jobs.
+      queue_max_jobs:
+        name: Maximum queued and running jobs
+        description: Total number of jobs that can exist in the queue, including jobs already running.
+      tail_chars:
+        name: Live log buffer size (characters)
+        description: Amount of stdout and stderr kept ready for live viewing in the Web UI.
+      job_retention_hours:
+        name: Keep finished jobs for (hours)
+        description: Finished jobs older than this can be cleaned up automatically.
+
+  resources:
+    name: Per-job resource limits
+    description: Default and maximum CPU, memory, and thread settings applied to submitted jobs.
+    fields:
+      cpu_limit_mode:
+        name: CPU limit mode
+        description: single_core treats the percentage as one CPU core. total_machine scales the percentage across all available CPU cores.
+      default_cpu_percent:
+        name: Default CPU limit (%)
+        description: CPU limit used when Pythonista does not request a custom value.
+      max_cpu_percent:
+        name: Maximum CPU limit (%)
+        description: Highest CPU limit Pythonista is allowed to request.
+      default_mem_mb:
+        name: Default memory limit (MB)
+        description: Memory cap used when Pythonista does not request a custom value.
+      max_mem_mb:
+        name: Maximum memory limit (MB)
+        description: Highest memory limit Pythonista is allowed to request.
+      max_threads:
+        name: Maximum thread count
+        description: Caps common numeric libraries such as OpenBLAS and MKL so one job does not create too many threads.
+
+  python:
+    name: Python package handling
+    description: Optional package installation, persistent package storage, and environment-variable allowlists for submitted jobs.
+    fields:
+      install_requirements:
+        name: Install requirements.txt automatically
+        description: Turn this on to install requirements.txt before run.py starts. Phase 1 keeps the current per-job install behaviour while the persistent package store is being introduced.
+      dependency_mode:
+        name: Dependency handling mode
+        description: disabled ignores requirements.txt, per_job uses the uploaded requirements.txt, and profile attaches the named default package profile from /config/package_profiles.
+      package_cache_enabled:
+        name: Enable persistent pip cache
+        description: Store pip download and wheel cache data under the add-on private /data area for reuse across jobs.
+      package_cache_max_mb:
+        name: Package cache limit (MB)
+        description: Soft target for private package storage size. The add-on now prunes least recently used cache content to stay near this limit while protecting active reusable environments.
+      package_cache_prune_on_start:
+        name: Prune package cache on add-on start
+        description: Run a best-effort package cache prune during add-on startup before new jobs begin.
+      package_profiles_enabled:
+        name: Enable package profiles
+        description: Allow named reusable package profiles stored in /config/package_profiles to be listed, built, and reused across jobs.
+      package_profile_default:
+        name: Default package profile
+        description: Optional profile name to use when dependency mode is set to profile. This should match a folder name under /config/package_profiles.
+      package_allow_public_wheelhouse:
+        name: Allow public wheel uploads
+        description: Allow the add-on to import validated wheel files from the public add-on config folder at /config into the private internal wheelhouse for reuse across jobs.
+      package_public_wheelhouse_subdir:
+        name: Public wheel uploads subfolder
+        description: Subfolder name created under /config for uploaded wheel files. Keep this to a simple folder name.
+      package_require_hashes:
+        name: Require package hashes
+        description: Require --hash entries when building from requirements.lock files. Leave this off unless you manage locked dependency sets with hashes.
+      package_offline_prefer_local:
+        name: Prefer local packages before remote indexes
+        description: Try local wheelhouse and uploaded wheel files first. If that does not satisfy requirements, pip can still fall back to remote indexes when configured.
+      venv_reuse_enabled:
+        name: Enable reusable virtual environments
+        description: Reuse keyed virtual environments under /data/pythonista_job_runner/venvs when the same dependency definition is seen again.
+      venv_max_count:
+        name: Maximum reusable virtual environments
+        description: Soft cap for how many cached virtual environments the add-on should keep once reuse is enabled.
+      pip_timeout_seconds:
+        name: pip install timeout (seconds)
+        description: Maximum time allowed for each pip install step.
+      pip_index_url:
+        name: Primary pip index URL
+        description: Optional custom Python package index URL.
+      pip_extra_index_url:
+        name: Extra pip index URL
+        description: Optional secondary Python package index URL.
+      pip_trusted_hosts:
+        name: Trusted pip hosts
+        description: Optional hostnames passed to pip as trusted-host values.
+      allow_env:
+        name: Allowed inherited environment variables
+        description: Optional allowlist of environment variables that submitted jobs may inherit from the add-on.
+
+  notifications:
+    name: Home Assistant notifications
+    description: Control optional persistent notifications when a job completes.
+    fields:
+      notify_on_completion:
+        name: Send completion notifications
+        description: Create a Home Assistant persistent notification when a job finishes.
+      notification_mode:
+        name: Notification behaviour
+        description: latest reuses one notification. per_job creates a separate notification for each finished job.
+      notification_id_prefix:
+        name: Notification ID prefix
+        description: Prefix added to notification IDs created by this add-on.
+      notification_excerpt_chars:
+        name: Notification log excerpt length
+        description: Number of stdout and stderr characters included in the notification summary.
+
+  artefacts:
+    name: Output files and safety limits
+    description: Control summaries, manifests, and uploaded zip guardrails.
+    fields:
+      summary_head_chars:
+        name: Summary start length (characters)
+        description: Number of characters taken from the start of stdout and stderr for the generated summary.
+      summary_tail_chars:
+        name: Summary end length (characters)
+        description: Number of characters taken from the end of stdout and stderr for the generated summary.
+      manifest_sha256:
+        name: Include SHA-256 manifest
+        description: Add file hashes for outputs into the result zip.
+      outputs_max_files:
+        name: Maximum output files
+        description: Maximum number of output files that one job may place into its result zip.
+      outputs_max_bytes:
+        name: Maximum output size (bytes)
+        description: Maximum combined size of output files collected into the result zip.
+      zip_max_members:
+        name: Maximum uploaded zip members
+        description: Reject uploaded job zips that contain more files than this.
+      zip_max_total_uncompressed:
+        name: Maximum uploaded zip size after extraction (bytes)
+        description: Protects against zip bombs by limiting the total uncompressed size of an uploaded job zip.
+      zip_max_single_uncompressed:
+        name: Maximum single extracted file size (bytes)
+        description: Protects against unusually large files inside an uploaded job zip.
+
+  housekeeping:
+    name: Disk protection
+    description: Keep the add-on working when free space starts to run low.
+    fields:
+      cleanup_min_free_mb:
+        name: Minimum free disk space (MB)
+        description: If free space drops below this level, the add-on will delete the oldest finished jobs.
+
+  telemetry:
+    name: MQTT telemetry
+    description: Optional telemetry published through Home Assistant MQTT services.
+    fields:
+      telemetry_mqtt_enabled:
+        name: Publish MQTT telemetry
+        description: Publish audit and job telemetry using Home Assistant mqtt.publish service calls.
+      telemetry_topic_prefix:
+        name: MQTT topic prefix
+        description: Prefix used for telemetry topics, for example pythonista_job_runner/audit.
+
+network:
+  8787/TCP: Runner HTTP API for direct access. Home Assistant Ingress uses its own proxy path.

@@ -1,0 +1,4 @@
+Offline wheelhouse install example completed.
+energy_dashboard.csv: 768 Bytes
+sensor_history.json: 2.0 kB
+year_end_archive.zip: 3.6 MB

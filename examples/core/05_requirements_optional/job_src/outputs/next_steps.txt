@@ -1,0 +1,1 @@
+This example needs the vendored `pjr_demo_formatsize` wheel. Enable per-job requirements installation and rerun.

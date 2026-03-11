@@ -1,0 +1,6 @@
+timestamp,device,reading
+2026-01-01T08:00:00Z,sensor_a,72
+2026-01-01T08:05:00Z,sensor_b,55
+2026-01-01T08:10:00Z,sensor_c,83
+2026-01-01T08:15:00Z,sensor_a,61
+2026-01-01T08:20:00Z,sensor_b,47

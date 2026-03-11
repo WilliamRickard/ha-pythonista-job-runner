@@ -1,0 +1,13 @@
+{
+  "band_counts": {
+    "high": 1,
+    "low": 2,
+    "medium": 2
+  },
+  "example_id": "03_process_input_files",
+  "input_row_count": 5,
+  "max_reading": 83,
+  "min_reading": 47,
+  "reading_average": 64,
+  "reading_sum": 318
+}

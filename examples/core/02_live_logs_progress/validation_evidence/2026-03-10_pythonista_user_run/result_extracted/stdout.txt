@@ -1,0 +1,10 @@
+live-logs example starting
+step 1/8: prepare workspace
+step 2/8: load sample configuration
+step 3/8: validate inputs
+step 4/8: start processing
+step 5/8: write checkpoint
+step 6/8: verify checkpoint
+step 7/8: finalise outputs
+step 8/8: complete job
+live-logs example finished

@@ -1,0 +1,169 @@
+<!-- Section: Desktop splitter and selected job detail panel -->
+      <div id="desktop_splitter" class="desktop-splitter" role="separator" aria-orientation="vertical" aria-label="Resize jobs and detail panes"></div>
+<!-- Section: Job detail panel and closes main container -->
+      <section id="pane_detail" class="card" style="margin-top:14px;" aria-label="Selected job details">
+        <div class="card-header">
+          <h2>Job details</h2>
+          <div class="actionsbar right">
+            <button type="button" class="small" id="btn_back" data-action="back-to-jobs" hidden>Back</button>
+            <button type="button" class="small" data-action="copy-curl">Copy curl</button>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div id="detail_empty" class="empty" role="status" aria-live="polite">Select a job to see lifecycle status, outputs, logs, and download options.</div>
+
+          <section id="detail" hidden aria-label="Job detail">
+            <div class="detail-topline">
+              <div class="detail-heading">
+                <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+                  <button type="button" class="breadcrumb-link" data-action="back-to-jobs">Jobs</button>
+                  <span class="breadcrumb-sep" aria-hidden="true">/</span>
+                  <span class="breadcrumb-current" id="detail_breadcrumb_current">Selected job</span>
+                </nav>
+                <div class="detail-eyebrow">Selected job</div>
+                <div class="detail-title-row">
+                  <div class="detail-title">Job <span id="jobid"></span></div>
+                  <span class="badge queued detail-inline-state" id="detail_inline_state" hidden>queued</span>
+                </div>
+                <div class="detail-subtitle">Lifecycle, outputs, and logs in one place.</div>
+              </div>
+              <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
+                <button type="button" class="small primary" data-action="download-zip">Download zip</button>
+                <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
+                <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
+                <details class="secondary-panel detail-more-actions">
+                  <summary>More</summary>
+                  <div class="secondary-panel-body detail-more-actions-body" role="menu" aria-label="More job actions">
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem">Download stdout</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem">Download stderr</button>
+                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem">Copy curl</button>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            <section id="detail_state_banner" class="state-banner" role="status" aria-live="polite" style="margin-top:10px;" hidden>
+              <div class="state-banner-main">
+                <span class="badge" id="state_badge">queued</span>
+                <strong id="state_title">Queued</strong>
+              </div>
+              <div id="state_description" class="state-description"></div>
+            </section>
+
+            <div id="detail_progress_shell" class="detail-progress-shell" hidden>
+              <div id="detail_progress" class="progress detail-progress" role="progressbar" aria-label="Job progress">
+                <div id="detail_progress_bar" class="progress-bar"></div>
+              </div>
+              <div id="detail_progress_copy" class="detail-progress-copy">Running…</div>
+            </div>
+
+            <section class="detail-priority-strip" aria-label="Job summary" style="margin-top:10px;">
+              <article class="detail-priority-item detail-priority-result">
+                <div class="detail-priority-label">Result</div>
+                <div id="detail_result_summary" class="detail-priority-value muted">Result not yet available.</div>
+              </article>
+              <article class="detail-priority-item detail-priority-failure">
+                <div class="detail-priority-label">Failure hints</div>
+                <div id="detail_failure_summary" class="detail-priority-value muted">No failure detected.</div>
+              </article>
+              <article class="detail-priority-item detail-priority-limits">
+                <div class="detail-priority-label">Execution limits</div>
+                <div id="detail_limits_summary" class="detail-priority-value muted">Limits unavailable.</div>
+              </article>
+            </section>
+
+            <div class="tabs detail-tabs" style="margin-top:14px;" role="tablist" aria-label="Detail sections">
+              <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="true" aria-controls="overview" tabindex="0">summary</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stdout</button>
+              <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
+            </div>
+
+            <div id="overview" style="margin-top:12px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="false">
+              <div class="detail-summary-stack">
+                <section class="detail-summary-panel" aria-label="Lifecycle timeline">
+                  <h3>Lifecycle</h3>
+                  <ul id="detail_timeline" class="timeline"></ul>
+                </section>
+
+                <details class="detail-block detail-meta-block">
+                  <summary>Metadata</summary>
+                  <div class="scroll-area scroll-area-meta">
+                    <div class="item-list meta-items" id="meta"></div>
+                  </div>
+                </details>
+
+                <section class="detail-summary-panel detail-overview-note">
+                  <h3>Quick facts</h3>
+                  <div class="hint" id="overview_text"></div>
+                </section>
+
+                <details class="detail-block detail-api-block">
+                  <summary>Request and API</summary>
+                  <textarea id="curl_snippet" class="scroll-area-control" rows="9" readonly></textarea>
+                </details>
+              </div>
+            </div>
+
+            <div id="logpanel" role="tabpanel" aria-labelledby="tab_stdout" aria-hidden="true" style="margin-top:12px;">
+              <div class="scroll-area scroll-area-log">
+                <pre id="logview"></pre>
+              </div>
+            </div>
+
+            <details class="detail-log-shell" style="margin-top:10px;">
+              <summary>Log controls</summary>
+              <div class="detail-log-tools-body">
+            <div class="logtools" id="logtools" style="margin-top:10px;">
+              <div class="livebar" role="group" aria-label="Live tail controls">
+                <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
+                <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
+                <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
+                <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
+                <span class="pill" id="livepill" title="Live tail state">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span id="livestate">Live</span>
+                </span>
+                <input type="checkbox" id="follow" checked hidden/>
+                <input type="checkbox" id="pause" hidden/>
+              </div>
+
+              <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
+              <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
+              <label class="tog" style="gap:10px;">
+                font
+                <input type="range" id="font" min="11" max="18" value="13"/>
+              </label>
+              <button type="button" class="small" data-action="jump-error">Next error</button>
+              <span style="flex:1 1 140px;"></span>
+              <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
+              <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+            </div>
+
+            <div class="hilitebar" id="hilitebar" aria-label="Highlight terms">
+              <span class="hilite-label">Highlight</span>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
+              <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
+              <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
+              <span style="flex:1 1 140px;"></span>
+              <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
+              <button type="button" class="small" data-action="add-hterm">Add</button>
+              <button type="button" class="small" data-action="clear-hterms">Clear</button>
+            </div>
+
+            <div class="findbar" id="findbar">
+              <label class="sr-only" for="logsearch">Find in log</label>
+              <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
+              <button type="button" class="small" data-action="find-prev">Prev</button>
+              <button type="button" class="small" data-action="find-next">Next</button>
+              <button type="button" class="small" data-action="clear-search">Clear</button>
+              <span class="count" id="matchcount" role="status" aria-live="polite"></span>
+            </div>
+              </div>
+            </details>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>

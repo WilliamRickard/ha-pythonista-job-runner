@@ -1,0 +1,55 @@
+{
+  "_version": "0.6.13-examples.7",
+  "all_compared_files_matched": true,
+  "compare_files": [
+    {
+      "actual_sha256": "25af419f0b54e44000a0870eb2694dafda0739783f71eae367dd4411cc52caa2",
+      "actual_size": 264,
+      "expected_sha256": "25af419f0b54e44000a0870eb2694dafda0739783f71eae367dd4411cc52caa2",
+      "expected_size": 264,
+      "matched": true,
+      "path": "outputs/processed.csv"
+    },
+    {
+      "actual_sha256": "f9ee2a3b78c84b115888d137cc6ee0f73b8a3aa9af0a9cb2d9203780260942b9",
+      "actual_size": 156,
+      "expected_sha256": "f9ee2a3b78c84b115888d137cc6ee0f73b8a3aa9af0a9cb2d9203780260942b9",
+      "expected_size": 156,
+      "matched": true,
+      "path": "outputs/summary.md"
+    },
+    {
+      "actual_sha256": "b4e81ab1c160c730d9db9e1fb4d939f1dbc24b084b77559b7dc292d407c84d1e",
+      "actual_size": 227,
+      "expected_sha256": "b4e81ab1c160c730d9db9e1fb4d939f1dbc24b084b77559b7dc292d407c84d1e",
+      "expected_size": 227,
+      "matched": true,
+      "path": "outputs/stats.json"
+    },
+    {
+      "actual_sha256": "42ab4e83f674d2f0f37b306ef4bd2d5dc0ed077df9691fa306b33e269a420285",
+      "actual_size": 439,
+      "expected_sha256": "42ab4e83f674d2f0f37b306ef4bd2d5dc0ed077df9691fa306b33e269a420285",
+      "expected_size": 439,
+      "matched": true,
+      "path": "stdout.txt"
+    },
+    {
+      "actual_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual_size": 0,
+      "expected_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "expected_size": 0,
+      "matched": true,
+      "path": "stderr.txt"
+    }
+  ],
+  "example_id": "03_process_input_files",
+  "validated_run": {
+    "created_utc": "2026-03-10T11:52:20Z",
+    "duration_seconds": 1,
+    "exit_code": 0,
+    "finished_utc": "2026-03-10T11:52:21Z",
+    "job_id": "57a8aff9947049068fbec5af55de4e4a",
+    "state": "done"
+  }
+}

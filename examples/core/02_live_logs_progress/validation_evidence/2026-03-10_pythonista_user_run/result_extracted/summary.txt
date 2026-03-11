@@ -1,0 +1,62 @@
+Pythonista Job Runner summary
+runner_version: 0.6.13
+job_id: e68d9d1fefed489e906f64308b43dbb2
+created_utc: 2026-03-10T11:51:36Z
+started_utc: 2026-03-10T11:51:36Z
+finished_utc: 2026-03-10T11:51:45Z
+state: done
+phase: done
+exit_code: 0
+error: None
+
+limits:
+  cpu_percent: 25
+  cpu_limit_mode: single_core
+  cpu_count: 2
+  cpu_cpulimit_pct: 25
+  mem_mb: 4096
+  threads: 1
+  timeout_seconds: 3600
+
+outputs_total_files: 2
+outputs_total_bytes: 349
+outputs_truncated: False
+outputs_limit_reason: None
+outputs_max_files: 2000
+outputs_max_bytes: 209715200
+
+stdout_head:
+live-logs example starting
+step 1/8: prepare workspace
+step 2/8: load sample configuration
+step 3/8: validate inputs
+step 4/8: start processing
+step 5/8: write checkpoint
+step 6/8: verify checkpoint
+step 7/8: finalise outputs
+step 8/8: complete job
+live-logs example finished
+
+
+stdout_tail:
+live-logs example starting
+step 1/8: prepare workspace
+step 2/8: load sample configuration
+step 3/8: validate inputs
+step 4/8: start processing
+step 5/8: write checkpoint
+step 6/8: verify checkpoint
+step 7/8: finalise outputs
+step 8/8: complete job
+live-logs example finished
+
+
+stderr_head:
+warning at step 3: simulated stderr event
+warning at step 6: simulated stderr event
+
+
+stderr_tail:
+warning at step 3: simulated stderr event
+warning at step 6: simulated stderr event
+

@@ -1,0 +1,1501 @@
+{
+  "components": {
+    "parameters": {
+      "JobId": {
+        "in": "path",
+        "name": "job_id",
+        "required": true,
+        "schema": {
+          "pattern": "^[^./][^/]*$",
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "Unauthorised": {
+        "content": {
+          "application/json": {
+            "example": {
+              "error": "unauthorised"
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "Authentication failed"
+      },
+      "UnknownJob": {
+        "content": {
+          "application/json": {
+            "example": {
+              "error": "unknown_job"
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "Job not found"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ok"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ],
+        "type": "object"
+      },
+      "JobLimits": {
+        "properties": {
+          "cpu_count": {
+            "type": "integer"
+          },
+          "cpu_cpulimit_pct": {
+            "type": "integer"
+          },
+          "cpu_limit_mode": {
+            "type": "string"
+          },
+          "cpu_percent": {
+            "type": "integer"
+          },
+          "mem_mb": {
+            "type": "integer"
+          },
+          "threads": {
+            "type": "integer"
+          },
+          "timeout_seconds": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cpu_percent",
+          "cpu_limit_mode",
+          "cpu_count",
+          "cpu_cpulimit_pct",
+          "mem_mb",
+          "threads",
+          "timeout_seconds"
+        ],
+        "type": "object"
+      },
+      "JobStatus": {
+        "properties": {
+          "client_ip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_utc": {
+            "type": "string"
+          },
+          "delete_requested": {
+            "type": "boolean"
+          },
+          "duration_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "finished_utc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "input_sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "job_id": {
+            "type": "string"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/JobLimits"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "result_filename": {
+            "type": "string"
+          },
+          "runner_version": {
+            "type": "string"
+          },
+          "started_utc": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "error"
+            ],
+            "type": "string"
+          },
+          "submitted_by": {
+            "$ref": "#/components/schemas/SubmittedBy"
+          }
+        },
+        "required": [
+          "job_id",
+          "created_utc",
+          "state",
+          "phase",
+          "runner_version",
+          "submitted_by",
+          "limits",
+          "result_filename",
+          "delete_requested"
+        ],
+        "type": "object"
+      },
+      "PurgeRequest": {
+        "additionalProperties": true,
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "older_than_hours": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "states": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "PurgeResponse": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "deleted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "deleted",
+          "count",
+          "dry_run"
+        ],
+        "type": "object"
+      },
+      "RunAcceptedResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "jobs_url": {
+            "type": "string"
+          },
+          "result_url": {
+            "type": "string"
+          },
+          "tail_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "tail_url",
+          "result_url",
+          "jobs_url"
+        ],
+        "type": "object"
+      },
+      "ServiceInfo": {
+        "properties": {
+          "endpoints": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "service": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "service",
+          "version",
+          "endpoints"
+        ],
+        "type": "object"
+      },
+      "SetupMutationResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "setup_status": {
+            "$ref": "#/components/schemas/SetupStatusResponse"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "setup_status"
+        ],
+        "type": "object"
+      },
+      "SetupStatusResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "blockers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "config_snippet": {
+            "type": "string"
+          },
+          "next_steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ready_for_example_5": {
+            "type": "boolean"
+          },
+          "ready_state": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "target_profile": {
+            "type": "string"
+          },
+          "target_wheel": {
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "ready_for_example_5",
+          "ready_state",
+          "blockers",
+          "next_steps"
+        ],
+        "type": "object"
+      },
+      "SubmittedBy": {
+        "properties": {
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "display_name"
+        ],
+        "type": "object"
+      },
+      "TailResponse": {
+        "properties": {
+          "offsets": {
+            "properties": {
+              "stderr_from": {
+                "type": "integer"
+              },
+              "stderr_next": {
+                "type": "integer"
+              },
+              "stderr_size": {
+                "type": "integer"
+              },
+              "stdout_from": {
+                "type": "integer"
+              },
+              "stdout_next": {
+                "type": "integer"
+              },
+              "stdout_size": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "status": {
+            "$ref": "#/components/schemas/JobStatus"
+          },
+          "tail": {
+            "properties": {
+              "stderr": {
+                "type": "string"
+              },
+              "stdout": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "stdout",
+              "stderr"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "status",
+          "tail"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "RunnerToken": {
+        "in": "header",
+        "name": "X-Runner-Token",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "Machine-readable contract for the direct HTTP API exposed by pythonista_job_runner. This contract is derived from app/http_api_server.py and validated by tests.",
+    "title": "Pythonista Job Runner Direct API",
+    "version": "0.6.15"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Returns JSON service info by default. If Accept prefers HTML, returns Web UI and requires auth.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceInfo"
+                }
+              },
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Service info JSON or HTML page"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "summary": "Service index or Web UI"
+      }
+    },
+    "/cancel/{job_id}": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Cancellation request accepted"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Cancel a job"
+      }
+    },
+    "/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Service health"
+          }
+        },
+        "summary": "Health check"
+      }
+    },
+    "/index.html": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Service info JSON or HTML page"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "summary": "Service index or Web UI"
+      }
+    },
+    "/info.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceInfo"
+                }
+              }
+            },
+            "description": "Service info"
+          }
+        },
+        "summary": "Service information"
+      }
+    },
+    "/job/{job_id}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Delete request result"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Delete a job"
+      }
+    },
+    "/job/{job_id}.json": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            },
+            "description": "Job status"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "$ref": "#/components/responses/UnknownJob"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Get job status"
+      }
+    },
+    "/jobs.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "jobs": {
+                      "items": {
+                        "$ref": "#/components/schemas/JobStatus"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "jobs"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Jobs list"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "List jobs"
+      }
+    },
+    "/package_profiles.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Package profile inventory"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "List package profiles"
+      }
+    },
+    "/package_profiles/build": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Package profile build result"
+          },
+          "400": {
+            "description": "Build failed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Build or rebuild a package profile"
+      }
+    },
+    "/packages/cache.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Package cache summary"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Get package cache summary"
+      }
+    },
+    "/packages/cache/prune": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Package cache prune result"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Prune private package cache"
+      }
+    },
+    "/packages/cache/purge": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Package cache purge result"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Purge private package cache"
+      }
+    },
+    "/packages/summary.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Package summary payload"
+          }
+        },
+        "summary": "Get combined package subsystem summary"
+      }
+    },
+    "/purge": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurgeRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurgeRequest"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurgeResponse"
+                }
+              }
+            },
+            "description": "Purge result"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid JSON payload"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Payload too large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported content type"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Purge jobs by state and age"
+      }
+    },
+    "/result/{job_id}.zip": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Zip bytes"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown job or result not ready"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Download result zip"
+      }
+    },
+    "/run": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            },
+            "application/zip": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAcceptedResponse"
+                }
+              }
+            },
+            "description": "Accepted"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Invalid request payload"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "411": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing Content-Length"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Upload too large"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported content type"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Submit a job zip"
+      }
+    },
+    "/setup/apply-persistent-mode": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "target_profile": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            },
+            "description": "Persistent-package settings saved"
+          },
+          "400": {
+            "description": "Invalid request or validation failure"
+          },
+          "401": {
+            "description": "Unauthorised"
+          },
+          "413": {
+            "description": "Payload too large"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Save the recommended persistent-package settings"
+      }
+    },
+    "/setup/delete-profile": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            },
+            "description": "Delete result"
+          },
+          "400": {
+            "description": "Delete rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Delete one uploaded setup profile"
+      }
+    },
+    "/setup/delete-wheel": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            },
+            "description": "Delete result"
+          },
+          "400": {
+            "description": "Delete rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "description": "Wheel not found"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Delete one uploaded setup wheel"
+      }
+    },
+    "/setup/status.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatusResponse"
+                }
+              }
+            },
+            "description": "Setup readiness payload"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Get guided package setup readiness"
+      }
+    },
+    "/setup/upload-profile-zip": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            },
+            "description": "Profile upload result"
+          },
+          "400": {
+            "description": "Upload rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "409": {
+            "description": "Upload would overwrite an existing profile"
+          },
+          "411": {
+            "description": "Content-Length required"
+          },
+          "413": {
+            "description": "Upload too large"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Upload one setup profile archive"
+      }
+    },
+    "/setup/upload-wheel": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            },
+            "description": "Wheel upload result"
+          },
+          "400": {
+            "description": "Upload rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "409": {
+            "description": "Upload would overwrite an existing wheel"
+          },
+          "411": {
+            "description": "Content-Length required"
+          },
+          "413": {
+            "description": "Upload too large"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Upload one setup wheel"
+      }
+    },
+    "/stats.json": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Stats map"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Runner stats"
+      }
+    },
+    "/stderr/{job_id}.txt": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "minimum": -1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_bytes",
+            "schema": {
+              "maximum": 1048576,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plain-text stderr"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown job or log not ready"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Read stderr log"
+      }
+    },
+    "/stdout/{job_id}.txt": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "minimum": -1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_bytes",
+            "schema": {
+              "maximum": 1048576,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plain-text stdout"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unknown job or log not ready"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Read stdout log"
+      }
+    },
+    "/tail/{job_id}.json": {
+      "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/JobId"
+          },
+          {
+            "in": "query",
+            "name": "stdout_from",
+            "schema": {
+              "minimum": -1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stderr_from",
+            "schema": {
+              "minimum": -1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "max_bytes",
+            "schema": {
+              "maximum": 1048576,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TailResponse"
+                }
+              }
+            },
+            "description": "Job status and tail"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "$ref": "#/components/responses/UnknownJob"
+          }
+        },
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "summary": "Tail stdout and stderr"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://{host}:8787",
+      "variables": {
+        "host": {
+          "default": "homeassistant.local"
+        }
+      }
+    }
+  ]
+}

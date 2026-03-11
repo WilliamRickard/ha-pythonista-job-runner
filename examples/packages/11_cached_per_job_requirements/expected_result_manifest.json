@@ -1,0 +1,16 @@
+{
+  "files": [
+    {
+      "path": "outputs/cache_probe.json"
+    },
+    {
+      "path": "outputs/summary.md"
+    },
+    {
+      "path": "stdout.txt"
+    },
+    {
+      "path": "stderr.txt"
+    }
+  ]
+}

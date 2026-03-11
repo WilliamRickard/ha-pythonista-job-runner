@@ -1,0 +1,110 @@
+long-running cancellation example starting
+heartbeat 1/90: job still running
+heartbeat 2/90: job still running
+heartbeat 3/90: job still running
+heartbeat 4/90: job still running
+heartbeat 5/90: job still running
+checkpoint after 5 heartbeats
+heartbeat 6/90: job still running
+heartbeat 7/90: job still running
+heartbeat 8/90: job still running
+heartbeat 9/90: job still running
+heartbeat 10/90: job still running
+checkpoint after 10 heartbeats
+heartbeat 11/90: job still running
+heartbeat 12/90: job still running
+heartbeat 13/90: job still running
+heartbeat 14/90: job still running
+heartbeat 15/90: job still running
+checkpoint after 15 heartbeats
+heartbeat 16/90: job still running
+heartbeat 17/90: job still running
+heartbeat 18/90: job still running
+heartbeat 19/90: job still running
+heartbeat 20/90: job still running
+checkpoint after 20 heartbeats
+heartbeat 21/90: job still running
+heartbeat 22/90: job still running
+heartbeat 23/90: job still running
+heartbeat 24/90: job still running
+heartbeat 25/90: job still running
+checkpoint after 25 heartbeats
+heartbeat 26/90: job still running
+heartbeat 27/90: job still running
+heartbeat 28/90: job still running
+heartbeat 29/90: job still running
+heartbeat 30/90: job still running
+checkpoint after 30 heartbeats
+heartbeat 31/90: job still running
+heartbeat 32/90: job still running
+heartbeat 33/90: job still running
+heartbeat 34/90: job still running
+heartbeat 35/90: job still running
+checkpoint after 35 heartbeats
+heartbeat 36/90: job still running
+heartbeat 37/90: job still running
+heartbeat 38/90: job still running
+heartbeat 39/90: job still running
+heartbeat 40/90: job still running
+checkpoint after 40 heartbeats
+heartbeat 41/90: job still running
+heartbeat 42/90: job still running
+heartbeat 43/90: job still running
+heartbeat 44/90: job still running
+heartbeat 45/90: job still running
+checkpoint after 45 heartbeats
+heartbeat 46/90: job still running
+heartbeat 47/90: job still running
+heartbeat 48/90: job still running
+heartbeat 49/90: job still running
+heartbeat 50/90: job still running
+checkpoint after 50 heartbeats
+heartbeat 51/90: job still running
+heartbeat 52/90: job still running
+heartbeat 53/90: job still running
+heartbeat 54/90: job still running
+heartbeat 55/90: job still running
+checkpoint after 55 heartbeats
+heartbeat 56/90: job still running
+heartbeat 57/90: job still running
+heartbeat 58/90: job still running
+heartbeat 59/90: job still running
+heartbeat 60/90: job still running
+checkpoint after 60 heartbeats
+heartbeat 61/90: job still running
+heartbeat 62/90: job still running
+heartbeat 63/90: job still running
+heartbeat 64/90: job still running
+heartbeat 65/90: job still running
+checkpoint after 65 heartbeats
+heartbeat 66/90: job still running
+heartbeat 67/90: job still running
+heartbeat 68/90: job still running
+heartbeat 69/90: job still running
+heartbeat 70/90: job still running
+checkpoint after 70 heartbeats
+heartbeat 71/90: job still running
+heartbeat 72/90: job still running
+heartbeat 73/90: job still running
+heartbeat 74/90: job still running
+heartbeat 75/90: job still running
+checkpoint after 75 heartbeats
+heartbeat 76/90: job still running
+heartbeat 77/90: job still running
+heartbeat 78/90: job still running
+heartbeat 79/90: job still running
+heartbeat 80/90: job still running
+checkpoint after 80 heartbeats
+heartbeat 81/90: job still running
+heartbeat 82/90: job still running
+heartbeat 83/90: job still running
+heartbeat 84/90: job still running
+heartbeat 85/90: job still running
+checkpoint after 85 heartbeats
+heartbeat 86/90: job still running
+heartbeat 87/90: job still running
+heartbeat 88/90: job still running
+heartbeat 89/90: job still running
+heartbeat 90/90: job still running
+checkpoint after 90 heartbeats
+long-running cancellation example finished without cancellation

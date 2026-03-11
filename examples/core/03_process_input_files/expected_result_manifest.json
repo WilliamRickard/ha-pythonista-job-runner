@@ -1,0 +1,39 @@
+{
+  "_version": "0.6.13-examples.5",
+  "example_id": "03_process_input_files",
+  "description": "Deterministic reference files for the stable subset of the 03_process_input_files result.",
+  "compare_files": [
+    "outputs/processed.csv",
+    "outputs/summary.md",
+    "outputs/stats.json",
+    "stdout.txt",
+    "stderr.txt"
+  ],
+  "files": [
+    {
+      "path": "outputs/processed.csv",
+      "sha256": "87ebd52738d8ea94d53e11582d9829a1b006e6ebbf69dd57d7c727420b6c6770",
+      "size": 270
+    },
+    {
+      "path": "outputs/summary.md",
+      "sha256": "f9ee2a3b78c84b115888d137cc6ee0f73b8a3aa9af0a9cb2d9203780260942b9",
+      "size": 156
+    },
+    {
+      "path": "outputs/stats.json",
+      "sha256": "b4e81ab1c160c730d9db9e1fb4d939f1dbc24b084b77559b7dc292d407c84d1e",
+      "size": 227
+    },
+    {
+      "path": "stdout.txt",
+      "sha256": "42ab4e83f674d2f0f37b306ef4bd2d5dc0ed077df9691fa306b33e269a420285",
+      "size": 439
+    },
+    {
+      "path": "stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    }
+  ]
+}

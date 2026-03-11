@@ -1,0 +1,169 @@
+# Version: 0.6.15-config.1
+name: "Pythonista Job Runner"
+version: "0.6.15"
+slug: "pythonista_job_runner"
+description: >-
+  Run Python jobs sent from Pythonista and return results as a zip.
+  Includes an Ingress Web UI for viewing job status and logs.
+  Most users only need to set the access token.
+url: "https://github.com/WilliamRickard/ha-pythonista-job-runner"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+startup: services
+boot: auto
+init: false
+
+ingress: true
+ingress_stream: true
+ingress_port: 8787
+ingress_entry: /
+panel_title: "Pythonista Runner"
+panel_icon: "mdi:language-python"
+webui: "http://[HOST]:[PORT:8787]/"
+
+homeassistant_api: true
+apparmor: true
+
+privileged: []
+host_network: false
+host_pid: false
+host_ipc: false
+host_dbus: false
+full_access: false
+
+map:
+  - type: addon_config
+    read_only: false
+    path: /config
+
+ports:
+  8787/tcp: 8787
+ports_description:
+  8787/tcp: "Runner HTTP API (direct access; Ingress uses its own internal proxy)"
+
+options:
+  security:
+    token: ""
+    ingress_strict: false
+    api_allow_cidrs: []
+  runner:
+    bind_host: "0.0.0.0"
+    job_user: "jobrunner"
+  jobs:
+    timeout_seconds: 3600
+    max_upload_mb: 50
+    max_concurrent_jobs: 1
+    queue_max_jobs: 10
+    tail_chars: 8000
+    job_retention_hours: 24
+  resources:
+    cpu_limit_mode: "single_core"
+    default_cpu_percent: 25
+    max_cpu_percent: 50
+    default_mem_mb: 4096
+    max_mem_mb: 4096
+    max_threads: 1
+  python:
+    install_requirements: false
+    dependency_mode: "per_job"
+    package_cache_enabled: true
+    package_cache_max_mb: 2048
+    package_cache_prune_on_start: true
+    package_profiles_enabled: true
+    package_profile_default: ""
+    package_allow_public_wheelhouse: true
+    package_public_wheelhouse_subdir: "wheel_uploads"
+    package_require_hashes: false
+    package_offline_prefer_local: true
+    venv_reuse_enabled: true
+    venv_max_count: 20
+    pip_timeout_seconds: 120
+    pip_index_url: ""
+    pip_extra_index_url: ""
+    pip_trusted_hosts: []
+    allow_env: []
+  notifications:
+    notify_on_completion: true
+    notification_mode: "latest"
+    notification_id_prefix: "pythonista_job_runner"
+    notification_excerpt_chars: 1200
+  artefacts:
+    summary_head_chars: 4000
+    summary_tail_chars: 4000
+    manifest_sha256: false
+    outputs_max_files: 2000
+    outputs_max_bytes: 209715200
+    zip_max_members: 2000
+    zip_max_total_uncompressed: 209715200
+    zip_max_single_uncompressed: 52428800
+  housekeeping:
+    cleanup_min_free_mb: 4096
+  telemetry:
+    telemetry_mqtt_enabled: false
+    telemetry_topic_prefix: "pythonista_job_runner"
+
+schema:
+  security:
+    token: password
+    ingress_strict: bool
+    api_allow_cidrs:
+      - str
+  runner:
+    bind_host: str
+    job_user: str
+  jobs:
+    timeout_seconds: "int(1,86400)"
+    max_upload_mb: "int(1,1024)"
+    max_concurrent_jobs: "int(1,32)"
+    queue_max_jobs: "int(1,1000)"
+    tail_chars: "int(0,1000000)"
+    job_retention_hours: "int(1,720)"
+  resources:
+    cpu_limit_mode: "list(single_core|total_machine)"
+    default_cpu_percent: "int(1,100)"
+    max_cpu_percent: "int(1,100)"
+    default_mem_mb: "int(256,262144)"
+    max_mem_mb: "int(256,262144)"
+    max_threads: "int(1,256)"
+  python:
+    install_requirements: bool
+    dependency_mode: "list(disabled|per_job|profile)"
+    package_cache_enabled: bool
+    package_cache_max_mb: "int(256,65536)"
+    package_cache_prune_on_start: bool
+    package_profiles_enabled: bool
+    package_profile_default: str
+    package_allow_public_wheelhouse: bool
+    package_public_wheelhouse_subdir: str
+    package_require_hashes: bool
+    package_offline_prefer_local: bool
+    venv_reuse_enabled: bool
+    venv_max_count: "int(0,500)"
+    pip_timeout_seconds: "int(10,3600)"
+    pip_index_url: str
+    pip_extra_index_url: str
+    pip_trusted_hosts:
+      - str
+    allow_env:
+      - str
+  notifications:
+    notify_on_completion: bool
+    notification_mode: "list(latest|per_job)"
+    notification_id_prefix: str
+    notification_excerpt_chars: "int(0,10000)"
+  artefacts:
+    summary_head_chars: "int(0,1000000)"
+    summary_tail_chars: "int(0,1000000)"
+    manifest_sha256: bool
+    outputs_max_files: "int(0,1000000)"
+    outputs_max_bytes: "int(0,2147483647)"
+    zip_max_members: "int(1,100000)"
+    zip_max_total_uncompressed: "int(1,2147483647)"
+    zip_max_single_uncompressed: "int(1,2147483647)"
+  housekeeping:
+    cleanup_min_free_mb: "int(0,262144)"
+  telemetry:
+    telemetry_mqtt_enabled: bool
+    telemetry_topic_prefix: str

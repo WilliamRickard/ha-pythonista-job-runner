@@ -1,0 +1,744 @@
+# Version: 0.6.13-http-api.7
+from __future__ import annotations
+
+"""HTTP API server and request handlers for job runner endpoints."""
+
+import hashlib
+import json
+import os
+import tempfile
+from pathlib import Path
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
+from urllib.parse import parse_qs, urlparse
+from zipfile import BadZipFile
+
+from http_api_auth import auth_ok
+from http_api_helpers import (
+    info_payload,
+    is_allowed_content_type,
+    job_id_from_path,
+    parse_int,
+    safe_runtime_error_code,
+)
+from runner_core import ADDON_VERSION, Runner, read_options
+from utils import read_file_delta, stream_file
+from webui import html_page
+
+
+class RunnerHTTPServer(ThreadingHTTPServer):
+    """HTTP server that carries a Runner instance for request handlers."""
+
+    runner: Runner
+
+
+class Handler(BaseHTTPRequestHandler):
+    """HTTP API surface for the Runner."""
+
+    server: RunnerHTTPServer
+
+    def _write_bytes(self, data: bytes) -> None:
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
+    def _drain_request_body(self, nbytes: int, max_drain: int = 16 * 1024 * 1024) -> None:
+        try:
+            n = int(nbytes)
+        except Exception:
+            return
+        if n <= 0 or n > max_drain:
+            return
+        remaining = n
+        while remaining > 0:
+            chunk = self.rfile.read(min(65536, remaining))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+
+
+    def _request_actor(self) -> dict[str, Any]:
+        """Return request actor metadata for audit trail capture."""
+        client_addr = ""
+        try:
+            client_addr = self.client_address[0] or ""
+        except (IndexError, AttributeError, TypeError):
+            pass
+        return self.server.runner.actor_from_request(self.headers, client_addr)
+
+    def _read_body_to_tempfile(self, length: int, max_bytes: int, *, suffix: str = ".zip") -> tuple[str | None, Path | None, str | None]:
+        """Stream request body to temporary file with length and size guardrails."""
+        if length <= 0:
+            return "bad_content_length", None, None
+        if length > max_bytes:
+            self._drain_request_body(length)
+            return "upload_too_large", None, None
+
+        fd, temp_name = tempfile.mkstemp(prefix="upload_", suffix=str(suffix or ".bin"), dir="/tmp")
+        os_path = Path(temp_name)
+        hasher = hashlib.sha256()
+        received = 0
+        try:
+            with os_path.open("wb") as out:
+                while received < length:
+                    chunk = self.rfile.read(min(65536, length - received))
+                    if not chunk:
+                        try:
+                            os_path.unlink(missing_ok=True)
+                        except Exception:
+                            pass
+                        return "incomplete_upload", None, None
+                    out.write(chunk)
+                    hasher.update(chunk)
+                    received += len(chunk)
+            return None, os_path, hasher.hexdigest()
+        except Exception:
+            try:
+                os_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            raise
+        finally:
+            try:
+                os.close(fd)
+            except Exception:
+                pass
+
+    def _send_bytes(self, code: int, content_type: str, data: bytes) -> None:
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self._write_bytes(data)
+
+    def _json(self, code: int, obj: Any) -> None:
+        data = json.dumps(obj, separators=(",", ":")).encode("utf-8")
+        self._send_bytes(code, "application/json; charset=utf-8", data)
+
+    def _validate_content_type(self, allowed_types: set[str], *, optional: bool = True) -> bool:
+        """Validate request content type against an allowlist."""
+        if is_allowed_content_type(self.headers.get("Content-Type"), allowed_types, optional=optional):
+            return True
+        self._json(415, {"error": "unsupported_content_type"})
+        return False
+
+    def _job_id_from_suffix(self, prefix: str, suffix: str) -> str:
+        return job_id_from_path(self.path, prefix, suffix)
+
+    def _require_auth(self) -> bool:
+        if auth_ok(self):
+            return True
+        self._json(401, {"error": "unauthorised"})
+        return False
+
+    def _get_job_or_404(self, prefix: str, suffix: str) -> Any | None:
+        job_id = self._job_id_from_suffix(prefix, suffix)
+        if not job_id:
+            self._json(404, {"error": "unknown_job"})
+            return None
+        job = self.server.runner.get(job_id)
+        if not job:
+            self._json(404, {"error": "unknown_job"})
+            return None
+        return job
+
+    def _send_text_delta_or_stream(self, file_path: Any, query: dict[str, list[str]], tail_chars: int) -> None:
+        from_off = parse_int((query.get("from") or [None])[0], -1)
+        max_bytes = parse_int((query.get("max_bytes") or [None])[0], 0)
+
+        if from_off >= 0 or max_bytes > 0:
+            from_off = max(0, from_off)
+            max_bytes_default = tail_chars * 2
+            if max_bytes <= 0:
+                max_bytes = max_bytes_default
+            max_bytes = min(max_bytes, 1024 * 1024)
+            txt, next_off, size = read_file_delta(file_path, from_off, max_bytes)
+            data = txt.encode("utf-8", errors="replace")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-File-Size", str(size))
+            self.send_header("X-From-Offset", str(from_off))
+            self.send_header("X-Next-Offset", str(next_off))
+            self.end_headers()
+            self._write_bytes(data)
+            return
+
+        size = file_path.stat().st_size
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(size))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        try:
+            stream_file(file_path, self.wfile.write)
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
+    def _truthy_query_flag(self, query: dict[str, list[str]], key: str) -> bool:
+        """Return whether one query-string flag is present and truthy."""
+        values = query.get(key) or []
+        if not values:
+            return False
+        return str(values[0] or "").strip().lower() in {"1", "true", "yes", "on"}
+
+    def _setup_upload_code(self, payload: dict[str, Any]) -> int:
+        """Return the HTTP status code for one setup-upload result payload."""
+        if str(payload.get("status") or "") == "ok":
+            return 200
+        error = str(payload.get("error") or "")
+        if error in {"already_exists"}:
+            return 409
+        if error in {"upload_too_large", "archive_unpacked_too_large"}:
+            return 413
+        return 400
+
+    def _setup_delete_code(self, payload: dict[str, Any]) -> int:
+        """Return the HTTP status code for one setup-delete result payload."""
+        if str(payload.get("status") or "") == "ok":
+            return 200
+        error = str(payload.get("error") or "")
+        if error in {"not_found"}:
+            return 404
+        if error in {"profile_in_use"}:
+            return 409
+        return 400
+
+    def _handle_root_get(self, path: str) -> bool:
+        if path not in {"/", "/index.html"}:
+            return False
+        accept = (self.headers.get("Accept") or "").lower()
+        wants_html = ("text/html" in accept) or ("application/xhtml+xml" in accept)
+        if wants_html:
+            if not self._require_auth():
+                return True
+            self._send_bytes(200, "text/html; charset=utf-8", html_page(ADDON_VERSION))
+            return True
+        self._json(200, info_payload(ADDON_VERSION))
+        return True
+
+    def do_GET(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if self._handle_root_get(path):
+            return
+        if path == "/health":
+            self._json(200, {"status": "ok", "version": ADDON_VERSION})
+            return
+        if path == "/info.json":
+            self._json(200, info_payload(ADDON_VERSION))
+            return
+        if not self._require_auth():
+            return
+
+        runner = self.server.runner
+        if path == "/stats.json":
+            self._json(200, runner.stats_dict())
+            return
+        if path == "/package_profiles.json":
+            self._json(200, runner.list_package_profiles())
+            return
+        if path == "/setup/status.json":
+            self._json(200, runner.package_setup_status())
+            return
+        if path == "/packages/cache.json":
+            self._json(200, runner.package_cache_summary())
+            return
+        if path == "/packages/summary.json":
+            self._json(200, runner.package_summary())
+            return
+        if path == "/jobs.json":
+            self._json(200, {"jobs": [j.status_dict() for j in runner.list_jobs()]})
+            return
+        if path == "/support_bundle.json":
+            self._json(200, runner.support_bundle_dict())
+            return
+        if path == "/backup/status.json":
+            self._json(200, runner.pause_status())
+            return
+        if path.startswith("/job/") and path.endswith(".json"):
+            j = self._get_job_or_404("/job/", ".json")
+            if j:
+                self._json(200, j.status_dict())
+            return
+        if path.startswith("/tail/") and path.endswith(".json"):
+            self._handle_tail_get(runner)
+            return
+        if path.startswith("/result/") and path.endswith(".zip"):
+            self._handle_result_get()
+            return
+        if path.startswith("/stdout/") and path.endswith(".txt"):
+            self._handle_stream_get("/stdout/", ".txt", "stdout_path")
+            return
+        if path.startswith("/stderr/") and path.endswith(".txt"):
+            self._handle_stream_get("/stderr/", ".txt", "stderr_path")
+            return
+        self._json(404, {"error": "not_found"})
+
+    def _handle_tail_get(self, runner: Runner) -> None:
+        j = self._get_job_or_404("/tail/", ".json")
+        if not j:
+            return
+        q = parse_qs(urlparse(self.path).query)
+        stdout_from = parse_int((q.get("stdout_from") or [None])[0], -1)
+        stderr_from = parse_int((q.get("stderr_from") or [None])[0], -1)
+        max_bytes_default = runner.tail_chars * 2
+        max_bytes = parse_int((q.get("max_bytes") or [str(max_bytes_default)])[0], max_bytes_default)
+        if max_bytes <= 0:
+            max_bytes = max_bytes_default
+        max_bytes = min(max_bytes, 1024 * 1024)
+
+        if stdout_from >= 0 or stderr_from >= 0:
+            stdout_from = max(0, stdout_from)
+            stderr_from = max(0, stderr_from)
+            out_txt, out_next, out_size = read_file_delta(j.stdout_path, stdout_from, max_bytes)
+            err_txt, err_next, err_size = read_file_delta(j.stderr_path, stderr_from, max_bytes)
+            self._json(
+                200,
+                {
+                    "status": j.status_dict(),
+                    "tail": {"stdout": out_txt, "stderr": err_txt},
+                    "offsets": {
+                        "stdout_from": stdout_from,
+                        "stdout_next": out_next,
+                        "stdout_size": out_size,
+                        "stderr_from": stderr_from,
+                        "stderr_next": err_next,
+                        "stderr_size": err_size,
+                    },
+                },
+            )
+            return
+        self._json(200, {"status": j.status_dict(), "tail": {"stdout": j.tail_stdout.get(), "stderr": j.tail_stderr.get()}})
+
+    def _handle_result_get(self) -> None:
+        j = self._get_job_or_404("/result/", ".zip")
+        if not j:
+            return
+        if not j.result_zip.exists():
+            self._json(404, {"error": "result_not_ready"})
+            return
+        size = j.result_zip.stat().st_size
+        self.send_response(200)
+        self.send_header("Content-Type", "application/zip")
+        self.send_header("Content-Length", str(size))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        actor = self._request_actor()
+        try:
+            self.server.runner.record_audit_event("job_result_download", actor, job_id=j.job_id, details={"bytes": size}, persist_status=True)
+        except Exception:
+            pass
+        try:
+            stream_file(j.result_zip, self.wfile.write)
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
+    def _handle_stream_get(self, prefix: str, suffix: str, field_name: str) -> None:
+        j = self._get_job_or_404(prefix, suffix)
+        if not j:
+            return
+        file_path = getattr(j, field_name)
+        if not file_path.exists():
+            self._json(404, {"error": "not_ready"})
+            return
+        self._send_text_delta_or_stream(file_path, parse_qs(urlparse(self.path).query), self.server.runner.tail_chars)
+
+    def do_POST(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if path.startswith("/cancel/"):
+            self._handle_cancel_post()
+            return
+        if path == "/purge":
+            self._handle_purge_post()
+            return
+        if path == "/run":
+            self._handle_run_post()
+            return
+        if path == "/package_profiles/build":
+            self._handle_package_profile_build_post()
+            return
+        if path == "/setup/upload-wheel":
+            self._handle_setup_upload_wheel_post()
+            return
+        if path == "/setup/apply-persistent-mode":
+            self._handle_setup_apply_persistent_mode_post()
+            return
+        if path == "/setup/upload-profile-zip":
+            self._handle_setup_upload_profile_zip_post()
+            return
+        if path == "/setup/delete-wheel":
+            self._handle_setup_delete_wheel_post()
+            return
+        if path == "/setup/delete-profile":
+            self._handle_setup_delete_profile_post()
+            return
+        if path == "/packages/cache/prune":
+            self._handle_package_cache_prune_post()
+            return
+        if path == "/packages/cache/purge":
+            self._handle_package_cache_purge_post()
+            return
+        if path == "/backup/pause":
+            self._handle_backup_pause_post()
+            return
+        if path == "/backup/resume":
+            self._handle_backup_resume_post()
+            return
+        self._json(404, {"error": "not_found"})
+
+    def _handle_cancel_post(self) -> None:
+        if not self._require_auth():
+            return
+        job_id = self._job_id_from_suffix("/cancel/", "")
+        self._json(200, {"ok": self.server.runner.cancel(job_id, actor=self._request_actor())})
+
+    def _handle_purge_post(self) -> None:
+        if not self._require_auth():
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+
+        raw_states = payload.get("states")
+        if raw_states is None:
+            raw_states = payload.get("state")
+        states: Any = raw_states or []
+        if isinstance(states, str):
+            states = [states]
+        if not isinstance(states, list):
+            states = []
+        older_hours = payload.get("older_than_hours")
+        older_hours_i = parse_int(str(older_hours) if older_hours is not None else None, 0)
+        dry_run = bool(payload.get("dry_run", False))
+        self._json(200, self.server.runner.purge(states=states, older_than_hours=older_hours_i, dry_run=dry_run, actor=self._request_actor()))
+
+    def _handle_package_profile_build_post(self) -> None:
+        if not self._require_auth():
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 32 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        profile_name = payload.get("profile")
+        rebuild = bool(payload.get("rebuild", False))
+        result = self.server.runner.build_package_profile(profile_name, rebuild=rebuild, actor=self._request_actor())
+        code = 200 if str(result.get("status") or "") == "ready" else 400
+        self._json(code, result)
+
+    def _handle_setup_upload_wheel_post(self) -> None:
+        """Upload one wheel file into the public setup wheel directory."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/octet-stream", "application/zip", "application/x-zip-compressed"}, optional=True):
+            return
+        query = parse_qs(urlparse(self.path).query)
+        filename = str((query.get("filename") or [self.headers.get("X-Upload-Filename") or ""])[0] or "").strip()
+        overwrite = self._truthy_query_flag(query, "overwrite") or str(self.headers.get("X-Upload-Overwrite") or "").strip().lower() in {"1", "true", "yes", "on"}
+        cl = self.headers.get("Content-Length")
+        if not cl:
+            self._json(411, {"error": "length_required"})
+            return
+        ln = parse_int(cl, -1)
+        max_bytes = int(self.server.runner.max_upload_mb) * 1024 * 1024
+        err, upload_path, _sha256 = self._read_body_to_tempfile(ln, max_bytes, suffix='.whl')
+        if err:
+            code = 413 if err == "upload_too_large" else 400
+            self._json(code, {"error": err})
+            return
+        if upload_path is None:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+        try:
+            payload = self.server.runner.upload_package_setup_wheel(
+                upload_path,
+                filename=filename,
+                overwrite=overwrite,
+                actor=self._request_actor(),
+            )
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        self._json(self._setup_upload_code(payload), payload)
+
+    def _handle_setup_upload_profile_zip_post(self) -> None:
+        """Upload one profile archive into the public setup profile directory."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/octet-stream", "application/zip", "application/x-zip-compressed"}, optional=True):
+            return
+        query = parse_qs(urlparse(self.path).query)
+        filename = str((query.get("filename") or [self.headers.get("X-Upload-Filename") or ""])[0] or "").strip()
+        overwrite = self._truthy_query_flag(query, "overwrite") or str(self.headers.get("X-Upload-Overwrite") or "").strip().lower() in {"1", "true", "yes", "on"}
+        cl = self.headers.get("Content-Length")
+        if not cl:
+            self._json(411, {"error": "length_required"})
+            return
+        ln = parse_int(cl, -1)
+        max_bytes = int(self.server.runner.max_upload_mb) * 1024 * 1024
+        err, upload_path, _sha256 = self._read_body_to_tempfile(ln, max_bytes, suffix='.zip')
+        if err:
+            code = 413 if err == "upload_too_large" else 400
+            self._json(code, {"error": err})
+            return
+        if upload_path is None:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+        try:
+            payload = self.server.runner.upload_package_setup_profile_zip(
+                upload_path,
+                filename=filename,
+                overwrite=overwrite,
+                actor=self._request_actor(),
+            )
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+        self._json(self._setup_upload_code(payload), payload)
+
+    def _handle_setup_apply_persistent_mode_post(self) -> None:
+        """Save the recommended persistent-package settings through Supervisor."""
+        if not self._require_auth():
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        result = self.server.runner.apply_persistent_package_mode(payload.get("target_profile"), actor=self._request_actor())
+        code = 200 if str(result.get("status") or "") == "ok" else safe_runtime_error_code(str(result.get("error") or ""))
+        self._json(code, result)
+
+    def _handle_setup_delete_wheel_post(self) -> None:
+        """Delete one uploaded setup wheel file."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        filename = payload.get("filename")
+        result = self.server.runner.delete_package_setup_wheel(str(filename or ""), actor=self._request_actor())
+        self._json(self._setup_delete_code(result), result)
+
+    def _handle_setup_delete_profile_post(self) -> None:
+        """Delete one uploaded setup profile directory."""
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 16 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        profile_name = payload.get("profile")
+        if profile_name is None:
+            profile_name = payload.get("name")
+        result = self.server.runner.delete_package_setup_profile(str(profile_name or ""), actor=self._request_actor())
+        self._json(self._setup_delete_code(result), result)
+
+
+    def _handle_package_cache_prune_post(self) -> None:
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 32 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        reason = str(payload.get("reason") or "manual").strip() or "manual"
+        self._json(200, self.server.runner.prune_package_cache(actor=self._request_actor(), reason=reason))
+
+    def _handle_package_cache_purge_post(self) -> None:
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/json", "text/json"}, optional=True):
+            return
+        cl = self.headers.get("Content-Length")
+        ln = parse_int(cl, 0) if cl else 0
+        if ln < 0 or ln > 32 * 1024:
+            self._json(413, {"error": "payload_too_large"})
+            return
+        body = self.rfile.read(ln) if ln > 0 else b"{}"
+        try:
+            payload = json.loads(body.decode("utf-8", errors="replace") or "{}")
+        except json.JSONDecodeError:
+            self._json(400, {"error": "invalid_json"})
+            return
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "invalid_json"})
+            return
+        reason = str(payload.get("reason") or "manual").strip() or "manual"
+        include_venvs = bool(payload.get("include_venvs", False))
+        include_imported_wheels = bool(payload.get("include_imported_wheels", False))
+        self._json(
+            200,
+            self.server.runner.purge_package_cache(
+                actor=self._request_actor(),
+                reason=reason,
+                include_venvs=include_venvs,
+                include_imported_wheels=include_imported_wheels,
+            ),
+        )
+
+    def _handle_run_post(self) -> None:
+        if not self._require_auth():
+            return
+        if not self._validate_content_type({"application/zip", "application/octet-stream"}, optional=True):
+            return
+
+        cl = self.headers.get("Content-Length")
+        if not cl:
+            self._json(411, {"error": "length_required"})
+            return
+        ln = parse_int(cl, -1)
+        runner = self.server.runner
+        max_bytes = int(runner.max_upload_mb) * 1024 * 1024
+
+        err, upload_path, _sha256 = self._read_body_to_tempfile(ln, max_bytes)
+        if err:
+            code = 413 if err == "upload_too_large" else 400
+            self._json(code, {"error": err})
+            return
+        if upload_path is None:
+            self._json(400, {"error": "incomplete_upload"})
+            return
+
+        try:
+            client_addr = ""
+            try:
+                client_addr = self.client_address[0] or ""
+            except (IndexError, AttributeError, TypeError):
+                pass
+            j = runner.new_job(upload_path, self.headers, client_addr)
+        except BadZipFile:
+            self._json(400, {"error": "invalid_zip"})
+            return
+        except RuntimeError as exc:
+            self.log_error("Error creating job: %r", exc)
+            self._json(400, {"error": safe_runtime_error_code(exc)})
+            return
+        except (OSError, ValueError, TypeError) as exc:
+            self.log_error("Error creating job: %r", exc)
+            self._json(400, {"error": "job_creation_failed"})
+            return
+        finally:
+            try:
+                upload_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        self._json(202, {"job_id": j.job_id, "tail_url": f"/tail/{j.job_id}.json", "result_url": f"/result/{j.job_id}.zip", "jobs_url": "/jobs.json"})
+
+
+
+    def _handle_backup_pause_post(self) -> None:
+        if not self._require_auth():
+            return
+        self._json(200, self.server.runner.pause_for_backup(reason="ha_backup"))
+
+    def _handle_backup_resume_post(self) -> None:
+        if not self._require_auth():
+            return
+        self._json(200, self.server.runner.resume_after_backup())
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        path = urlparse(self.path).path
+        if path.startswith("/job/"):
+            if not self._require_auth():
+                return
+            job_id = self._job_id_from_suffix("/job/", "")
+            self._json(200, {"ok": self.server.runner.delete(job_id, actor=self._request_actor())})
+            return
+        self._json(404, {"error": "not_found"})
+
+
+def serve() -> None:
+    """Load options, create a Runner, and serve the HTTP API."""
+    opts = read_options()
+    runner = Runner(opts)
+    httpd = RunnerHTTPServer((runner.bind_host, runner.bind_port), Handler)
+    httpd.runner = runner
+    print(f"Runner listening on http://{runner.bind_host}:{runner.bind_port}", flush=True)
+    httpd.serve_forever()

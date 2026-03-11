@@ -1,0 +1,10 @@
+{
+  "job_id": "3f115886da9e4b62b45a31f19f5d45c9",
+  "jobs_url": "/jobs.json",
+  "result_url": "/result/3f115886da9e4b62b45a31f19f5d45c9.zip",
+  "selected_job_zip": "<redacted-ios-path>/selected_job_...zip",
+  "selected_job_zip_label": "pythonista_example_runner_package_20260310_103715.zip :: example_job_zips/04_cancel_long_running_job_job.zip",
+  "selected_zip": "<redacted-ios-path>/pythonista_example_runner_package_20260310_103715.zip",
+  "selected_zip_was_embedded": true,
+  "tail_url": "/tail/3f115886da9e4b62b45a31f19f5d45c9.json"
+}

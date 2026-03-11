@@ -1,0 +1,7 @@
+{
+  "dependency": "pjr_demo_formatsize",
+  "example_id": "05_requirements_optional",
+  "message": "Enable per-job requirements installation, then rerun the example.",
+  "requirements_source": "local wheel",
+  "status": "missing_dependency"
+}
