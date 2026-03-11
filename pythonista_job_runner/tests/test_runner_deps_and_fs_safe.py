@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-deps-fs-safe.4
+# Version: 0.6.13-tests-deps-fs-safe.5
 """Focused tests for runner dependency install/process fallback/fs-safety helpers."""
 
 from __future__ import annotations
@@ -512,3 +512,93 @@ def test_profile_mode_attaches_default_profile_without_job_requirements(tmp_path
     assert env["VIRTUAL_ENV"].endswith("/demo")
     assert job.package["profile_name"] == "demo_profile"
     assert job.package["profile_status"] == "ready"
+
+
+
+def test_deps_package_report_dir_repairs_job_user_permissions(tmp_path, monkeypatch):
+    """The per-job package report directory should be handed to the job user."""
+    report_root = tmp_path / "reports"
+    runner = SimpleNamespace(package_store_paths=SimpleNamespace(jobs_package_reports_dir=report_root), _job_uid=111, _job_gid=222)
+    job = SimpleNamespace(job_id="job-42", work_dir=tmp_path / "work")
+    calls: list[dict[str, object]] = []
+
+    def _fake_ensure(path, *, uid, gid, recursive=False, dir_mode=0o770, file_mode=0o660):
+        calls.append({"path": str(path), "uid": uid, "gid": gid, "recursive": recursive, "dir_mode": dir_mode, "file_mode": file_mode})
+        return {"status": "ok"}
+
+    monkeypatch.setattr(package_store_mod, "ensure_path_owner_mode", _fake_ensure)
+
+    report_dir = deps_mod._package_report_dir(runner, job)
+
+    assert report_dir == report_root / "job-42"
+    assert calls == [{"path": str(report_root / "job-42"), "uid": 111, "gid": 222, "recursive": False, "dir_mode": 0o770, "file_mode": 0o660}]
+
+
+def test_deps_repairs_private_package_store_before_pip(tmp_path, monkeypatch):
+    """Dependency setup should repair private package-store permissions before pip work starts."""
+    work_dir = tmp_path / "work"
+    work_dir.mkdir(parents=True, exist_ok=True)
+    (work_dir / "requirements.txt").write_text("wheel\n", encoding="utf-8")
+
+    paths = SimpleNamespace(
+        jobs_package_reports_dir=tmp_path / "reports",
+        pip_cache_dir=tmp_path / "pip-cache",
+        wheelhouse_imported_dir=tmp_path / "wheel-imported",
+        wheelhouse_downloaded_dir=tmp_path / "wheel-downloaded",
+        wheelhouse_built_dir=tmp_path / "wheel-built",
+        public_wheel_uploads_dir=tmp_path / "public-wheels",
+        package_index_path=tmp_path / "package-index.json",
+        storage_stats_path=tmp_path / "storage-stats.json",
+        venvs_root=tmp_path / "venvs",
+        venv_index_path=tmp_path / "venv-index.json",
+    )
+    for directory in (
+        paths.jobs_package_reports_dir,
+        paths.pip_cache_dir,
+        paths.wheelhouse_imported_dir,
+        paths.wheelhouse_downloaded_dir,
+        paths.wheelhouse_built_dir,
+        paths.public_wheel_uploads_dir,
+        paths.venvs_root,
+    ):
+        directory.mkdir(parents=True, exist_ok=True)
+    paths.package_index_path.write_text('{}\n', encoding='utf-8')
+    paths.storage_stats_path.write_text('{}\n', encoding='utf-8')
+    paths.venv_index_path.write_text('{"version": 1, "items": []}\n', encoding='utf-8')
+
+    runner = SimpleNamespace(
+        install_requirements=True,
+        dependency_mode="per_job",
+        package_cache_enabled=True,
+        package_store_paths=paths,
+        package_allow_public_wheelhouse=True,
+        package_cache_max_mb=2048,
+        venv_reuse_enabled=False,
+        _is_root=True,
+        _job_uid=111,
+        _job_gid=222,
+        pip_timeout_seconds=10,
+        pip_index_url="",
+        pip_extra_index_url="",
+        pip_trusted_hosts=[],
+    )
+    job = SimpleNamespace(work_dir=work_dir, job_id="job-9")
+    env: dict[str, str] = {}
+
+    repair_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        package_store_mod,
+        "ensure_job_user_private_write_access",
+        lambda _paths, *, uid, gid: repair_calls.append({"uid": uid, "gid": gid}) or {"status": "ok"},
+    )
+    monkeypatch.setattr(package_store_mod, "sync_public_wheel_uploads", lambda *_args, **_kwargs: {"status": "ok", "copied": 0, "updated": 0, "unchanged": 0, "skipped_invalid": 0})
+    monkeypatch.setattr(package_store_mod, "public_wheel_import_max_bytes", lambda _mb: 1024)
+    monkeypatch.setattr(package_store_mod, "find_links_dirs", lambda _paths, work_dir=None: [])
+    monkeypatch.setattr(deps_mod, "_refresh_wheelhouse_summary", lambda _runner: {"downloaded_files": 0, "built_files": 0, "imported_files": 0, "total_files": 0})
+    monkeypatch.setattr(deps_mod, "_run_pip_command", lambda *args, **kwargs: (0, None))
+
+    err = deps_mod.maybe_install_requirements(runner, job, env)
+
+    assert err is None
+    assert repair_calls == [{"uid": 111, "gid": 222}]
+    assert env["PYTHONPATH"].endswith(str(work_dir / "_deps"))

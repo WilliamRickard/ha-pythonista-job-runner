@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-package-store.3
+# Version: 0.6.13-tests-package-store.4
 """Tests for package storage path resolution and bootstrap."""
 
 from __future__ import annotations
@@ -134,3 +134,25 @@ def test_find_links_dirs_includes_internal_and_job_vendor_dirs(tmp_path):
 
     assert str(paths.wheelhouse_imported_dir) in out
     assert str(vendor) in out
+
+
+
+def test_ensure_job_user_private_write_access_repairs_private_dirs(tmp_path, monkeypatch):
+    """Private package-store paths should be repaired for the job user on startup."""
+    public_root = tmp_path / "public_config"
+    public_root.mkdir(parents=True, exist_ok=True)
+    paths = package_store.build_package_store_paths(tmp_path, public_root=public_root)
+    package_store.bootstrap_package_store(paths)
+
+    chown_calls: list[str] = []
+    chmod_calls: list[str] = []
+
+    monkeypatch.setattr(package_store.os, "chown", lambda path, uid, gid: chown_calls.append(str(path)))
+    monkeypatch.setattr(package_store.os, "chmod", lambda path, mode: chmod_calls.append(str(path)))
+
+    result = package_store.ensure_job_user_private_write_access(paths, uid=123, gid=456)
+
+    assert result["status"] == "ok"
+    assert any(path.endswith('/venvs') for path in chown_calls)
+    assert any(path.endswith('/jobs/package_reports') for path in chown_calls)
+    assert any(path.endswith('/cache/pip') for path in chmod_calls)

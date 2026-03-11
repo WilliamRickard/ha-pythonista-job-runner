@@ -1,10 +1,11 @@
-# Version: 0.6.13-package-store.3
+# Version: 0.6.13-package-store.4
 """Persistent package storage helpers, wheelhouse sync, and status scans."""
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import zipfile
@@ -100,6 +101,106 @@ def build_package_store_paths(
 def _ensure_directory(path: Path) -> None:
     """Create a directory tree when it does not already exist."""
     path.mkdir(parents=True, exist_ok=True)
+
+
+def _best_effort_set_owner_mode(
+    path: Path,
+    *,
+    uid: int | None,
+    gid: int | None,
+    dir_mode: int = 0o770,
+    file_mode: int = 0o660,
+) -> bool:
+    """Best-effort chown and chmod for one filesystem entry."""
+    if uid is None or gid is None:
+        return False
+    try:
+        if path.is_symlink():
+            return False
+    except OSError:
+        return False
+    try:
+        os.chown(str(path), int(uid), int(gid))
+    except Exception:
+        pass
+    try:
+        if path.is_dir():
+            os.chmod(str(path), dir_mode)
+        else:
+            os.chmod(str(path), file_mode)
+    except Exception:
+        pass
+    return True
+
+
+def ensure_path_owner_mode(
+    path: Path,
+    *,
+    uid: int | None,
+    gid: int | None,
+    recursive: bool = False,
+    dir_mode: int = 0o770,
+    file_mode: int = 0o660,
+) -> dict[str, Any]:
+    """Best-effort repair ownership and mode for one path tree."""
+    result = {
+        "path": str(path),
+        "recursive": bool(recursive),
+        "attempted": False,
+        "exists": bool(path.exists()),
+        "items_seen": 0,
+        "items_touched": 0,
+    }
+    if uid is None or gid is None or not path.exists():
+        return result
+
+    entries: list[Path] = [path]
+    if recursive and path.is_dir():
+        try:
+            entries.extend(sorted(path.rglob('*')))
+        except Exception:
+            pass
+
+    result["attempted"] = True
+    result["items_seen"] = len(entries)
+    touched = 0
+    for entry in entries:
+        if _best_effort_set_owner_mode(entry, uid=uid, gid=gid, dir_mode=dir_mode, file_mode=file_mode):
+            touched += 1
+    result["items_touched"] = touched
+    return result
+
+
+def ensure_job_user_private_write_access(
+    paths: PackageStorePaths,
+    *,
+    uid: int | None,
+    gid: int | None,
+) -> dict[str, Any]:
+    """Best-effort repair write access for private package-store paths used by pip jobs."""
+    targets = [
+        paths.private_root,
+        paths.cache_root,
+        paths.pip_cache_dir,
+        paths.http_cache_dir,
+        paths.wheelhouse_root,
+        paths.wheelhouse_downloaded_dir,
+        paths.wheelhouse_built_dir,
+        paths.wheelhouse_imported_dir,
+        paths.venvs_root,
+        paths.jobs_package_reports_dir,
+    ]
+    results = [
+        ensure_path_owner_mode(target, uid=uid, gid=gid, recursive=True)
+        for target in targets
+        if target.exists()
+    ]
+    return {
+        "status": "ok" if uid is not None and gid is not None else "skipped",
+        "uid": uid,
+        "gid": gid,
+        "results": results,
+    }
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
