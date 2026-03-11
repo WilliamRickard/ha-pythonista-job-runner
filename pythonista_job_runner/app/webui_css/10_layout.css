@@ -253,6 +253,8 @@
   background: color-mix(in srgb, var(--panel2) 66%, transparent);
 }
 
+.header-more-panel[hidden]{display:none !important;}
+
 .header-more-panel{
   position:absolute;
   right:0;

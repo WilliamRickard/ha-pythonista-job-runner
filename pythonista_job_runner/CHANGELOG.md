@@ -1,4 +1,4 @@
-<!-- Version: 0.6.14-docs.1 -->
+<!-- Version: 0.6.15-docs.1 -->
 # Changelog
 
 ## Unreleased
@@ -11,6 +11,9 @@
 
 
 ### Web UI and add-on usability
+
+- Fix the header `More` dropdown staying visible because `.header-more-panel` used `display:grid`, which overrides the HTML `hidden` attribute unless CSS explicitly restores `display:none` for the hidden state.
+- Add regression tests that require the header menu to keep the `hidden` attribute in markup and a matching `.header-more-panel[hidden]{display:none !important;}` rule in both source and built assets.
 
 - Fix a Web UI JavaScript syntax error in the job detail package metadata renderer that stopped the entire Ingress UI from responding after the script failed to parse.
 - Add a regression check that syntax-checks the bundled `webui.js` file and verifies the `Package find-links` newline join is emitted correctly.

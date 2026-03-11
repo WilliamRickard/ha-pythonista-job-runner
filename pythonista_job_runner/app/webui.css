@@ -1,4 +1,4 @@
-/* VERSION: 0.6.14-webui.1 */
+/* VERSION: 0.6.15-webui.1 */
 :root{
   --bg: #0f1115;
   --panel: #141824;
@@ -330,6 +330,8 @@ a:hover{ text-decoration: underline; }
   border-color: color-mix(in srgb, var(--line) 95%, transparent);
   background: color-mix(in srgb, var(--panel2) 66%, transparent);
 }
+
+.header-more-panel[hidden]{display:none !important;}
 
 .header-more-panel{
   position:absolute;
