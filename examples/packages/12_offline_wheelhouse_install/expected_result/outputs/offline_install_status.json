@@ -1,0 +1,11 @@
+{
+  "dependency_mode_hint": "per_job",
+  "example_id": "12_offline_wheelhouse_install",
+  "expected_install_source": "local_wheelhouse",
+  "files": {
+    "energy_dashboard.csv": "768 Bytes",
+    "sensor_history.json": "2.0 kB",
+    "year_end_archive.zip": "3.6 MB"
+  },
+  "requirements_source": "public wheelhouse import"
+}

@@ -1,0 +1,10 @@
+{
+  "job_id": "423d3e4f94864c37abbd9aa81bb2d07a",
+  "jobs_url": "/jobs.json",
+  "result_url": "/result/423d3e4f94864c37abbd9aa81bb2d07a.zip",
+  "selected_job_zip": "<redacted-ios-path>/selected_job_...zip",
+  "selected_job_zip_label": "pythonista_example_runner_package_20260310_084108.zip :: example_job_zips/01_hello_world_job.zip",
+  "selected_zip": "<redacted-ios-path>/pythonista_example_runner_package_20260310_084108.zip",
+  "selected_zip_was_embedded": true,
+  "tail_url": "/tail/423d3e4f94864c37abbd9aa81bb2d07a.json"
+}

@@ -1,0 +1,11 @@
+{
+  "dependency_mode_hint": "profile",
+  "example_id": "13_named_package_profile_run",
+  "expected_install_source": "profile_venv",
+  "files": {
+    "buyout_summary.csv": "1.0 kB",
+    "liability_curve.json": "2.8 kB",
+    "trustee_pack.zip": "5.2 MB"
+  },
+  "profile_name": "demo_formatsize_profile"
+}

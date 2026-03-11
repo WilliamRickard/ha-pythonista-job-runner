@@ -1,0 +1,33 @@
+{
+  "_version": "0.6.13-examples.5",
+  "example_id": "02_live_logs_progress",
+  "description": "Deterministic reference files for the stable subset of the 02_live_logs_progress result.",
+  "compare_files": [
+    "outputs/progress_summary.json",
+    "outputs/progress_timeline.txt",
+    "stdout.txt",
+    "stderr.txt"
+  ],
+  "files": [
+    {
+      "path": "outputs/progress_summary.json",
+      "sha256": "0dbb33ebb817b1ae708152b2e76d0bb749ff5042f0a2c23225e04b1da521363c",
+      "size": 114
+    },
+    {
+      "path": "outputs/progress_timeline.txt",
+      "sha256": "335153d7cb027f861acbe5cee9b3fbe8ad71672f46ee4dc2de676a7c69fc9969",
+      "size": 235
+    },
+    {
+      "path": "stdout.txt",
+      "sha256": "90a09c6d568ae0fccdbe747d7e662a03ddbd3ae631cb8e10526afa2b26d11e7b",
+      "size": 276
+    },
+    {
+      "path": "stderr.txt",
+      "sha256": "e89861ec0960c3f8ba7d2aa14745ecd3f21724d18998f569e77562abe333609d",
+      "size": 84
+    }
+  ]
+}

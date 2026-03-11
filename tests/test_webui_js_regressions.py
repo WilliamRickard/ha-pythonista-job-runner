@@ -1,0 +1,304 @@
+# Version: 0.6.15-tests-webui-js-regressions.1
+"""Regression tests for key Web UI JavaScript safety fixes.
+
+These tests deliberately check for small, behaviour-critical patterns in the JS
+sources to reduce the chance of reintroducing subtle UI bugs.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import shutil
+import subprocess
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def test_tail_offsets_accept_zero() -> None:
+    """Offsets should not treat 0 as missing (avoid `||` fallback)."""
+
+    p = Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js"
+    s = _read(p)
+
+    assert "stdout_next ?? offsets.stdout" in s
+    assert "stderr_next ?? offsets.stderr" in s
+
+
+def test_parse_endpoint_path_rejects_protocol_relative() -> None:
+    """Protocol-relative paths (`//host/...`) must be rejected."""
+
+    p = Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js"
+    s = _read(p)
+
+    assert "!parts[1].startsWith(\"//\")" in s
+    assert "!s.startsWith(\"//\")" in s
+
+
+def test_jump_error_prefers_rendered_text() -> None:
+    """Jump-to-error should align indices with the rendered log text."""
+
+    p = Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js"
+    s = _read(p)
+
+    assert "const visibleTxt" in s
+    assert "els.logview.textContent" in s
+
+
+def test_render_log_uses_escaped_newline_literals() -> None:
+    """Rendered log splitting and joining must keep escaped newline literals."""
+
+    part = Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js"
+    s = _read(part)
+
+    assert 'slice.split("\\n")' in s
+    assert 'out.join("\\n")' in s
+
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+    assert 'slice.split("\\n")' in built
+    assert 'out.join("\\n")' in built
+
+
+def test_jobs_refresh_uses_silent_mode_and_in_place_rows() -> None:
+    """Routine polling should be silent and avoid full tbody rebuilds."""
+
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert "await refreshAll({ silent: true });" in refresh
+    assert "if (els.jobs_loading && !silent)" in render
+    assert "function _patchRow(tr, j)" in render
+    assert 'tbody.textContent = ""' not in render
+
+
+def test_jobs_filters_include_sort_and_secondary_flags() -> None:
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'sortMode === "oldest"' in render
+    assert 'sortMode === "active"' in render
+    assert 'filterHasResult' in render
+    assert 'function updateSortUi()' in render
+
+
+def test_jobs_controls_use_clear_visibility_instead_of_sticky_summary() -> None:
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+
+    assert "function updateClearButtonVisibility()" in core
+    assert "sticky_summary" not in core
+    assert "function updateStickySummary()" not in core
+
+
+def test_row_menu_and_context_menu_actions_exist() -> None:
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+    overlays = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "55_overlays.html")
+
+    assert 'row-overflow' in render
+    assert 'openRowMenu(' in render
+    assert 'contextmenu' in render
+    assert 'data-action="row-menu-copy-id"' in overlays
+
+
+def test_jobs_command_row_removes_duplicate_refresh_controls() -> None:
+    html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "20_jobs.html")
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+
+    assert 'class="searchbar-row"' in html
+    assert 'Search, filter, sort, then open details.' not in html
+    assert 'data-action="refresh" aria-label="Refresh jobs now"' not in html
+    assert shell.count('data-action="refresh"') == 1
+    assert 'id="sort_menu"' in html
+    assert 'data-action="set-sort" data-sort="newest"' in html
+
+
+def test_localstorage_access_uses_safe_wrappers() -> None:
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+
+    assert "function storageGet(" in core
+    assert "function storageSet(" in core
+    assert "function storageRemove(" in core
+
+    assert "localStorage.getItem(" not in core
+    assert "localStorage.setItem(" not in core
+    assert "localStorage.removeItem(" not in core
+
+    assert "localStorage.getItem(" not in init
+    assert "localStorage.setItem(" not in init
+    assert "localStorage.removeItem(" not in init
+    assert "storageGet(" in init
+    assert "storageSet(" in init
+
+
+def test_direction_setting_and_breadcrumb_exist() -> None:
+    settings = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "45_settings.html")
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "30_detail.html")
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+
+    assert "settings_direction" in settings
+    assert "detail_breadcrumb_current" in detail
+    assert "function updateDirectionUi()" in core
+    assert 'window["localStorage"]' in core
+
+
+def test_row_popover_and_progress_helpers_exist() -> None:
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "20_detail_meta.js")
+
+    assert 'function openRowPopover(' in render
+    assert '_applyProgressUi(' in render
+    assert 'row-progress-shell' in render
+    assert 'function _renderDetailProgress(' in detail
+
+
+def test_tooltip_and_popover_markup_exist() -> None:
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    overlays = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "55_overlays.html")
+
+    assert 'data-tooltip="Reload stats and jobs"' in shell
+    assert 'data-action="row-popover-view"' in overlays
+
+
+def test_downloads_use_authenticated_fetch_instead_of_window_open() -> None:
+    """Downloads should stay inside the authenticated Ingress session."""
+
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+
+    assert 'fetch(apiUrl(path), { credentials: "same-origin" })' in refresh
+    assert 'window.open(apiUrl(`result/${encodeURIComponent(currentJob)}.zip`)' not in refresh
+    assert 'window.open(url, "_blank", "noopener,noreferrer")' not in refresh
+
+
+def test_shell_and_stats_expose_home_assistant_host_and_cidrs() -> None:
+    """The UI should surface the current Home Assistant host and direct-access summary."""
+
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    overview = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "10_overview.html")
+    core = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "00_core.js")
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'id="ha_host_pill"' in shell
+    assert 'id="meta_allowed_cidrs"' in overview
+    assert 'function currentHomeAssistantHost()' in core
+    assert 'const allowedCidrsText = ingressStrict' in render
+
+
+def test_detail_meta_renders_package_rows() -> None:
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "20_detail_meta.js")
+    assert "Package status" in detail
+    assert "Package cache hit" in detail
+    assert "Package wheelhouse hit" in detail
+    assert "Wheelhouse files" in detail
+    assert "Package env key" in detail
+    assert "Reusable venv" in detail
+    assert "Package install report" in detail
+
+
+def test_package_profiles_ui_and_actions_exist() -> None:
+    advanced = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "40_advanced.html")
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    detail = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "20_detail_meta.js")
+
+    assert 'id="package_profiles_list"' in advanced
+    assert 'id="package_profiles_summary"' in advanced
+    assert 'function refreshPackageProfiles()' in refresh
+    assert 'function buildPackageProfile(' in refresh
+    assert 'data-action", "build-package-profile"' in refresh
+    assert 'refresh-package-profiles' in init
+    assert 'Package profile' in detail
+    assert 'Package profile bundle' in detail
+
+
+def test_setup_ui_and_actions_exist() -> None:
+    setup_html = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "42_setup.html")
+    settings = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "45_settings.html")
+    refresh = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "30_refresh_actions.js")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    render = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "10_render_search.js")
+
+    assert 'id="setup_overlay"' in setup_html
+    assert 'id="setup_status_banner"' in setup_html
+    assert 'id="setup_apply_persistent_mode"' in setup_html
+    assert 'id="setup_persistent_mode_summary"' in setup_html
+    assert 'id="setup_wheel_file"' in setup_html
+    assert 'id="setup_profile_zip_file"' in setup_html
+    assert 'id="setup_build_target_profile"' in setup_html
+    assert 'id="setup_config_snippet"' in setup_html
+    assert 'data-action="setup-upload-wheel"' in setup_html
+    assert 'data-action="setup-upload-profile-zip"' in setup_html
+    assert 'data-action="open-setup"' in settings
+    assert 'function refreshSetupStatus()' in refresh
+    assert 'function applySetupPersistentMode()' in refresh
+    assert 'function renderSetupStatus(payload)' in refresh
+    assert 'function uploadSetupBinary(kind, overwrite)' in refresh
+    assert 'function buildSetupTargetProfile(rebuild)' in refresh
+    assert 'function copySetupConfigSnippet()' in refresh
+    assert 'function deleteSetupWheel(filename)' in refresh
+    assert 'function deleteSetupProfile(profileName)' in refresh
+    assert 'setup-apply-persistent-mode' in init
+    assert 'setup-build-target-profile' in init
+    assert 'setup-copy-config-snippet' in init
+    assert 'setup-delete-profile' in init
+    assert 'function openSetup()' in render
+
+
+
+
+def test_built_webui_javascript_parses_cleanly() -> None:
+    """The bundled Web UI JavaScript should parse without syntax errors."""
+
+    built_path = Path(__file__).resolve().parent.parent / "app" / "webui.js"
+    built = _read(built_path)
+
+    assert 'pkg.find_links_dirs.join("\\n")' in built
+
+    node = shutil.which("node")
+    if node:
+        proc = subprocess.run(
+            [node, "--check", str(built_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+
+def test_header_more_menu_uses_plain_button_panel_and_direct_handlers() -> None:
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    layout = _read(Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css")
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+
+    assert 'id="header_more_toggle"' in shell
+    assert 'id="header_more_panel"' in shell
+    assert 'class="header-more-menu"' not in shell
+    assert '<details class="header-more-menu">' not in shell
+    assert 'function bindHeaderMoreDirectActions()' in init
+    assert 'function runHeaderMoreAction(action)' in init
+    assert 'consumeHeaderMoreSyntheticClick(ev)' in init
+    assert 'headerMoreClickLockUntil' in init
+    assert 'pointerup' in init
+    assert 'touchend' in init
+    assert '.header-more-wrap{' in layout
+    assert 'touch-action:manipulation;' in layout
+    assert 'function bindHeaderMoreDirectActions()' in built
+
+
+def test_header_more_menu_respects_hidden_attribute_in_source_assets() -> None:
+    """Header menu must explicitly restore hidden display state in CSS."""
+
+    shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")
+    css = _read(Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css")
+
+    assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in shell
+    assert '.header-more-panel[hidden]{display:none !important;}' in css
+
+
+def test_header_more_menu_respects_hidden_attribute_in_built_assets() -> None:
+    """Built Web UI outputs must preserve the header-menu hidden-state guard."""
+
+    built_html = _read(Path(__file__).resolve().parent.parent / "app" / "webui.html")
+    built_css = _read(Path(__file__).resolve().parent.parent / "app" / "webui.css")
+
+    assert 'id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden' in built_html
+    assert '.header-more-panel[hidden]{display:none !important;}' in built_css

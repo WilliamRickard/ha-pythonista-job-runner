@@ -1,0 +1,61 @@
+{
+  "audit_events": [
+    {
+      "action": "job_submit",
+      "actor": {
+        "client_ip": "<redacted-lan-ip>",
+        "display_name": null,
+        "ingress_path": null,
+        "user_id": null,
+        "user_name": null,
+        "via_ingress": false
+      },
+      "details": {
+        "upload_bytes": 1053
+      }
+    },
+    {
+      "action": "job_complete",
+      "actor": {
+        "client_ip": "<redacted-lan-ip>",
+        "display_name": null,
+        "ingress_path": null,
+        "user_id": null,
+        "user_name": null,
+        "via_ingress": false
+      },
+      "details": {
+        "exit_code": 0,
+        "state": "done"
+      }
+    }
+  ],
+  "client_ip": "<redacted-lan-ip>",
+  "created_utc": "2026-03-10T11:51:36Z",
+  "delete_requested": false,
+  "duration_seconds": 9,
+  "error": null,
+  "exit_code": 0,
+  "finished_utc": "2026-03-10T11:51:45Z",
+  "input_sha256": "530969498de8699f88bba1e171dcd2da7aa420e0a4e10e078ab0eb563c7b61ec",
+  "job_id": "e68d9d1fefed489e906f64308b43dbb2",
+  "limits": {
+    "cpu_count": 2,
+    "cpu_cpulimit_pct": 25,
+    "cpu_limit_mode": "single_core",
+    "cpu_percent": 25,
+    "mem_mb": 4096,
+    "threads": 1,
+    "timeout_seconds": 3600
+  },
+  "phase": "done",
+  "result_filename": "result_20260310_115136_e68d9d1fefed489e906f64308b43dbb2.zip",
+  "runner_version": "0.6.13",
+  "started_utc": "2026-03-10T11:51:36Z",
+  "state": "done",
+  "submitted_by": {
+    "display_name": null,
+    "id": null,
+    "name": null
+  }
+}

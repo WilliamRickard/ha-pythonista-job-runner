@@ -1,0 +1,31 @@
+<!-- Section: Shell header and main container open -->
+  <a class="skip-link" href="#main_content">Skip to main content</a>
+  <div class="container">
+    <header class="page-header monitor-header" id="main_header">
+      <div class="brand">
+        <h1>Pythonista Job Runner</h1>
+        <div class="subline monitor-subline">
+          <span class="pill status-pill" id="statuspill">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="statusline" role="status" aria-live="polite">Connecting…</span>
+          </span>
+          <span class="pill passive-pill quiet-meta" id="ha_host_pill" hidden>
+            <span class="dot" aria-hidden="true"></span>
+            <span id="ha_host_label">Home Assistant</span>
+          </span>
+        </div>
+      </div>
+      <div class="toplinks header-actions" role="group" aria-label="Primary actions">
+        <button type="button" class="linkbtn primary tooltip-target" data-tooltip="Reload stats and jobs" data-action="refresh" aria-label="Refresh now">Refresh</button>
+        <div class="header-more-wrap">
+          <button type="button" id="header_more_toggle" class="linkbtn tertiary tooltip-target header-more-toggle" data-tooltip="Settings, help, and commands" aria-haspopup="menu" aria-controls="header_more_panel" aria-expanded="false" aria-label="More actions">More</button>
+          <div id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden>
+            <button type="button" id="header_more_command" class="small tertiary menu-item" data-action="open-command" aria-haspopup="dialog" aria-label="Open command menu">Command</button>
+            <button type="button" id="header_more_settings" class="small tertiary menu-item" data-action="open-settings" aria-haspopup="dialog" aria-label="Open settings">Settings</button>
+            <button type="button" id="header_more_help" class="small tertiary menu-item" data-action="open-about" aria-haspopup="dialog" aria-label="Open help">Help</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main_content" tabindex="-1">

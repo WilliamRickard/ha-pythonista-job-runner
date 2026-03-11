@@ -1,0 +1,118 @@
+<!-- Section: Jobs list and filters -->
+      <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
+        <div class="card-header jobs-header">
+          <h2>Jobs</h2>
+        </div>
+        <div class="card-body jobs-body">
+          <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
+
+          <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>
+            <div class="jobs-skeleton" aria-hidden="true">
+              <span class="sk sk-lg"></span>
+              <span class="sk"></span>
+              <span class="sk"></span>
+            </div>
+            <span>Loading jobs…</span>
+          </div>
+
+          <div class="jobs-toolbar" aria-label="Jobs controls">
+            <div class="searchbar-row">
+              <div class="input-group search-group">
+                <span class="input-group-icon" aria-hidden="true">⌕</span>
+                <label for="search" class="sr-only">Search jobs</label>
+                <input id="search" type="search" placeholder="Search jobs" autocomplete="off"/>
+                <button type="button" class="small tertiary clear-inline input-group-action" data-action="clear-filters" id="clear_filters" aria-label="Clear search and filters" hidden>Clear</button>
+              </div>
+            </div>
+
+            <div class="jobs-primary-row" aria-label="Primary jobs controls">
+              <div class="state-filters" role="group" aria-label="Primary job state filters">
+                <div class="toggle-group">
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="all" id="view_all">All</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="running" id="view_running">Running</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="queued" id="view_queued">Queued</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="error" id="view_error">Errors</button>
+                <button type="button" class="small toggle-item" data-action="set-view" data-view="done" id="view_done">Done</button>
+              </div>
+              </div>
+              <div class="jobs-secondary-row">
+                <details class="secondary-panel sort-menu" id="sort_menu">
+                  <summary><span class="summary-label">Sort</span><span id="sort_summary">Newest first</span></summary>
+                  <div class="secondary-panel-body sort-menu-body" role="menu" aria-label="Sort jobs">
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="newest" role="menuitemradio" aria-checked="true">Newest first</button>
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="oldest" role="menuitemradio" aria-checked="false">Oldest first</button>
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="active" role="menuitemradio" aria-checked="false">Active first</button>
+                    <button type="button" class="small sort-option" data-action="set-sort" data-sort="errors" role="menuitemradio" aria-checked="false">Errors first</button>
+                  </div>
+                </details>
+                <details class="secondary-panel filters-sheet-trigger">
+                  <summary>Filters</summary>
+                  <div class="secondary-panel-body filters-sheet-body">
+                    <div class="field-shell filters-field-group">
+                      <div class="field adv-field combobox-field">
+                        <label for="filter_user" class="field-label">User</label>
+                        <div class="combobox-shell">
+                          <input id="filter_user" type="search" list="filter_user_list" placeholder="Any user" autocomplete="off" aria-label="Filter by user"/>
+                          <button type="button" class="small tertiary combobox-clear" data-action="clear-user-filter" aria-label="Clear user filter" hidden>Clear</button>
+                        </div>
+                        <datalist id="filter_user_list"></datalist>
+                        <div class="field-hint">Filter jobs by submitted user with quick suggestions from recent jobs.</div>
+                      </div>
+                      <div class="separator" role="separator" aria-hidden="true"></div>
+                      <div class="field adv-field calendar-field">
+                        <label for="filter_since" class="field-label">From date</label>
+                        <input id="filter_since" type="date" aria-label="Show jobs created on or after date"/>
+                        <div class="filter-presets" role="group" aria-label="Date filter presets">
+                          <button type="button" class="small tertiary" data-action="set-date-preset" data-preset="today">Today</button>
+                          <button type="button" class="small tertiary" data-action="set-date-preset" data-preset="7d">Last 7 days</button>
+                          <button type="button" class="small tertiary" data-action="set-date-preset" data-preset="clear">Clear date</button>
+                        </div>
+                      </div>
+                      <div class="separator" role="separator" aria-hidden="true"></div>
+                      <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="table-region" aria-live="polite">
+            <div class="tablewrap">
+              <table id="jobtable">
+                <caption class="sr-only">Submitted jobs and current lifecycle state</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Job</th>
+                    <th scope="col">State</th>
+                    <th scope="col">Age</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div id="jobs_pagination" class="pagination-shell" aria-label="Jobs pagination" hidden>
+              <button type="button" class="small tertiary" data-action="page-prev" id="page_prev">Previous</button>
+              <div id="page_summary" class="pagination-summary" role="status" aria-live="polite">Page 1 of 1</div>
+              <button type="button" class="small tertiary" data-action="page-next" id="page_next">Next</button>
+            </div>
+
+            <div id="empty" class="empty empty-pattern" role="status" aria-live="polite" hidden>
+              <div class="empty-icon" aria-hidden="true">○</div>
+              <div class="empty-content">
+                <div id="empty_title" class="empty-title">No jobs yet</div>
+                <div id="empty_body" class="empty-body">Copy the sample task, run it from Pythonista, then return here to open the first job.</div>
+                <div class="help-actions-row empty-actions">
+                  <button type="button" class="small primary" data-action="copy-sample-task">Copy sample Python task</button>
+                  <button type="button" class="small tertiary text-link" data-action="open-about">Open quick start</button>
+                </div>
+                <div id="empty_action" class="empty-action">A successful run appears here with a View button and a result zip when it finishes.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>

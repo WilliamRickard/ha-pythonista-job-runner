@@ -1,0 +1,25 @@
+{
+  "generated_utc": "2026-03-10T11:52:21Z",
+  "job_id": "57a8aff9947049068fbec5af55de4e4a",
+  "outputs": [
+    {
+      "path": "outputs/processed.csv",
+      "size": 270
+    },
+    {
+      "path": "outputs/stats.json",
+      "size": 227
+    },
+    {
+      "path": "outputs/summary.md",
+      "size": 156
+    }
+  ],
+  "outputs_limit_reason": null,
+  "outputs_max_bytes": 209715200,
+  "outputs_max_files": 2000,
+  "outputs_total_bytes": 653,
+  "outputs_total_files": 3,
+  "outputs_truncated": false,
+  "runner_version": "0.6.13"
+}

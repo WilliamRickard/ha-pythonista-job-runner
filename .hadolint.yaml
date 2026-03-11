@@ -1,3 +1,0 @@
----
-ignored:
-  - DL3008  # Pin versions in apt/apk - we use alpine apk add --no-cache in some cases

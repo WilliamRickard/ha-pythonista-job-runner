@@ -1,0 +1,92 @@
+<!-- Section: Setup panel -->
+  <div id="setup_overlay" class="overlay" hidden aria-hidden="true">
+    <div class="modal mobile-panel sheet-modal" id="setup_modal" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="setup_title" aria-describedby="setup_sub">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="setup_title">Setup</div>
+          <div class="modal-sub" id="setup_sub">Persistent packages, with one guided toggle instead of a stack of settings</div>
+        </div>
+        <div class="item-actions">
+          <button type="button" id="setup_refresh" class="small tertiary" data-action="refresh-setup-status">Refresh</button>
+          <button type="button" id="setup_close" class="small tertiary" data-action="close-setup" aria-label="Close setup">Close</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="setup_status_banner" class="banner" role="status" aria-live="polite">Loading setup readiness…</div>
+        <details open>
+          <summary>Persistent packages</summary>
+          <div class="field-shell">
+            <div class="field-hint" id="setup_persistent_mode_summary">Checking whether the recommended persistent-package settings are saved and running…</div>
+            <div class="help-actions-row compact-row">
+              <button type="button" id="setup_apply_persistent_mode" class="small primary" data-action="setup-apply-persistent-mode">Enable persistent packages</button>
+              <button type="button" id="setup_copy_config_snippet" class="small tertiary" data-action="setup-copy-config-snippet">Copy fallback config</button>
+            </div>
+            <div class="field-hint">This saves the recommended settings for persistent package profiles. Upload and build controls stay below for advanced use.</div>
+          </div>
+        </details>
+        <details open>
+          <summary>Setup target</summary>
+          <div class="field-shell">
+            <div class="field-hint" id="setup_target_summary">Checking target profile and wheel…</div>
+          </div>
+        </details>
+        <details open>
+          <summary>Add-on settings</summary>
+          <div class="field-shell">
+            <div class="field-hint" id="setup_settings_summary">Checking add-on settings…</div>
+            <div id="setup_settings_list" class="stack-list" aria-live="polite"></div>
+          </div>
+        </details>
+        <details open>
+          <summary>Wheel uploads</summary>
+          <div class="field-shell">
+            <div class="field-hint" id="setup_wheels_summary">Checking wheel uploads…</div>
+            <div class="setup-upload-panel">
+              <label class="field-label" for="setup_wheel_file">Choose wheel file</label>
+              <input type="file" id="setup_wheel_file" class="setup-file-input" accept=".whl,application/octet-stream" />
+              <div class="help-actions-row compact-row">
+                <button type="button" id="setup_upload_wheel" class="small tertiary" data-action="setup-upload-wheel">Upload wheel</button>
+                <button type="button" id="setup_clear_wheel_file" class="small tertiary" data-action="setup-clear-wheel-file">Clear</button>
+              </div>
+              <div class="field-hint" id="setup_wheel_picker_summary">Choose one <code>.whl</code> file to upload into <code>/config/wheel_uploads</code>.</div>
+            </div>
+            <div id="setup_wheels_list" class="stack-list" aria-live="polite"></div>
+          </div>
+        </details>
+        <details open>
+          <summary>Package profiles</summary>
+          <div class="field-shell">
+            <div class="field-hint" id="setup_profiles_summary">Checking package profiles…</div>
+            <div class="setup-upload-panel">
+              <label class="field-label" for="setup_profile_zip_file">Choose profile zip</label>
+              <input type="file" id="setup_profile_zip_file" class="setup-file-input" accept=".zip,application/zip,application/x-zip-compressed" />
+              <div class="help-actions-row compact-row">
+                <button type="button" id="setup_upload_profile_zip" class="small tertiary" data-action="setup-upload-profile-zip">Upload profile zip</button>
+                <button type="button" id="setup_clear_profile_zip_file" class="small tertiary" data-action="setup-clear-profile-file">Clear</button>
+              </div>
+              <div class="field-hint" id="setup_profile_picker_summary">Choose one profile archive to upload into <code>/config/package_profiles</code>.</div>
+            </div>
+            <div id="setup_profiles_list" class="stack-list" aria-live="polite"></div>
+          </div>
+        </details>
+        <details open>
+          <summary>Readiness</summary>
+          <div class="field-shell">
+            <div class="field-hint" id="setup_readiness_summary">Checking example 5 readiness…</div>
+            <div class="help-actions-row compact-row">
+              <button type="button" id="setup_build_target_profile" class="small tertiary" data-action="setup-build-target-profile">Build target profile</button>
+              <button type="button" id="setup_rebuild_target_profile" class="small tertiary" data-action="setup-rebuild-target-profile">Rebuild target profile</button>
+                          </div>
+            <div class="field-hint" id="setup_build_summary">Checking build status…</div>
+            <label class="field-label" for="setup_config_snippet">Suggested add-on config</label>
+            <textarea id="setup_config_snippet" class="scroll-area-control" rows="8" readonly aria-label="Suggested add-on config snippet"></textarea>
+            <div class="field-hint" id="setup_restart_guidance">Checking restart guidance…</div>
+            <div id="setup_blockers_list" class="stack-list" aria-live="polite"></div>
+            <div id="setup_warnings_list" class="stack-list" aria-live="polite"></div>
+            <div id="setup_next_steps_list" class="stack-list" aria-live="polite"></div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>

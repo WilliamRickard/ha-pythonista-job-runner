@@ -1,0 +1,21 @@
+{
+  "generated_utc": "2026-03-10T08:59:11Z",
+  "job_id": "423d3e4f94864c37abbd9aa81bb2d07a",
+  "outputs": [
+    {
+      "path": "outputs/details.json",
+      "size": 252
+    },
+    {
+      "path": "outputs/hello.txt",
+      "size": 45
+    }
+  ],
+  "outputs_limit_reason": null,
+  "outputs_max_bytes": 209715200,
+  "outputs_max_files": 2000,
+  "outputs_total_bytes": 297,
+  "outputs_total_files": 2,
+  "outputs_truncated": false,
+  "runner_version": "0.6.13"
+}

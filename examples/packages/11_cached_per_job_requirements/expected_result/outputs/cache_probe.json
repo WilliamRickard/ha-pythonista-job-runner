@@ -1,0 +1,11 @@
+{
+  "dependency_mode_hint": "per_job",
+  "example_id": "11_cached_per_job_requirements",
+  "files": {
+    "backup_snapshot.tar": "512 Bytes",
+    "camera_archive.zip": "1.5 kB",
+    "grafana_export.json": "1.2 MB"
+  },
+  "next_check": "Run the same example again and compare package/package_diagnostics.json for reused_venv.",
+  "requirements_source": "vendored local wheel"
+}
