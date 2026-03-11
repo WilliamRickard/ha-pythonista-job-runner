@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.8 -->
+<!-- Version: 0.6.13-docs.9 -->
 # Pythonista Job Runner
 
 Run Python jobs from Pythonista on your iPhone, execute them on your Home Assistant host, and download the result zip back to the phone.
@@ -67,7 +67,7 @@ After that, the next package-focused checks are:
 - wheelhouse imports can satisfy installs without bundling the wheel in every job zip
 - profile mode can attach one named prepared environment across multiple jobs
 
-That exact flow is documented in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md) and exercised in [`pythonista_job_runner/examples/packages/README.md`](pythonista_job_runner/examples/packages/README.md).
+The add-on now has a guided **Setup** flow in the Ingress Web UI for profile-mode examples. It can show readiness, upload a wheel, upload a profile zip, build or rebuild the target profile, and tell you exactly which add-on options still need a save plus restart before example 5 is truly ready. That exact flow is documented in [`pythonista_job_runner/DOCS.md`](pythonista_job_runner/DOCS.md#guided-setup-for-profile-mode-package-uploads) and exercised in [`pythonista_job_runner/examples/packages/README.md`](pythonista_job_runner/examples/packages/README.md).
 
 ## Screenshots
 

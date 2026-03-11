@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-package-store.4
+# Version: 0.6.13-tests-package-store.6
 """Tests for package storage path resolution and bootstrap."""
 
 from __future__ import annotations
@@ -156,3 +156,81 @@ def test_ensure_job_user_private_write_access_repairs_private_dirs(tmp_path, mon
     assert any(path.endswith('/venvs') for path in chown_calls)
     assert any(path.endswith('/jobs/package_reports') for path in chown_calls)
     assert any(path.endswith('/cache/pip') for path in chmod_calls)
+
+
+def test_upload_public_wheel_stores_file_and_syncs_to_imported_wheelhouse(tmp_path):
+    """Wheel uploads should land in the public folder and sync into the imported wheelhouse."""
+    public_root = tmp_path / "public_config"
+    public_root.mkdir(parents=True, exist_ok=True)
+    paths = package_store.build_package_store_paths(tmp_path, public_root=public_root)
+    package_store.bootstrap_package_store(paths)
+
+    upload_path = tmp_path / "incoming.whl"
+    _write_demo_wheel(upload_path)
+
+    result = package_store.upload_public_wheel(
+        paths,
+        upload_path,
+        filename="demo_pkg-0.1.0-py3-none-any.whl",
+        overwrite=False,
+        max_upload_bytes=1024 * 1024,
+        sync_after_upload=True,
+    )
+
+    assert result["status"] == "ok"
+    assert result["action"] == "uploaded"
+    assert (paths.public_wheel_uploads_dir / "demo_pkg-0.1.0-py3-none-any.whl").is_file()
+    assert (paths.wheelhouse_imported_dir / "demo_pkg-0.1.0-py3-none-any.whl").is_file()
+    assert result["sync"]["status"] == "ok"
+
+
+def test_upload_public_wheel_rejects_existing_file_without_overwrite(tmp_path):
+    """Wheel uploads should not overwrite an existing public file unless requested."""
+    public_root = tmp_path / "public_config"
+    public_root.mkdir(parents=True, exist_ok=True)
+    paths = package_store.build_package_store_paths(tmp_path, public_root=public_root)
+    package_store.bootstrap_package_store(paths)
+
+    existing = paths.public_wheel_uploads_dir / "demo_pkg-0.1.0-py3-none-any.whl"
+    _write_demo_wheel(existing)
+    upload_path = tmp_path / "incoming.whl"
+    _write_demo_wheel(upload_path)
+
+    result = package_store.upload_public_wheel(
+        paths,
+        upload_path,
+        filename=existing.name,
+        overwrite=False,
+        max_upload_bytes=1024 * 1024,
+        sync_after_upload=False,
+    )
+
+    assert result["status"] == "error"
+    assert result["error"] == "already_exists"
+
+
+def test_delete_public_wheel_removes_public_and_imported_copy(tmp_path):
+    """Deleting one uploaded wheel should also remove its imported copy."""
+    public_root = tmp_path / "public_config"
+    public_root.mkdir(parents=True, exist_ok=True)
+    paths = package_store.build_package_store_paths(tmp_path, public_root=public_root)
+    package_store.bootstrap_package_store(paths)
+
+    upload_path = tmp_path / "incoming.whl"
+    _write_demo_wheel(upload_path)
+    package_store.upload_public_wheel(
+        paths,
+        upload_path,
+        filename="demo_pkg-0.1.0-py3-none-any.whl",
+        overwrite=False,
+        max_upload_bytes=1024 * 1024,
+        sync_after_upload=True,
+    )
+
+    result = package_store.delete_public_wheel(paths, "demo_pkg-0.1.0-py3-none-any.whl")
+
+    assert result["status"] == "ok"
+    assert result["deleted_public"] is True
+    assert result["deleted_imported"] is True
+    assert not (paths.public_wheel_uploads_dir / "demo_pkg-0.1.0-py3-none-any.whl").exists()
+    assert not (paths.wheelhouse_imported_dir / "demo_pkg-0.1.0-py3-none-any.whl").exists()

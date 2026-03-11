@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.8 -->
+<!-- Version: 0.6.13-docs.9 -->
 # Release readiness checklist
 
 Use this file as the release gate for the dependency-storage and package-management workstream.
@@ -10,6 +10,7 @@ This checklist covers:
 - regression validation of core and package examples
 - upgrade validation from earlier `0.6.13` builds
 - backup and restore checks for public package inputs
+- guided Setup-flow validation for wheel and profile uploads through Ingress
 - architecture truthfulness and native-host smoke testing
 - changelog and release-note completion
 
@@ -32,6 +33,11 @@ This checklist covers:
 
 ### Package subsystem
 
+- [ ] Setup modal shows accurate readiness before any file upload.
+- [ ] Wheel upload from the Setup modal lands in `/config/wheel_uploads/` and is visible in readiness.
+- [ ] Profile archive upload from the Setup modal lands in `/config/package_profiles/` and is visible in readiness.
+- [ ] Setup modal build or rebuild succeeds for the target profile and updates readiness immediately.
+- [ ] Setup modal delete actions remove the intended wheel or profile without leaving stale readiness data.
 - [ ] `11_cached_per_job_requirements` proves warm-cache or warm-venv reuse on a second run.
 - [ ] `12_offline_wheelhouse_install` succeeds with local wheelhouse inputs only.
 - [ ] `13_named_package_profile_run` succeeds in `profile` mode with the configured default profile.

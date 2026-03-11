@@ -669,6 +669,217 @@
         }
       }
     },
+    "/setup/status.json": {
+      "get": {
+        "summary": "Get guided package setup readiness",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Setup readiness payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          }
+        }
+      }
+    },
+    "/setup/upload-wheel": {
+      "post": {
+        "summary": "Upload one setup wheel",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wheel upload result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Upload rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "409": {
+            "description": "Upload would overwrite an existing wheel"
+          },
+          "411": {
+            "description": "Content-Length required"
+          },
+          "413": {
+            "description": "Upload too large"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          }
+        }
+      }
+    },
+    "/setup/upload-profile-zip": {
+      "post": {
+        "summary": "Upload one setup profile archive",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile upload result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Upload rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "409": {
+            "description": "Upload would overwrite an existing profile"
+          },
+          "411": {
+            "description": "Content-Length required"
+          },
+          "413": {
+            "description": "Upload too large"
+          },
+          "415": {
+            "description": "Unsupported media type"
+          }
+        }
+      }
+    },
+    "/setup/delete-wheel": {
+      "post": {
+        "summary": "Delete one uploaded setup wheel",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Delete rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "description": "Wheel not found"
+          }
+        }
+      }
+    },
+    "/setup/delete-profile": {
+      "post": {
+        "summary": "Delete one uploaded setup profile",
+        "security": [
+          {
+            "RunnerToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupMutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Delete rejected or invalid"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorised"
+          },
+          "404": {
+            "description": "Profile not found"
+          }
+        }
+      }
+    },
     "/packages/cache.json": {
       "get": {
         "summary": "Get package cache summary",
@@ -1159,6 +1370,82 @@
             "type": "boolean"
           }
         }
+      },
+      "SetupStatusResponse": {
+        "type": "object",
+        "required": [
+          "ready_for_example_5",
+          "ready_state",
+          "blockers",
+          "next_steps"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "ready_for_example_5": {
+            "type": "boolean"
+          },
+          "ready_state": {
+            "type": "string"
+          },
+          "target_profile": {
+            "type": "string"
+          },
+          "target_wheel": {
+            "type": "string"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "next_steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "config_snippet": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SetupMutationResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "setup_status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "setup_status": {
+            "$ref": "#/components/schemas/SetupStatusResponse"
+          }
+        },
+        "additionalProperties": true
       }
     }
   }

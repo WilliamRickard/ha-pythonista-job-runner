@@ -1,4 +1,4 @@
-# Version: 0.6.13-core.7
+# Version: 0.6.13-core.11
 from __future__ import annotations
 
 import ipaddress
@@ -620,9 +620,133 @@ class Runner:
         """Return the current package profile inventory."""
         return _package_profiles.list_profiles(self)
 
+    def package_setup_status(self) -> Dict[str, Any]:
+        """Return read-only package setup readiness for the guided example flow."""
+        return _package_profiles.setup_status(self)
+
+    def upload_package_setup_wheel(
+        self,
+        upload_path: Path,
+        *,
+        filename: str,
+        overwrite: bool = False,
+        actor: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Validate and store one uploaded setup wheel, then record audit details."""
+        result = _package_store.upload_public_wheel(
+            self.package_store_paths,
+            upload_path,
+            filename=filename,
+            overwrite=overwrite,
+            max_upload_bytes=_package_store.public_wheel_import_max_bytes(getattr(self, "package_cache_max_mb", 0)),
+            sync_after_upload=True,
+        )
+        result["setup_status"] = _package_profiles.setup_status(self)
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "setup_wheel_upload",
+                safe_actor,
+                details={
+                    "filename": str(result.get("filename") or filename or ""),
+                    "overwrite": bool(overwrite),
+                    "status": str(result.get("status") or "error"),
+                    "error": result.get("error"),
+                    "size_bytes": int(result.get("size_bytes", 0) or 0),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+    def upload_package_setup_profile_zip(
+        self,
+        upload_path: Path,
+        *,
+        filename: str,
+        overwrite: bool = False,
+        actor: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Validate and store one uploaded setup profile archive, then record audit details."""
+        result = _package_profiles.upload_profile_zip(self, upload_path, filename=filename, overwrite=overwrite)
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "setup_profile_upload",
+                safe_actor,
+                details={
+                    "filename": str(result.get("filename") or filename or ""),
+                    "profile_name": str(result.get("profile_name") or ""),
+                    "overwrite": bool(overwrite),
+                    "status": str(result.get("status") or "error"),
+                    "error": result.get("error"),
+                    "size_bytes": int(result.get("size_bytes", 0) or 0),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+    def delete_package_setup_wheel(
+        self,
+        filename: str,
+        *,
+        actor: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Delete one uploaded setup wheel and record audit details."""
+        result = _package_store.delete_public_wheel(self.package_store_paths, filename)
+        result["setup_status"] = _package_profiles.setup_status(self)
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "setup_wheel_delete",
+                safe_actor,
+                details={
+                    "filename": str(result.get("filename") or filename or ""),
+                    "status": str(result.get("status") or "error"),
+                    "error": result.get("error"),
+                    "deleted_imported": bool(result.get("deleted_imported", False)),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+    def delete_package_setup_profile(
+        self,
+        profile_name: str,
+        *,
+        actor: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Delete one uploaded setup profile and record audit details."""
+        result = _package_profiles.delete_uploaded_profile(self, profile_name)
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "setup_profile_delete",
+                safe_actor,
+                details={
+                    "profile_name": str(result.get("profile_name") or profile_name or ""),
+                    "status": str(result.get("status") or "error"),
+                    "error": result.get("error"),
+                    "removed_cached_venv": bool(result.get("removed_cached_venv", False)),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+
     def build_package_profile(self, profile_name: str | None = None, *, rebuild: bool = False, actor: Dict[str, Any] | None = None) -> Dict[str, Any]:
         """Build or rebuild one named package profile and record an audit event."""
         result = _package_profiles.build_profile(self, profile_name, rebuild=rebuild)
+        setup_target = str(result.get("profile_name") or profile_name or self.package_profile_default or _package_profiles.DEFAULT_SETUP_TARGET_PROFILE)
+        result["setup_status"] = _package_profiles.setup_status(self, target_profile=setup_target)
+        result["inventory"] = _package_profiles.list_profiles(self)
         safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
         try:
             self.record_audit_event(

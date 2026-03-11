@@ -1,4 +1,4 @@
-/* VERSION: 0.6.13-webui.3 */
+/* VERSION: 0.6.13-webui.6 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -49,6 +49,7 @@
   let toastActionHandler = null;
 
   let infoCache = null;
+  let setupStatusCache = null;
   let rowPopoverMode = "manual";
   let hoverPopoverTimer = null;
   let hoverPopoverCloseTimer = null;
@@ -1590,6 +1591,7 @@ function applyFilters() {
 
   let _aboutReturnFocus = null;
   let _advReturnFocus = null;
+  let _setupReturnFocus = null;
   let _settingsReturnFocus = null;
   let _commandReturnFocus = null;
   let _confirmReturnFocus = null;
@@ -1654,6 +1656,7 @@ function applyFilters() {
       { key: "search", title: "Focus search", description: "Jump straight to the Jobs search field.", hint: "/", action: async () => { if (els.search) els.search.focus(); } },
       { key: "settings", title: "Open settings", description: "Change runtime and UI preferences.", hint: "Panel", action: async () => openSettings() },
       { key: "help", title: "Open help", description: "See quick start, samples, and troubleshooting.", hint: "Panel", action: async () => openAbout() },
+      { key: "setup", title: "Open setup", description: "Check package setup readiness for example 5.", hint: "Panel", action: async () => openSetup() },
       { key: "maintenance", title: "Open maintenance tools", description: "Open advanced cleanup and reset actions.", hint: "Panel", action: async () => openAdvanced() },
       { key: "sample", title: "Copy sample Python task", description: "Copy the quick-start Python task to the clipboard.", hint: "Copy", action: async () => copySampleTask() },
     ];
@@ -1954,6 +1957,33 @@ function applyFilters() {
       try { _advReturnFocus.focus(); } catch (e) {}
     }
     _advReturnFocus = null;
+  }
+
+  function openSetup() {
+    _setupReturnFocus = (document.activeElement instanceof HTMLElement) ? document.activeElement : null;
+    els.setup_overlay.hidden = false;
+    els.setup_overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.documentElement.style.height = "100%";
+    document.body.style.height = "100%";
+    if (els.setup_close) els.setup_close.focus();
+    else if (els.setup_modal) els.setup_modal.focus();
+    refreshSetupStatus().catch((_err) => {});
+  }
+
+  function closeSetup() {
+    if (!els.setup_overlay) return;
+    els.setup_overlay.hidden = true;
+    els.setup_overlay.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+    document.documentElement.style.height = "";
+    document.body.style.height = "";
+    if (_setupReturnFocus && (document.contains(_setupReturnFocus))) {
+      try { _setupReturnFocus.focus(); } catch (e) {}
+    }
+    _setupReturnFocus = null;
   }
 
   function openSettings() {
@@ -2701,6 +2731,499 @@ Client IP: ${ip || ""}`;
     await refreshAll({ silent: true });
   }
 
+  function setupBadgeText(enabled) {
+    return enabled ? "Enabled" : "Disabled";
+  }
+
+  function createSetupRow(titleText, descriptionText, metaText) {
+    const row = document.createElement("div");
+    row.className = "item-row";
+    const copy = document.createElement("div");
+    copy.className = "item-copy";
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = titleText;
+    const desc = document.createElement("div");
+    desc.className = "item-description";
+    desc.textContent = descriptionText;
+    copy.append(title, desc);
+    row.appendChild(copy);
+    if (metaText) {
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.textContent = metaText;
+      row.appendChild(meta);
+    }
+    return row;
+  }
+
+  function createSetupActionButton(label, action, dataName, dataValue) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "small tertiary";
+    btn.textContent = label;
+    btn.setAttribute("data-action", action);
+    if (dataName) btn.setAttribute(dataName, String(dataValue || ""));
+    return btn;
+  }
+
+  function createSetupManagedRow(titleText, descriptionText, metaText, buttons) {
+    const row = createSetupRow(titleText, descriptionText, metaText);
+    if (Array.isArray(buttons) && buttons.length) {
+      const actions = document.createElement("div");
+      actions.className = "item-actions";
+      for (const btn of buttons) {
+        if (btn instanceof HTMLElement) actions.appendChild(btn);
+      }
+      if (actions.childElementCount) row.appendChild(actions);
+    }
+    return row;
+  }
+
+  function renderSetupSectionList(container, rows, emptyText) {
+    if (!(container instanceof HTMLElement)) return;
+    container.textContent = "";
+    if (!Array.isArray(rows) || !rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "field-hint";
+      empty.textContent = emptyText;
+      container.appendChild(empty);
+      return;
+    }
+    for (const row of rows) {
+      container.appendChild(row);
+    }
+  }
+
+  function renderSetupTextList(container, heading, items, emptyText) {
+    if (!(container instanceof HTMLElement)) return;
+    container.textContent = "";
+    const values = Array.isArray(items) ? items.filter((item) => String(item || "").trim()) : [];
+    if (!values.length) {
+      const empty = document.createElement("div");
+      empty.className = "field-hint";
+      empty.textContent = emptyText;
+      container.appendChild(empty);
+      return;
+    }
+    const title = document.createElement("div");
+    title.className = "item-title";
+    title.textContent = heading;
+    container.appendChild(title);
+    for (const item of values) {
+      const row = document.createElement("div");
+      row.className = "item-row";
+      const copy = document.createElement("div");
+      copy.className = "item-copy";
+      const desc = document.createElement("div");
+      desc.className = "item-description";
+      desc.textContent = String(item);
+      copy.appendChild(desc);
+      row.appendChild(copy);
+      container.appendChild(row);
+    }
+  }
+
+  function selectedSetupFile(kind) {
+    const input = kind === "profile" ? els.setup_profile_zip_file : els.setup_wheel_file;
+    if (!(input instanceof HTMLInputElement) || !input.files || !input.files.length) return null;
+    return input.files[0] || null;
+  }
+
+  function updateSetupPickerSummary(kind) {
+    const file = selectedSetupFile(kind);
+    if (kind === "profile") {
+      if (els.setup_profile_picker_summary) {
+        els.setup_profile_picker_summary.textContent = file
+          ? `Selected profile archive: ${file.name}`
+          : "Choose one profile archive to upload into /config/package_profiles.";
+      }
+      if (els.setup_upload_profile_zip) els.setup_upload_profile_zip.disabled = !file;
+      if (els.setup_clear_profile_zip_file) els.setup_clear_profile_zip_file.disabled = !file;
+      return;
+    }
+    if (els.setup_wheel_picker_summary) {
+      els.setup_wheel_picker_summary.textContent = file
+        ? `Selected wheel file: ${file.name}`
+        : "Choose one .whl file to upload into /config/wheel_uploads.";
+    }
+    if (els.setup_upload_wheel) els.setup_upload_wheel.disabled = !file;
+    if (els.setup_clear_wheel_file) els.setup_clear_wheel_file.disabled = !file;
+  }
+
+  function clearSetupSelectedFile(kind) {
+    const input = kind === "profile" ? els.setup_profile_zip_file : els.setup_wheel_file;
+    if (input instanceof HTMLInputElement) input.value = "";
+    updateSetupPickerSummary(kind);
+  }
+
+  async function setupRequest(path, opts) {
+    const response = await fetch(apiUrl(path), Object.assign({ credentials: "same-origin" }, opts || {}));
+    const ct = response.headers.get("content-type") || "";
+    const payload = ct.includes("application/json") ? await response.json() : await response.text();
+    if (!response.ok) {
+      const message = (payload && typeof payload === "object" && payload.error)
+        ? String(payload.error)
+        : `${response.status}`;
+      const err = new Error(message);
+      err.status = response.status;
+      err.payload = payload;
+      throw err;
+    }
+    return payload;
+  }
+
+  function setSetupBusy(isBusy, bannerText) {
+    const busy = !!isBusy;
+    const cached = setupStatusCache && typeof setupStatusCache === "object" ? setupStatusCache : {};
+    if (els.setup_refresh) els.setup_refresh.disabled = busy;
+    if (els.setup_upload_wheel) els.setup_upload_wheel.disabled = busy || !selectedSetupFile("wheel");
+    if (els.setup_clear_wheel_file) els.setup_clear_wheel_file.disabled = busy || !selectedSetupFile("wheel");
+    if (els.setup_upload_profile_zip) els.setup_upload_profile_zip.disabled = busy || !selectedSetupFile("profile");
+    if (els.setup_clear_profile_zip_file) els.setup_clear_profile_zip_file.disabled = busy || !selectedSetupFile("profile");
+    if (els.setup_build_target_profile) els.setup_build_target_profile.disabled = busy || !cached.build_available;
+    if (els.setup_rebuild_target_profile) els.setup_rebuild_target_profile.disabled = busy || !cached.rebuild_available;
+    if (els.setup_copy_config_snippet) els.setup_copy_config_snippet.disabled = busy || !String(cached.config_snippet || "").trim();
+    if (busy && els.setup_status_banner && bannerText) {
+      els.setup_status_banner.classList.remove("ok", "warn", "err");
+      els.setup_status_banner.textContent = bannerText;
+    }
+  }
+
+  function applySetupStatusPayload(payload) {
+    const nextPayload = (payload && typeof payload === "object" && payload.setup_status && typeof payload.setup_status === "object")
+      ? payload.setup_status
+      : payload;
+    if (nextPayload && typeof nextPayload === "object") {
+      renderSetupStatus(nextPayload);
+      return;
+    }
+    refreshSetupStatus().catch((_err) => {});
+  }
+
+  async function buildSetupTargetProfile(rebuild) {
+    const target = String((setupStatusCache && setupStatusCache.target_profile) || "").trim();
+    if (!target) {
+      toast("err", "No target profile", "Refresh Setup and try again.");
+      return;
+    }
+    const actionText = rebuild ? "Rebuilding" : "Building";
+    setSetupBusy(true, `${actionText} ${target}…`);
+    try {
+      const payload = await setupRequest("package_profiles/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile: target, rebuild: !!rebuild }),
+      });
+      applySetupStatusPayload(payload || {});
+      await refreshPackageProfiles().catch((_err) => {});
+      await refreshAll({ silent: true });
+      const status = String((payload && payload.status) || "unknown");
+      toast(status === "ready" ? "ok" : "err", rebuild ? "Profile rebuilt" : "Profile built", `${target}: ${status}`);
+    } catch (err) {
+      const payload = err && err.payload && typeof err.payload === "object" ? err.payload : null;
+      if (payload) applySetupStatusPayload(payload);
+      const msg = payload && payload.error ? String(payload.error) : String(err && err.message ? err.message : err);
+      toast("err", rebuild ? "Rebuild failed" : "Build failed", `${target}: ${msg}`);
+    } finally {
+      setSetupBusy(false);
+    }
+  }
+
+  async function copySetupConfigSnippet() {
+    const snippet = String((setupStatusCache && setupStatusCache.config_snippet) || (els.setup_config_snippet && els.setup_config_snippet.value) || "").trim();
+    if (!snippet) {
+      toast("err", "No config snippet", "Refresh Setup and try again.");
+      return;
+    }
+    await copyTextToClipboard(snippet);
+    toast("ok", "Copied", "Suggested add-on config copied to clipboard");
+  }
+
+  async function uploadSetupBinary(kind, overwrite) {
+    const file = selectedSetupFile(kind);
+    if (!file) {
+      toast("err", "No file selected", kind === "profile" ? "Choose a profile archive first." : "Choose a wheel file first.");
+      return;
+    }
+    const path = kind === "profile" ? "setup/upload-profile-zip" : "setup/upload-wheel";
+    const noun = kind === "profile" ? "profile archive" : "wheel";
+    const query = `${path}?filename=${encodeURIComponent(file.name)}${overwrite ? "&overwrite=1" : ""}`;
+    setSetupBusy(true, `Uploading ${file.name}…`);
+    try {
+      const payload = await setupRequest(query, {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: file,
+      });
+      clearSetupSelectedFile(kind);
+      applySetupStatusPayload(payload || {});
+      toast("ok", overwrite ? "Replaced" : "Uploaded", `${file.name} ${overwrite ? "replaced" : `${noun} uploaded`}.`);
+    } catch (err) {
+      const status = Number(err && err.status ? err.status : 0);
+      const payload = err && err.payload && typeof err.payload === "object" ? err.payload : null;
+      if (!overwrite && status === 409 && payload && String(payload.error || "") === "already_exists") {
+        openConfirm({
+          title: `Replace ${file.name}?`,
+          body: `A file with that name already exists. Replace it with the selected ${noun}?`,
+          confirmLabel: "Replace",
+          onConfirm: async () => uploadSetupBinary(kind, true),
+        });
+      } else {
+        const msg = payload && payload.error ? String(payload.error) : String(err && err.message ? err.message : err);
+        toast("err", `Upload failed`, `${file.name}: ${msg}`);
+      }
+    } finally {
+      setSetupBusy(false);
+    }
+  }
+
+  async function performDeleteSetupWheel(filename) {
+    const safeName = String(filename || "").trim();
+    if (!safeName) return;
+    setSetupBusy(true, `Deleting ${safeName}…`);
+    try {
+      const payload = await setupRequest("setup/delete-wheel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: safeName }),
+      });
+      applySetupStatusPayload(payload || {});
+      toast("ok", "Wheel deleted", safeName);
+    } catch (err) {
+      const payload = err && err.payload && typeof err.payload === "object" ? err.payload : null;
+      const msg = payload && payload.error ? String(payload.error) : String(err && err.message ? err.message : err);
+      toast("err", "Delete failed", `${safeName}: ${msg}`);
+    } finally {
+      setSetupBusy(false);
+    }
+  }
+
+  function deleteSetupWheel(filename) {
+    const safeName = String(filename || "").trim();
+    if (!safeName) return;
+    openConfirm({
+      title: `Delete wheel ${safeName}?`,
+      body: "This removes the uploaded wheel and its imported copy from the internal wheelhouse.",
+      confirmLabel: "Delete wheel",
+      onConfirm: async () => performDeleteSetupWheel(safeName),
+    });
+  }
+
+  async function performDeleteSetupProfile(profileName) {
+    const safeName = String(profileName || "").trim();
+    if (!safeName) return;
+    setSetupBusy(true, `Deleting ${safeName}…`);
+    try {
+      const payload = await setupRequest("setup/delete-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile: safeName }),
+      });
+      applySetupStatusPayload(payload || {});
+      toast("ok", "Profile deleted", safeName);
+    } catch (err) {
+      const payload = err && err.payload && typeof err.payload === "object" ? err.payload : null;
+      const msg = payload && payload.error ? String(payload.error) : String(err && err.message ? err.message : err);
+      toast("err", "Delete failed", `${safeName}: ${msg}`);
+    } finally {
+      setSetupBusy(false);
+    }
+  }
+
+  function deleteSetupProfile(profileName) {
+    const safeName = String(profileName || "").trim();
+    if (!safeName) return;
+    openConfirm({
+      title: `Delete profile ${safeName}?`,
+      body: "This removes the uploaded package profile and any cached build artefacts linked to it.",
+      confirmLabel: "Delete profile",
+      onConfirm: async () => performDeleteSetupProfile(safeName),
+    });
+  }
+
+  function renderSetupStatus(payload) {
+    const data = payload || {};
+    setupStatusCache = data;
+    const blockers = Array.isArray(data.blockers) ? data.blockers : [];
+    const warnings = Array.isArray(data.warnings) ? data.warnings : [];
+    const nextSteps = Array.isArray(data.next_steps) ? data.next_steps : [];
+    const wheelFiles = Array.isArray(data.wheel_files) ? data.wheel_files : [];
+    const profileNames = Array.isArray(data.profile_names) ? data.profile_names : [];
+    const ready = !!data.ready_for_example_5;
+    const targetProfile = String(data.target_profile || "demo_formatsize_profile");
+    const targetWheel = String(data.target_wheel || "pjr_demo_formatsize-0.1.0-py3-none-any.whl");
+    const targetSummary = data.target_profile_summary || {};
+    const readyState = String(data.ready_state || "not_ready");
+    const buildAvailable = !!data.build_available;
+    const rebuildAvailable = !!data.rebuild_available;
+    const buildRecommended = !!data.build_recommended;
+    const targetProfileStatus = String(data.target_profile_status || (data.profile_present ? (data.profile_built ? "ready" : "not_built") : "missing"));
+    const targetProfileLastError = String(data.target_profile_last_error || "");
+    const restartRequired = !!data.restart_required;
+    const restartGuidance = String(data.restart_guidance || "");
+    const configSnippet = String(data.config_snippet || "");
+    const settingsSummary = [
+      `Mode: ${String(data.dependency_mode || "per_job")}`,
+      `Requirements: ${setupBadgeText(!!data.install_requirements_enabled)}`,
+      `Profiles: ${setupBadgeText(!!data.package_profiles_enabled)}`,
+    ].join(" • ");
+    const wheelsDir = String(((data.paths || {}).wheel_uploads_dir) || "/config/wheel_uploads");
+    const profilesDir = String(((data.paths || {}).profiles_dir) || "/config/package_profiles");
+
+    if (els.setup_status_banner) {
+      els.setup_status_banner.classList.remove("ok", "warn", "err");
+      if (readyState === "ready") {
+        els.setup_status_banner.classList.add("ok");
+        els.setup_status_banner.textContent = "Example 5 is ready. The target wheel, profile, and add-on settings are aligned.";
+      } else if (readyState === "build_recommended") {
+        els.setup_status_banner.classList.add("warn");
+        els.setup_status_banner.textContent = `Target files and settings are aligned. Build ${targetProfile} now for a cleaner example 5 run, or let example 5 build it on first use.`;
+      } else if (readyState === "build_failed") {
+        els.setup_status_banner.classList.add("err");
+        els.setup_status_banner.textContent = targetProfileLastError
+          ? `The last ${targetProfile} build failed: ${targetProfileLastError}`
+          : `The last ${targetProfile} build failed. Rebuild it and inspect the diagnostics bundle if needed.`;
+      } else if (readyState === "restart_required") {
+        els.setup_status_banner.classList.add("warn");
+        els.setup_status_banner.textContent = restartGuidance || "Save the add-on config, restart the add-on, then refresh Setup.";
+      } else if (blockers.length) {
+        els.setup_status_banner.classList.add("warn");
+        els.setup_status_banner.textContent = blockers[0];
+      } else {
+        els.setup_status_banner.textContent = "Setup information loaded.";
+      }
+    }
+    if (els.setup_target_summary) {
+      els.setup_target_summary.textContent = `Target profile: ${targetProfile} • Target wheel: ${targetWheel}`;
+    }
+    if (els.setup_settings_summary) {
+      els.setup_settings_summary.textContent = settingsSummary;
+    }
+    if (els.setup_wheels_summary) {
+      const wheelStatus = wheelFiles.length ? `${wheelFiles.length} wheel uploads found` : "No wheel uploads found yet";
+      els.setup_wheels_summary.textContent = `${wheelStatus} • Upload location: ${wheelsDir}`;
+    }
+    if (els.setup_profiles_summary) {
+      const readyCount = Number(((data.inventory || {}).ready_count) || 0);
+      const profileStatus = profileNames.length ? `${profileNames.length} profiles found, ${readyCount} ready` : "No package profiles found yet";
+      els.setup_profiles_summary.textContent = `${profileStatus} • Profile location: ${profilesDir}`;
+    }
+    if (els.setup_readiness_summary) {
+      if (readyState === "ready") {
+        els.setup_readiness_summary.textContent = "Ready to run example 5.";
+      } else if (readyState === "build_recommended") {
+        els.setup_readiness_summary.textContent = `Build ${targetProfile} now for a cleaner first run.`;
+      } else if (readyState === "build_failed") {
+        els.setup_readiness_summary.textContent = `${targetProfile} needs a rebuild before you rely on it.`;
+      } else if (readyState === "restart_required") {
+        els.setup_readiness_summary.textContent = "Restart required after the add-on config change.";
+      } else if (blockers.length) {
+        els.setup_readiness_summary.textContent = `${blockers.length} blocker${blockers.length === 1 ? "" : "s"} found.`;
+      } else if (warnings.length) {
+        els.setup_readiness_summary.textContent = `${warnings.length} warning${warnings.length === 1 ? "" : "s"} found.`;
+      } else {
+        els.setup_readiness_summary.textContent = "No blockers found.";
+      }
+    }
+    if (els.setup_build_summary) {
+      if (!data.profile_present) {
+        els.setup_build_summary.textContent = `Upload ${targetProfile} before trying to build it.`;
+      } else if (readyState === "build_failed") {
+        els.setup_build_summary.textContent = targetProfileLastError
+          ? `Last build failed: ${targetProfileLastError}`
+          : `Last build failed. Try Rebuild for ${targetProfile}.`;
+      } else if (data.profile_built) {
+        els.setup_build_summary.textContent = `${targetProfile} is already built and ready to attach.`;
+      } else if (buildRecommended) {
+        els.setup_build_summary.textContent = `${targetProfile} exists but has not been built yet.`;
+      } else {
+        els.setup_build_summary.textContent = `${targetProfile} status: ${targetProfileStatus}.`;
+      }
+    }
+    if (els.setup_config_snippet) {
+      els.setup_config_snippet.value = configSnippet;
+    }
+    if (els.setup_restart_guidance) {
+      els.setup_restart_guidance.textContent = restartGuidance || "Refresh Setup after the next change to confirm the current state.";
+    }
+    if (els.setup_build_target_profile) {
+      els.setup_build_target_profile.disabled = !buildAvailable;
+      els.setup_build_target_profile.textContent = data.profile_built ? "Refresh build" : "Build target profile";
+    }
+    if (els.setup_rebuild_target_profile) {
+      els.setup_rebuild_target_profile.disabled = !rebuildAvailable;
+    }
+    if (els.setup_copy_config_snippet) {
+      els.setup_copy_config_snippet.disabled = !configSnippet;
+    }
+
+    renderSetupSectionList(els.setup_settings_list, [
+      createSetupRow("Install requirements.txt automatically", setupBadgeText(!!data.install_requirements_enabled), null),
+      createSetupRow("Dependency handling mode", String(data.dependency_mode || "per_job"), null),
+      createSetupRow("Package profiles", setupBadgeText(!!data.package_profiles_enabled), null),
+      createSetupRow("Default package profile", String(data.default_profile || "Not set"), !!data.default_profile_exists ? "Found" : "Missing"),
+      createSetupRow("Public wheelhouse", setupBadgeText(!!data.package_allow_public_wheelhouse), null),
+      createSetupRow("Offline prefer local", setupBadgeText(!!data.package_offline_prefer_local), null),
+    ], "No setup settings available.");
+
+    const wheelRows = [
+      createSetupRow(
+        "Target wheel",
+        targetWheel,
+        !!data.wheel_present ? "Present" : "Missing"
+      ),
+      ...wheelFiles.map((name) => createSetupManagedRow(
+        "Uploaded wheel",
+        String(name),
+        name === targetWheel ? "Target match" : null,
+        [createSetupActionButton("Delete", "setup-delete-wheel", "data-filename", name)]
+      )),
+    ];
+    renderSetupSectionList(els.setup_wheels_list, wheelRows, "No uploaded wheel files were found.");
+
+    const targetProfileButtons = [];
+    if (buildAvailable) targetProfileButtons.push(createSetupActionButton(data.profile_built ? "Refresh build" : "Build", "setup-build-target-profile"));
+    if (rebuildAvailable) targetProfileButtons.push(createSetupActionButton("Rebuild", "setup-rebuild-target-profile"));
+    const profileRows = [
+      createSetupManagedRow(
+        "Target profile",
+        targetProfile,
+        !!data.profile_present ? (data.profile_built ? "Ready" : "Needs build") : "Missing",
+        targetProfileButtons
+      ),
+      ...profileNames.map((name) => {
+        let meta = null;
+        if (name === targetProfile) meta = !!data.profile_built ? "Target ready" : `Target (${targetProfileStatus})`;
+        return createSetupManagedRow(
+          "Discovered profile",
+          String(name),
+          meta,
+          [createSetupActionButton("Delete", "setup-delete-profile", "data-profile", name)]
+        );
+      }),
+    ];
+    if (targetSummary && typeof targetSummary === "object" && Object.keys(targetSummary).length) {
+      profileRows.splice(1, 0, createSetupRow(
+        "Target profile source",
+        String(targetSummary.requirements_kind || targetSummary.requirements_path || "requirements.txt"),
+        String(targetSummary.status || "unknown")
+      ));
+    }
+    renderSetupSectionList(els.setup_profiles_list, profileRows, "No package profiles were found.");
+
+    renderSetupTextList(els.setup_blockers_list, "Blockers", blockers, "No blockers found.");
+    renderSetupTextList(els.setup_warnings_list, "Warnings", warnings, "No warnings.");
+    renderSetupTextList(els.setup_next_steps_list, "Next steps", nextSteps, "No next steps available.");
+    updateSetupPickerSummary("wheel");
+    updateSetupPickerSummary("profile");
+  }
+
+  async function refreshSetupStatus() {
+    const payload = await api("setup/status.json");
+    renderSetupStatus(payload || {});
+  }
+
   async function copyEndpoint(btn) {
     const val = btn.getAttribute("data-copy") || "";
     if (!val) return;
@@ -2859,13 +3382,25 @@ function toggleAuto() {
           openSettings();
         }
         if (action === "close-settings") closeSettings();
+        if (action === "open-setup") openSetup();
         if (action === "open-advanced") openAdvanced();
+        if (action === "refresh-setup-status") await refreshSetupStatus();
+        if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
+        if (action === "setup-clear-wheel-file") clearSetupSelectedFile("wheel");
+        if (action === "setup-upload-profile-zip") await uploadSetupBinary("profile", false);
+        if (action === "setup-clear-profile-file") clearSetupSelectedFile("profile");
+        if (action === "setup-build-target-profile") await buildSetupTargetProfile(false);
+        if (action === "setup-rebuild-target-profile") await buildSetupTargetProfile(true);
+        if (action === "setup-copy-config-snippet") await copySetupConfigSnippet();
+        if (action === "setup-delete-wheel") deleteSetupWheel(btn.getAttribute("data-filename") || "");
+        if (action === "setup-delete-profile") deleteSetupProfile(btn.getAttribute("data-profile") || "");
         if (action === "refresh-package-cache") await refreshPackageCache();
         if (action === "prune-package-cache") await prunePackageCache();
         if (action === "purge-package-cache") await purgePackageCache();
         if (action === "refresh-package-profiles") await refreshPackageProfiles();
         if (action === "build-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", false);
         if (action === "rebuild-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", true);
+        if (action === "close-setup") closeSetup();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
@@ -2932,6 +3467,12 @@ function toggleAuto() {
       });
     }
 
+    if (els.setup_overlay) {
+      els.setup_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.setup_overlay) closeSetup();
+      });
+    }
+
     if (els.adv_overlay) {
       els.adv_overlay.addEventListener("click", (ev) => {
         if (ev.target === els.adv_overlay) closeAdvanced();
@@ -2993,6 +3534,16 @@ function toggleAuto() {
     }
 
 
+    if (els.setup_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeSetup();
+      };
+      els.setup_close.addEventListener("click", close);
+      els.setup_close.addEventListener("touchend", close, { passive: false });
+    }
+
     if (els.adv_close) {
       const close = (ev) => {
         ev.preventDefault();
@@ -3040,6 +3591,7 @@ function toggleAuto() {
         if (els.row_menu && !els.row_menu.hidden) closeRowMenu();
         if (els.row_popover && !els.row_popover.hidden) closeRowPopover();
         if (!els.about_overlay.hidden) closeAbout();
+        if (!els.setup_overlay.hidden) closeSetup();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
         return;
@@ -3048,10 +3600,18 @@ function toggleAuto() {
         if (els.command_overlay && !els.command_overlay.hidden) trapTabKey(ev, els.command_modal || els.command_overlay);
         if (els.confirm_overlay && !els.confirm_overlay.hidden) trapTabKey(ev, els.confirm_modal || els.confirm_overlay);
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
+        if (!els.setup_overlay.hidden) trapTabKey(ev, els.setup_modal || els.setup_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
         if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
       }
     });
+
+    if (els.setup_wheel_file) {
+      els.setup_wheel_file.addEventListener("change", () => updateSetupPickerSummary("wheel"));
+    }
+    if (els.setup_profile_zip_file) {
+      els.setup_profile_zip_file.addEventListener("change", () => updateSetupPickerSummary("profile"));
+    }
 
     els.pollms.addEventListener("change", () => {
       setPollMsFromInput();
@@ -3356,6 +3916,36 @@ function toggleAuto() {
     els.row_menu_zip = document.getElementById("row_menu_zip");
 
     els.about_overlay = document.getElementById("about_overlay");
+    els.setup_overlay = document.getElementById("setup_overlay");
+    els.setup_modal = document.getElementById("setup_modal");
+    els.setup_close = document.getElementById("setup_close");
+    els.setup_refresh = document.getElementById("setup_refresh");
+    els.setup_status_banner = document.getElementById("setup_status_banner");
+    els.setup_target_summary = document.getElementById("setup_target_summary");
+    els.setup_settings_summary = document.getElementById("setup_settings_summary");
+    els.setup_settings_list = document.getElementById("setup_settings_list");
+    els.setup_wheels_summary = document.getElementById("setup_wheels_summary");
+    els.setup_wheel_file = document.getElementById("setup_wheel_file");
+    els.setup_upload_wheel = document.getElementById("setup_upload_wheel");
+    els.setup_clear_wheel_file = document.getElementById("setup_clear_wheel_file");
+    els.setup_wheel_picker_summary = document.getElementById("setup_wheel_picker_summary");
+    els.setup_wheels_list = document.getElementById("setup_wheels_list");
+    els.setup_profiles_summary = document.getElementById("setup_profiles_summary");
+    els.setup_profile_zip_file = document.getElementById("setup_profile_zip_file");
+    els.setup_upload_profile_zip = document.getElementById("setup_upload_profile_zip");
+    els.setup_clear_profile_zip_file = document.getElementById("setup_clear_profile_zip_file");
+    els.setup_profile_picker_summary = document.getElementById("setup_profile_picker_summary");
+    els.setup_profiles_list = document.getElementById("setup_profiles_list");
+    els.setup_readiness_summary = document.getElementById("setup_readiness_summary");
+    els.setup_build_target_profile = document.getElementById("setup_build_target_profile");
+    els.setup_rebuild_target_profile = document.getElementById("setup_rebuild_target_profile");
+    els.setup_copy_config_snippet = document.getElementById("setup_copy_config_snippet");
+    els.setup_build_summary = document.getElementById("setup_build_summary");
+    els.setup_config_snippet = document.getElementById("setup_config_snippet");
+    els.setup_restart_guidance = document.getElementById("setup_restart_guidance");
+    els.setup_blockers_list = document.getElementById("setup_blockers_list");
+    els.setup_warnings_list = document.getElementById("setup_warnings_list");
+    els.setup_next_steps_list = document.getElementById("setup_next_steps_list");
     els.about_modal = document.getElementById("about_modal");
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");

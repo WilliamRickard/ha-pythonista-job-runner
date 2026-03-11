@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.8 -->
+<!-- Version: 0.6.13-docs.9 -->
 # Changelog
 
 ## Unreleased
@@ -12,6 +12,9 @@
 
 ### Web UI and add-on usability
 
+- Add a guided Setup flow in the Web UI for profile-mode package examples, including readiness checks, wheel uploads, profile archive uploads, delete and replace actions, build and rebuild controls, restart guidance, and a suggested config snippet.
+- Document the new Setup workflow in the repository README, add-on guide, package examples, and release-readiness checklist.
+- Extend automated checks with an end-to-end setup-flow API test that uploads files, builds the target profile, and verifies the ready state without a live Home Assistant host.
 - Fix live stdout and stderr streaming so the Web UI updates during execution instead of waiting for large buffered reads or job completion.
 - Replace new-tab stdout, stderr, and result downloads with in-page authenticated fetch downloads so Home Assistant Ingress sessions do not fail with `401 Unauthorized` in Safari or external browser handoff.
 - Show the active Home Assistant host at the top of the Web UI and surface direct-access mode plus configured allowed CIDRs in System details.

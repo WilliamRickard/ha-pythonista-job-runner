@@ -38,13 +38,25 @@ function toggleAuto() {
           openSettings();
         }
         if (action === "close-settings") closeSettings();
+        if (action === "open-setup") openSetup();
         if (action === "open-advanced") openAdvanced();
+        if (action === "refresh-setup-status") await refreshSetupStatus();
+        if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
+        if (action === "setup-clear-wheel-file") clearSetupSelectedFile("wheel");
+        if (action === "setup-upload-profile-zip") await uploadSetupBinary("profile", false);
+        if (action === "setup-clear-profile-file") clearSetupSelectedFile("profile");
+        if (action === "setup-build-target-profile") await buildSetupTargetProfile(false);
+        if (action === "setup-rebuild-target-profile") await buildSetupTargetProfile(true);
+        if (action === "setup-copy-config-snippet") await copySetupConfigSnippet();
+        if (action === "setup-delete-wheel") deleteSetupWheel(btn.getAttribute("data-filename") || "");
+        if (action === "setup-delete-profile") deleteSetupProfile(btn.getAttribute("data-profile") || "");
         if (action === "refresh-package-cache") await refreshPackageCache();
         if (action === "prune-package-cache") await prunePackageCache();
         if (action === "purge-package-cache") await purgePackageCache();
         if (action === "refresh-package-profiles") await refreshPackageProfiles();
         if (action === "build-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", false);
         if (action === "rebuild-package-profile") await buildPackageProfile(btn.getAttribute("data-profile") || "", true);
+        if (action === "close-setup") closeSetup();
         if (action === "close-advanced") closeAdvanced();
         if (action === "back-to-jobs") setPane("jobs");
         if (action === "clear-filters") clearFilters();
@@ -111,6 +123,12 @@ function toggleAuto() {
       });
     }
 
+    if (els.setup_overlay) {
+      els.setup_overlay.addEventListener("click", (ev) => {
+        if (ev.target === els.setup_overlay) closeSetup();
+      });
+    }
+
     if (els.adv_overlay) {
       els.adv_overlay.addEventListener("click", (ev) => {
         if (ev.target === els.adv_overlay) closeAdvanced();
@@ -172,6 +190,16 @@ function toggleAuto() {
     }
 
 
+    if (els.setup_close) {
+      const close = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        closeSetup();
+      };
+      els.setup_close.addEventListener("click", close);
+      els.setup_close.addEventListener("touchend", close, { passive: false });
+    }
+
     if (els.adv_close) {
       const close = (ev) => {
         ev.preventDefault();
@@ -219,6 +247,7 @@ function toggleAuto() {
         if (els.row_menu && !els.row_menu.hidden) closeRowMenu();
         if (els.row_popover && !els.row_popover.hidden) closeRowPopover();
         if (!els.about_overlay.hidden) closeAbout();
+        if (!els.setup_overlay.hidden) closeSetup();
         if (!els.adv_overlay.hidden) closeAdvanced();
         if (!els.settings_overlay.hidden) closeSettings();
         return;
@@ -227,10 +256,18 @@ function toggleAuto() {
         if (els.command_overlay && !els.command_overlay.hidden) trapTabKey(ev, els.command_modal || els.command_overlay);
         if (els.confirm_overlay && !els.confirm_overlay.hidden) trapTabKey(ev, els.confirm_modal || els.confirm_overlay);
         if (!els.about_overlay.hidden) trapTabKey(ev, els.about_modal || els.about_overlay);
+        if (!els.setup_overlay.hidden) trapTabKey(ev, els.setup_modal || els.setup_overlay);
         if (!els.adv_overlay.hidden) trapTabKey(ev, els.adv_modal || els.adv_overlay);
         if (!els.settings_overlay.hidden) trapTabKey(ev, els.settings_modal || els.settings_overlay);
       }
     });
+
+    if (els.setup_wheel_file) {
+      els.setup_wheel_file.addEventListener("change", () => updateSetupPickerSummary("wheel"));
+    }
+    if (els.setup_profile_zip_file) {
+      els.setup_profile_zip_file.addEventListener("change", () => updateSetupPickerSummary("profile"));
+    }
 
     els.pollms.addEventListener("change", () => {
       setPollMsFromInput();
@@ -535,6 +572,36 @@ function toggleAuto() {
     els.row_menu_zip = document.getElementById("row_menu_zip");
 
     els.about_overlay = document.getElementById("about_overlay");
+    els.setup_overlay = document.getElementById("setup_overlay");
+    els.setup_modal = document.getElementById("setup_modal");
+    els.setup_close = document.getElementById("setup_close");
+    els.setup_refresh = document.getElementById("setup_refresh");
+    els.setup_status_banner = document.getElementById("setup_status_banner");
+    els.setup_target_summary = document.getElementById("setup_target_summary");
+    els.setup_settings_summary = document.getElementById("setup_settings_summary");
+    els.setup_settings_list = document.getElementById("setup_settings_list");
+    els.setup_wheels_summary = document.getElementById("setup_wheels_summary");
+    els.setup_wheel_file = document.getElementById("setup_wheel_file");
+    els.setup_upload_wheel = document.getElementById("setup_upload_wheel");
+    els.setup_clear_wheel_file = document.getElementById("setup_clear_wheel_file");
+    els.setup_wheel_picker_summary = document.getElementById("setup_wheel_picker_summary");
+    els.setup_wheels_list = document.getElementById("setup_wheels_list");
+    els.setup_profiles_summary = document.getElementById("setup_profiles_summary");
+    els.setup_profile_zip_file = document.getElementById("setup_profile_zip_file");
+    els.setup_upload_profile_zip = document.getElementById("setup_upload_profile_zip");
+    els.setup_clear_profile_zip_file = document.getElementById("setup_clear_profile_zip_file");
+    els.setup_profile_picker_summary = document.getElementById("setup_profile_picker_summary");
+    els.setup_profiles_list = document.getElementById("setup_profiles_list");
+    els.setup_readiness_summary = document.getElementById("setup_readiness_summary");
+    els.setup_build_target_profile = document.getElementById("setup_build_target_profile");
+    els.setup_rebuild_target_profile = document.getElementById("setup_rebuild_target_profile");
+    els.setup_copy_config_snippet = document.getElementById("setup_copy_config_snippet");
+    els.setup_build_summary = document.getElementById("setup_build_summary");
+    els.setup_config_snippet = document.getElementById("setup_config_snippet");
+    els.setup_restart_guidance = document.getElementById("setup_restart_guidance");
+    els.setup_blockers_list = document.getElementById("setup_blockers_list");
+    els.setup_warnings_list = document.getElementById("setup_warnings_list");
+    els.setup_next_steps_list = document.getElementById("setup_next_steps_list");
     els.about_modal = document.getElementById("about_modal");
     els.about_close = document.getElementById("about_close");
     els.about_sub = document.getElementById("about_sub");

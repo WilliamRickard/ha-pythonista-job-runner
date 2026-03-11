@@ -1,4 +1,4 @@
-Version: 0.6.13-examples.1
+Version: 0.6.13-examples.2
 
 # Package examples
 
@@ -14,6 +14,6 @@ Recommended validation order:
 2. `12_offline_wheelhouse_install`
 3. `13_named_package_profile_run`
 
-These examples are not bundled into the small Pythonista runner package by default because each one needs add-on package settings or public add-on config files prepared first.
+These examples are not bundled into the small Pythonista runner package by default because each one needs add-on package settings or public add-on config files prepared first. The easiest preparation path is now the guided **Setup** modal in the add-on Web UI, which can upload the wheel and profile files, build the target profile, and tell you when a save plus restart is still required.
 
 The stable result files for these examples live under each example's `expected_result/` folder. The full add-on result bundle will also include package artefacts such as `package/package_diagnostics.json`, `package/pip_install_report.json`, and `result_manifest.json` when the add-on generated them.

@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.8 -->
+<!-- Version: 0.6.13-docs.9 -->
 # Pythonista Job Runner
 
 Pythonista Job Runner is a Home Assistant add-on that accepts a job zip, extracts it into an isolated working directory, runs `run.py`, streams logs while it runs, and returns a result zip when it finishes.
@@ -21,6 +21,7 @@ It supports two access paths:
 - [Choose the right package mode](#choose-the-right-package-mode)
 - [Migration from older `_deps`-only behaviour](#migration-from-older-_deps-only-behaviour)
 - [Release readiness and upgrade validation](#release-readiness-and-upgrade-validation)
+- [Guided setup for profile-mode package uploads](#guided-setup-for-profile-mode-package-uploads)
 - [Package example catalogue](#package-example-catalogue)
 - [Pythonista client examples](#pythonista-client-examples)
 - [HTTP API reference](#http-api-reference)
@@ -317,8 +318,45 @@ How to migrate safely:
 
 1. Leave **Dependency handling mode** on `per_job` first.
 2. Re-run one known package-aware job twice and inspect `package/package_diagnostics.json` plus `summary.txt`.
-3. Import any shared wheels into `/config/wheel_uploads/` instead of bundling them into every job zip.
-4. Once the dependency set is stable, move it into `/config/package_profiles/<name>/` and switch matching jobs to `profile` mode.
+3. Import any shared wheels into `/config/wheel_uploads/` instead of bundling them into every job zip. The easiest path on iPhone is now the guided Setup modal in the Web UI.
+4. Once the dependency set is stable, move it into `/config/package_profiles/<name>/` and switch matching jobs to `profile` mode. The guided Setup modal can upload the profile archive, build it, and tell you when the remaining step is a config save plus restart.
+
+## Guided setup for profile-mode package uploads
+
+Use the **Setup** modal in the Ingress Web UI when you need to prepare example 5 or any similar profile-mode run from an iPhone. This avoids manual shell access and avoids copying files into Home Assistant storage by hand.
+
+What the Setup modal can do:
+
+- show whether the target wheel, target profile, and current add-on settings line up
+- upload one wheel into `/config/wheel_uploads/`
+- upload one profile archive into `/config/package_profiles/`
+- delete or replace uploaded setup artefacts when you picked the wrong file
+- build or rebuild the target package profile
+- show a copyable config snippet when the remaining blocker is add-on configuration rather than missing files
+
+Recommended flow for example 5:
+
+1. Open **Open Web UI** from the add-on page.
+2. Open **Settings** or **Advanced**, then open **Setup**.
+3. Check the readiness banner first. If it says files are missing, upload the wheel and profile zip from the same page.
+4. If the page says the target profile exists but is not built, click **Build target profile**.
+5. If the page says restart is required, copy the suggested config snippet, save the matching add-on options, and restart the add-on.
+6. Return to **Setup** and refresh. When the page reports **Ready**, run example 5.
+
+Accepted upload inputs:
+
+- wheel uploads: one `.whl` file, stored under `/config/wheel_uploads/`
+- profile uploads: one zip file that expands into exactly one profile folder, or one flat archive containing `manifest.json` plus `requirements.txt` or `requirements.lock`
+
+The Setup endpoints exposed by the add-on are:
+
+- `GET /setup/status.json`: return readiness, blockers, warnings, and next steps
+- `POST /setup/upload-wheel`: upload one wheel file
+- `POST /setup/upload-profile-zip`: upload one profile archive
+- `POST /setup/delete-wheel`: delete one uploaded wheel
+- `POST /setup/delete-profile`: delete one uploaded profile
+
+These are authenticated endpoints intended for the built-in Web UI. Pythonista scripts can call them too, but the main reason they exist is to make the iPhone-first Web UI workflow practical.
 
 ## Package example catalogue
 
@@ -374,6 +412,7 @@ Endpoints:
 - `POST /run`: submit a job zip as raw bytes in the request body.
 - `GET /jobs.json`: list jobs.
 - `GET /package_profiles.json`: list discovered package profiles, default selection, and ready status.
+- `GET /setup/status.json`: fetch guided setup readiness, blockers, warnings, and next steps for profile-mode examples.
 - `GET /packages/cache.json`: fetch private package cache and storage summary.
 - `GET /job/<job_id>.json`: fetch job status.
 - `GET /tail/<job_id>.json`: fetch status plus stdout and stderr tails.
@@ -384,6 +423,10 @@ Endpoints:
 - `DELETE /job/<job_id>`: delete a job and its artefacts.
 - `POST /purge`: purge matching jobs.
 - `POST /package_profiles/build`: build or rebuild one named package profile from JSON such as `{ "profile": "data_tools_basic", "rebuild": true }`.
+- `POST /setup/upload-wheel`: upload one wheel file as raw bytes, with the filename supplied in `X-Upload-Filename` or the query string.
+- `POST /setup/upload-profile-zip`: upload one profile archive as raw bytes, with the filename supplied in `X-Upload-Filename` or the query string.
+- `POST /setup/delete-wheel`: delete one uploaded wheel using JSON such as `{ "filename": "demo_pkg-0.1.0-py3-none-any.whl" }`.
+- `POST /setup/delete-profile`: delete one uploaded profile using JSON such as `{ "profile": "demo_formatsize_profile" }`.
 - `POST /packages/cache/prune`: prune private package storage to the configured target.
 - `POST /packages/cache/purge`: purge private package cache areas, with optional flags to also remove reusable virtual environments and imported wheels.
 

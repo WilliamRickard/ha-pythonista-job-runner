@@ -1,3 +1,4 @@
+# Version: 0.6.13-tests-api-contract.1
 """Tests for machine-readable direct API contract."""
 
 from __future__ import annotations
@@ -32,6 +33,11 @@ def test_openapi_contract_has_expected_routes() -> None:
         "/purge",
         "/cancel/{job_id}",
         "/job/{job_id}",
+        "/setup/status.json",
+        "/setup/upload-wheel",
+        "/setup/upload-profile-zip",
+        "/setup/delete-wheel",
+        "/setup/delete-profile",
     }
     assert expected_paths.issubset(set(paths.keys()))
 
@@ -40,12 +46,16 @@ def test_openapi_contract_covers_major_error_cases() -> None:
     contract = _load_contract()
     run_responses = contract["paths"]["/run"]["post"]["responses"]
     purge_responses = contract["paths"]["/purge"]["post"]["responses"]
+    setup_upload_responses = contract["paths"]["/setup/upload-wheel"]["post"]["responses"]
 
     for code in ("400", "401", "411", "413", "415"):
         assert code in run_responses
 
     for code in ("200", "400", "401", "413", "415"):
         assert code in purge_responses
+
+    for code in ("200", "400", "401", "409", "411", "413", "415"):
+        assert code in setup_upload_responses
 
     assert "RunnerToken" in contract["components"]["securitySchemes"]
 
@@ -70,3 +80,19 @@ def test_openapi_contract_includes_client_required_response_shapes() -> None:
 
     tail_schema = contract["components"]["schemas"]["TailResponse"]
     assert set(tail_schema.get("required", [])) >= {"status", "tail"}
+
+
+def test_openapi_contract_includes_setup_status_and_mutation_shapes() -> None:
+    contract = _load_contract()
+
+    status_200 = contract["paths"]["/setup/status.json"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert status_200 == {"$ref": "#/components/schemas/SetupStatusResponse"}
+
+    mutation_200 = contract["paths"]["/setup/upload-profile-zip"]["post"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert mutation_200 == {"$ref": "#/components/schemas/SetupMutationResponse"}
+
+    status_schema = contract["components"]["schemas"]["SetupStatusResponse"]
+    assert set(status_schema.get("required", [])) >= {"ready_for_example_5", "ready_state", "blockers", "next_steps"}
+
+    mutation_schema = contract["components"]["schemas"]["SetupMutationResponse"]
+    assert set(mutation_schema.get("required", [])) >= {"status", "setup_status"}

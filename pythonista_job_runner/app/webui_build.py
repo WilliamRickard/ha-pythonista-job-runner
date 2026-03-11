@@ -1,4 +1,4 @@
-# Version: 0.6.13-webui.3
+# Version: 0.6.13-webui.6
 from __future__ import annotations
 
 """Build the Home Assistant Ingress-safe Web UI template.
@@ -28,7 +28,7 @@ from pathlib import Path
 import re
 
 
-WEBUI_VERSION = "0.6.13-webui.3"
+WEBUI_VERSION = "0.6.13-webui.6"
 
 _RE_JS_VERSION_HEADER = re.compile(r"^\s*(//|/\*)\s*VERSION\s*:", re.IGNORECASE)
 
@@ -144,6 +144,7 @@ WEBUI_HTML_PARTS: tuple[str, ...] = (
     "10_overview.html",
     "30_detail.html",
     "40_advanced.html",
+    "42_setup.html",
     "45_settings.html",
     "50_help.html",
     "55_overlays.html",

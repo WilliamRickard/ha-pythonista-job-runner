@@ -1,4 +1,4 @@
-# Version: 0.6.13-package-store.4
+# Version: 0.6.13-package-store.6
 """Persistent package storage helpers, wheelhouse sync, and status scans."""
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import tempfile
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -516,6 +517,177 @@ def sync_public_wheel_uploads(paths: PackageStorePaths, *, max_import_bytes: int
 
     result["status"] = "ok"
     result["summary"] = refresh_package_index(paths)
+    return result
+
+
+def upload_public_wheel(
+    paths: PackageStorePaths,
+    upload_path: Path,
+    *,
+    filename: str,
+    overwrite: bool = False,
+    max_upload_bytes: int | None = None,
+    sync_after_upload: bool = True,
+) -> dict[str, Any]:
+    """Validate and store one uploaded wheel in the public wheel area."""
+    requested_name = str(filename or "").strip()
+    safe_name = Path(requested_name).name
+    result: dict[str, Any] = {
+        "status": "error",
+        "filename": safe_name,
+        "requested_filename": requested_name,
+        "overwrite": bool(overwrite),
+        "dest_dir": str(paths.public_wheel_uploads_dir),
+    }
+    if not requested_name or requested_name != safe_name or not is_valid_wheel_filename(safe_name):
+        result["error"] = "invalid_wheel_filename"
+        return result
+
+    try:
+        if not upload_path.exists() or not upload_path.is_file() or upload_path.is_symlink():
+            result["error"] = "upload_missing"
+            return result
+    except OSError:
+        result["error"] = "upload_missing"
+        return result
+
+    try:
+        size_bytes = int(upload_path.stat().st_size)
+    except OSError:
+        result["error"] = "upload_missing"
+        return result
+    result["size_bytes"] = size_bytes
+    if size_bytes <= 0:
+        result["error"] = "empty_upload"
+        return result
+    if max_upload_bytes is not None and size_bytes > int(max_upload_bytes):
+        result["error"] = "upload_too_large"
+        result["max_upload_bytes"] = int(max_upload_bytes)
+        return result
+
+    archive_ok, archive_reason = _validate_wheel_archive(upload_path)
+    if not archive_ok:
+        result["error"] = archive_reason
+        return result
+
+    dest_dir = paths.public_wheel_uploads_dir
+    try:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        result["error"] = "wheel_upload_dir_unavailable"
+        return result
+    if not dest_dir.exists() or not dest_dir.is_dir() or dest_dir.is_symlink():
+        result["error"] = "wheel_upload_dir_unavailable"
+        return result
+
+    dest_path = dest_dir / safe_name
+    result["dest_path"] = str(dest_path)
+    existed_before = dest_path.exists()
+    if existed_before:
+        try:
+            if dest_path.is_symlink() or not dest_path.is_file():
+                result["error"] = "existing_path_invalid"
+                return result
+        except OSError:
+            result["error"] = "existing_path_invalid"
+            return result
+        if not overwrite:
+            result["error"] = "already_exists"
+            return result
+
+    fd, temp_name = tempfile.mkstemp(prefix=f'.{safe_name}.', suffix='.tmp', dir=str(dest_dir))
+    temp_path = Path(temp_name)
+    try:
+        with upload_path.open('rb') as src, temp_path.open('wb') as dst:
+            shutil.copyfileobj(src, dst, length=1024 * 1024)
+        temp_path.replace(dest_path)
+    except Exception:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        raise
+    finally:
+        try:
+            import os
+            os.close(fd)
+        except Exception:
+            pass
+
+    sha256 = _sha256_file(dest_path)
+    action = 'overwritten' if existed_before else 'uploaded'
+    result.update({
+        "status": "ok",
+        "action": action,
+        "sha256": sha256,
+    })
+    if sync_after_upload:
+        result["sync"] = sync_public_wheel_uploads(paths, max_import_bytes=max_upload_bytes)
+    return result
+
+
+def delete_public_wheel(
+    paths: PackageStorePaths,
+    filename: str,
+    *,
+    remove_imported_copy: bool = True,
+) -> dict[str, Any]:
+    """Delete one uploaded public wheel and its imported copy when present."""
+    requested_name = str(filename or "").strip()
+    safe_name = Path(requested_name).name
+    result: dict[str, Any] = {
+        "status": "error",
+        "filename": safe_name,
+        "requested_filename": requested_name,
+        "public_dir": str(paths.public_wheel_uploads_dir),
+        "imported_dir": str(paths.wheelhouse_imported_dir),
+    }
+    if not requested_name or requested_name != safe_name or not is_valid_wheel_filename(safe_name):
+        result["error"] = "invalid_wheel_filename"
+        return result
+
+    public_path = paths.public_wheel_uploads_dir / safe_name
+    try:
+        exists = public_path.exists()
+    except OSError:
+        exists = False
+    if not exists:
+        result["error"] = "not_found"
+        return result
+    try:
+        if public_path.is_symlink() or not public_path.is_file():
+            result["error"] = "existing_path_invalid"
+            return result
+    except OSError:
+        result["error"] = "existing_path_invalid"
+        return result
+
+    imported_path = paths.wheelhouse_imported_dir / safe_name
+    removed_imported = False
+    try:
+        public_path.unlink()
+    except FileNotFoundError:
+        result["error"] = "not_found"
+        return result
+    except Exception:
+        result["error"] = "delete_failed"
+        return result
+
+    if remove_imported_copy:
+        try:
+            if imported_path.exists() and imported_path.is_file() and not imported_path.is_symlink():
+                imported_path.unlink()
+                removed_imported = True
+        except Exception:
+            pass
+
+    result.update({
+        "status": "ok",
+        "action": "deleted",
+        "deleted_public": True,
+        "deleted_imported": bool(removed_imported),
+        "summary": refresh_package_index(paths),
+    })
     return result
 
 
