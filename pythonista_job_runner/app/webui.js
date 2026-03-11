@@ -1,4 +1,4 @@
-/* VERSION: 0.6.13-webui.6 */
+/* VERSION: 0.6.13-webui.7 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -2883,6 +2883,7 @@ Client IP: ${ip || ""}`;
     if (els.setup_clear_profile_zip_file) els.setup_clear_profile_zip_file.disabled = busy || !selectedSetupFile("profile");
     if (els.setup_build_target_profile) els.setup_build_target_profile.disabled = busy || !cached.build_available;
     if (els.setup_rebuild_target_profile) els.setup_rebuild_target_profile.disabled = busy || !cached.rebuild_available;
+    if (els.setup_apply_persistent_mode) els.setup_apply_persistent_mode.disabled = busy || !cached.persistent_packages_apply_available;
     if (els.setup_copy_config_snippet) els.setup_copy_config_snippet.disabled = busy || !String(cached.config_snippet || "").trim();
     if (busy && els.setup_status_banner && bannerText) {
       els.setup_status_banner.classList.remove("ok", "warn", "err");
@@ -2899,6 +2900,28 @@ Client IP: ${ip || ""}`;
       return;
     }
     refreshSetupStatus().catch((_err) => {});
+  }
+
+  async function applySetupPersistentMode() {
+    const target = String((setupStatusCache && setupStatusCache.target_profile) || "demo_formatsize_profile").trim() || "demo_formatsize_profile";
+    setSetupBusy(true, "Saving the recommended persistent-package settings…");
+    try {
+      const payload = await setupRequest("setup/apply-persistent-mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_profile: target }),
+      });
+      applySetupStatusPayload(payload || {});
+      const restartRequired = !!(payload && payload.setup_status && payload.setup_status.restart_required);
+      toast("ok", "Persistent packages saved", restartRequired ? "Restart the add-on, then refresh Setup." : "Recommended package settings saved.");
+    } catch (err) {
+      const payload = err && err.payload && typeof err.payload === "object" ? err.payload : null;
+      if (payload) applySetupStatusPayload(payload);
+      const msg = payload && payload.error ? String(payload.error) : String(err && err.message ? err.message : err);
+      toast("err", "Could not save persistent-package settings", msg);
+    } finally {
+      setSetupBusy(false);
+    }
   }
 
   async function buildSetupTargetProfile(rebuild) {
@@ -3063,6 +3086,10 @@ Client IP: ${ip || ""}`;
     const restartRequired = !!data.restart_required;
     const restartGuidance = String(data.restart_guidance || "");
     const configSnippet = String(data.config_snippet || "");
+    const persistentRunning = !!data.persistent_packages_running;
+    const persistentSaved = !!data.persistent_packages_saved;
+    const persistentApplyAvailable = !!data.persistent_packages_apply_available;
+    const persistentModeSummary = String(data.persistent_mode_summary || "");
     const settingsSummary = [
       `Mode: ${String(data.dependency_mode || "per_job")}`,
       `Requirements: ${setupBadgeText(!!data.install_requirements_enabled)}`,
@@ -3075,10 +3102,10 @@ Client IP: ${ip || ""}`;
       els.setup_status_banner.classList.remove("ok", "warn", "err");
       if (readyState === "ready") {
         els.setup_status_banner.classList.add("ok");
-        els.setup_status_banner.textContent = "Example 5 is ready. The target wheel, profile, and add-on settings are aligned.";
+        els.setup_status_banner.textContent = "Persistent packages are ready. The target wheel, profile, and running add-on settings are aligned.";
       } else if (readyState === "build_recommended") {
         els.setup_status_banner.classList.add("warn");
-        els.setup_status_banner.textContent = `Target files and settings are aligned. Build ${targetProfile} now for a cleaner example 5 run, or let example 5 build it on first use.`;
+        els.setup_status_banner.textContent = `The persistent-package settings are in place. Build ${targetProfile} now for a cleaner first run, or let the first run build it on demand.`;
       } else if (readyState === "build_failed") {
         els.setup_status_banner.classList.add("err");
         els.setup_status_banner.textContent = targetProfileLastError
@@ -3086,7 +3113,7 @@ Client IP: ${ip || ""}`;
           : `The last ${targetProfile} build failed. Rebuild it and inspect the diagnostics bundle if needed.`;
       } else if (readyState === "restart_required") {
         els.setup_status_banner.classList.add("warn");
-        els.setup_status_banner.textContent = restartGuidance || "Save the add-on config, restart the add-on, then refresh Setup.";
+        els.setup_status_banner.textContent = restartGuidance || "Persistent package defaults are saved. Restart the add-on, then refresh Setup.";
       } else if (blockers.length) {
         els.setup_status_banner.classList.add("warn");
         els.setup_status_banner.textContent = blockers[0];
@@ -3096,6 +3123,9 @@ Client IP: ${ip || ""}`;
     }
     if (els.setup_target_summary) {
       els.setup_target_summary.textContent = `Target profile: ${targetProfile} • Target wheel: ${targetWheel}`;
+    }
+    if (els.setup_persistent_mode_summary) {
+      els.setup_persistent_mode_summary.textContent = persistentModeSummary || "Refresh Setup to check the persistent-package toggle state.";
     }
     if (els.setup_settings_summary) {
       els.setup_settings_summary.textContent = settingsSummary;
@@ -3111,13 +3141,13 @@ Client IP: ${ip || ""}`;
     }
     if (els.setup_readiness_summary) {
       if (readyState === "ready") {
-        els.setup_readiness_summary.textContent = "Ready to run example 5.";
+        els.setup_readiness_summary.textContent = "Ready to run with persistent packages.";
       } else if (readyState === "build_recommended") {
         els.setup_readiness_summary.textContent = `Build ${targetProfile} now for a cleaner first run.`;
       } else if (readyState === "build_failed") {
         els.setup_readiness_summary.textContent = `${targetProfile} needs a rebuild before you rely on it.`;
       } else if (readyState === "restart_required") {
-        els.setup_readiness_summary.textContent = "Restart required after the add-on config change.";
+        els.setup_readiness_summary.textContent = "Restart required before the running add-on can use the saved persistent-package settings.";
       } else if (blockers.length) {
         els.setup_readiness_summary.textContent = `${blockers.length} blocker${blockers.length === 1 ? "" : "s"} found.`;
       } else if (warnings.length) {
@@ -3154,6 +3184,12 @@ Client IP: ${ip || ""}`;
     if (els.setup_rebuild_target_profile) {
       els.setup_rebuild_target_profile.disabled = !rebuildAvailable;
     }
+    if (els.setup_apply_persistent_mode) {
+      els.setup_apply_persistent_mode.disabled = !persistentApplyAvailable;
+      els.setup_apply_persistent_mode.textContent = persistentRunning
+        ? "Persistent packages enabled"
+        : (persistentSaved ? "Defaults saved" : "Enable persistent packages");
+    }
     if (els.setup_copy_config_snippet) {
       els.setup_copy_config_snippet.disabled = !configSnippet;
     }
@@ -3163,8 +3199,10 @@ Client IP: ${ip || ""}`;
       createSetupRow("Dependency handling mode", String(data.dependency_mode || "per_job"), null),
       createSetupRow("Package profiles", setupBadgeText(!!data.package_profiles_enabled), null),
       createSetupRow("Default package profile", String(data.default_profile || "Not set"), !!data.default_profile_exists ? "Found" : "Missing"),
+      createSetupRow("Persistent packages preset", persistentRunning ? "Running" : (persistentSaved ? "Saved, restart required" : "Not saved"), null),
       createSetupRow("Public wheelhouse", setupBadgeText(!!data.package_allow_public_wheelhouse), null),
       createSetupRow("Offline prefer local", setupBadgeText(!!data.package_offline_prefer_local), null),
+      createSetupRow("Reusable virtual environments", setupBadgeText(!!data.venv_reuse_enabled), null),
     ], "No setup settings available.");
 
     const wheelRows = [
@@ -3385,6 +3423,7 @@ function toggleAuto() {
         if (action === "open-setup") openSetup();
         if (action === "open-advanced") openAdvanced();
         if (action === "refresh-setup-status") await refreshSetupStatus();
+        if (action === "setup-apply-persistent-mode") await applySetupPersistentMode();
         if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
         if (action === "setup-clear-wheel-file") clearSetupSelectedFile("wheel");
         if (action === "setup-upload-profile-zip") await uploadSetupBinary("profile", false);
@@ -3921,6 +3960,8 @@ function toggleAuto() {
     els.setup_close = document.getElementById("setup_close");
     els.setup_refresh = document.getElementById("setup_refresh");
     els.setup_status_banner = document.getElementById("setup_status_banner");
+    els.setup_persistent_mode_summary = document.getElementById("setup_persistent_mode_summary");
+    els.setup_apply_persistent_mode = document.getElementById("setup_apply_persistent_mode");
     els.setup_target_summary = document.getElementById("setup_target_summary");
     els.setup_settings_summary = document.getElementById("setup_settings_summary");
     els.setup_settings_list = document.getElementById("setup_settings_list");

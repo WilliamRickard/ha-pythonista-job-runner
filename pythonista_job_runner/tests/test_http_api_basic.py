@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-http-api-basic.5
+# Version: 0.6.13-tests-http-api-basic.6
 """Basic HTTP API behaviour tests.
 
 These tests focus on auth and request/response codes. They avoid running real
@@ -654,3 +654,64 @@ def test_setup_delete_endpoints_require_token_and_return_payload(temp_data_dir, 
         ("wheel", "demo_pkg-0.1.0-py3-none-any.whl"),
         ("profile", "demo_formatsize_profile"),
     ]
+
+
+def test_setup_apply_persistent_mode_updates_saved_options(temp_data_dir, monkeypatch):
+    temp_data_dir.joinpath("options.json").write_text(json.dumps({
+        "python": {
+            "install_requirements": False,
+            "dependency_mode": "per_job",
+            "package_profiles_enabled": True,
+            "package_profile_default": "",
+            "package_allow_public_wheelhouse": True,
+            "package_offline_prefer_local": True,
+            "venv_reuse_enabled": True,
+        }
+    }), encoding="utf-8")
+
+    runner = runner_core.Runner({
+        "token": "t",
+        "bind_host": "127.0.0.1",
+        "bind_port": 0,
+        "install_requirements": False,
+        "dependency_mode": "per_job",
+        "package_profiles_enabled": True,
+        "package_profile_default": "",
+    })
+
+    def _fake_supervisor(path, payload=None, timeout_seconds=15):
+        _ = timeout_seconds
+        if path == "/addons/self/options/validate":
+            return {"ok": True, "status_code": 200, "payload": {"valid": True}}
+        if path == "/addons/self/options":
+            candidate = payload.get("options") if isinstance(payload, dict) else {}
+            runner.options_path.write_text(json.dumps(candidate), encoding="utf-8")
+            return {"ok": True, "status_code": 200, "payload": {"result": "ok"}}
+        raise AssertionError(path)
+
+    monkeypatch.setattr(runner, "_supervisor_api_post", _fake_supervisor)
+
+    httpd, host, port = _start_server(runner)
+    try:
+        body = json.dumps({"target_profile": "demo_formatsize_profile"}).encode("utf-8")
+        status, _hdrs, data = _request(
+            "POST",
+            host,
+            port,
+            "/setup/apply-persistent-mode",
+            body,
+            {
+                "X-Runner-Token": "t",
+                "Content-Type": "application/json",
+                "Content-Length": str(len(body)),
+            },
+        )
+        assert status == 200
+        payload = json.loads(data.decode("utf-8"))
+        assert payload["status"] == "ok"
+        assert payload["setup_status"]["persistent_packages_saved"] is True
+        assert payload["setup_status"]["persistent_packages_running"] is False
+        assert payload["setup_status"]["restart_required"] is True
+    finally:
+        httpd.shutdown()
+        httpd.server_close()

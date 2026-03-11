@@ -1,4 +1,4 @@
-# Version: 0.6.13-core.11
+# Version: 0.6.13-core.12
 from __future__ import annotations
 
 import ipaddress
@@ -18,6 +18,7 @@ except ImportError:
     pwd = None  # type: ignore[assignment]
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from runner import deps as _deps
@@ -56,7 +57,8 @@ OPTIONS_PATH = DATA_DIR / "options.json"
 JOBS_DIR = DATA_DIR / "jobs"
 
 INGRESS_PROXY_IP = "172.30.32.2"
-SUPERVISOR_CORE_API = "http://supervisor/core/api"
+SUPERVISOR_API = "http://supervisor"
+SUPERVISOR_CORE_API = f"{SUPERVISOR_API}/core/api"
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN", "")
 
 
@@ -69,6 +71,40 @@ def read_options() -> Dict[str, Any]:
     except Exception:
         return {}
     return _normalise_options(data) if isinstance(data, dict) else {}
+
+
+def read_raw_options() -> Dict[str, Any]:
+    """Read raw add-on options without flattening nested groups."""
+    if not OPTIONS_PATH.exists():
+        return {}
+    try:
+        data = json.loads(OPTIONS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _uses_grouped_options(data: Dict[str, Any]) -> bool:
+    """Return whether raw options use grouped add-on sections."""
+    if not isinstance(data, dict):
+        return False
+    for key in ("security", "runner", "jobs", "resources", "python", "notifications", "artefacts", "housekeeping", "telemetry"):
+        if isinstance(data.get(key), dict):
+            return True
+    return False
+
+
+def _merge_python_options(raw_options: Dict[str, Any], python_updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Return raw add-on options with python settings updated safely."""
+    base = json.loads(json.dumps(raw_options if isinstance(raw_options, dict) else {}))
+    if _uses_grouped_options(base) or not base:
+        group = dict(base.get("python") or {})
+        group.update(dict(python_updates))
+        base["python"] = group
+        return base
+    for key, value in python_updates.items():
+        base[key] = value
+    return base
 
 
 
@@ -757,6 +793,105 @@ class Runner:
                     "rebuild": bool(rebuild),
                     "status": str(result.get("status") or "unknown"),
                     "error": result.get("error") or result.get("last_error"),
+                },
+                persist_status=False,
+            )
+        except Exception:
+            pass
+        return result
+
+    def _supervisor_api_post(self, path: str, payload: Dict[str, Any] | None = None, *, timeout_seconds: int = 15) -> Dict[str, Any]:
+        """POST one JSON payload to the Home Assistant Supervisor API."""
+        if not SUPERVISOR_TOKEN:
+            return {"ok": False, "status_code": 503, "error": "supervisor_token_missing", "payload": {}}
+        url = f"{SUPERVISOR_API}{path}"
+        data = json.dumps(payload if payload is not None else {}).encode("utf-8")
+        req = Request(
+            url=url,
+            data=data,
+            headers={
+                "Authorization": f"Bearer {SUPERVISOR_TOKEN}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(req, timeout=timeout_seconds) as resp:  # noqa: S310
+                body = resp.read()
+                parsed: Dict[str, Any]
+                try:
+                    parsed = json.loads(body.decode("utf-8", errors="replace")) if body else {}
+                except Exception:
+                    parsed = {}
+                return {"ok": True, "status_code": int(getattr(resp, "status", 200) or 200), "payload": parsed}
+        except HTTPError as exc:
+            body = exc.read()
+            try:
+                parsed = json.loads(body.decode("utf-8", errors="replace")) if body else {}
+            except Exception:
+                parsed = {}
+            error = str(parsed.get("message") or parsed.get("error") or exc.reason or exc)
+            return {"ok": False, "status_code": int(getattr(exc, "code", 500) or 500), "error": error, "payload": parsed}
+        except Exception as exc:
+            return {"ok": False, "status_code": 503, "error": str(exc), "payload": {}}
+
+    def apply_persistent_package_mode(self, target_profile: str | None = None, *, actor: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        """Save the recommended persistent-package settings through Supervisor."""
+        safe_target = str(target_profile or self.package_profile_default or _package_profiles.DEFAULT_SETUP_TARGET_PROFILE).strip()
+        if not safe_target:
+            safe_target = _package_profiles.DEFAULT_SETUP_TARGET_PROFILE
+        raw_options = read_raw_options()
+        python_updates = {
+            "install_requirements": True,
+            "dependency_mode": "profile",
+            "package_profiles_enabled": True,
+            "package_profile_default": safe_target,
+            "package_allow_public_wheelhouse": True,
+            "package_public_wheelhouse_subdir": str(getattr(self, "package_public_wheelhouse_subdir", "wheel_uploads") or "wheel_uploads"),
+            "package_offline_prefer_local": True,
+            "venv_reuse_enabled": True,
+        }
+        candidate_options = _merge_python_options(raw_options, python_updates)
+        validate = self._supervisor_api_post("/addons/self/options/validate", candidate_options)
+        validate_payload = validate.get("payload") if isinstance(validate.get("payload"), dict) else {}
+        if not validate.get("ok"):
+            return {
+                "status": "error",
+                "error": str(validate.get("error") or "supervisor_validate_failed"),
+                "target_profile": safe_target,
+                "setup_status": self.package_setup_status(),
+            }
+        if validate_payload and validate_payload.get("valid") is False:
+            return {
+                "status": "error",
+                "error": str(validate_payload.get("message") or "options_invalid"),
+                "target_profile": safe_target,
+                "setup_status": self.package_setup_status(),
+            }
+        update = self._supervisor_api_post("/addons/self/options", {"options": candidate_options})
+        if not update.get("ok"):
+            return {
+                "status": "error",
+                "error": str(update.get("error") or "supervisor_update_failed"),
+                "target_profile": safe_target,
+                "setup_status": self.package_setup_status(),
+            }
+        result = {
+            "status": "ok",
+            "target_profile": safe_target,
+            "changed_keys": sorted(python_updates.keys()),
+            "restart_required": True,
+            "setup_status": self.package_setup_status(),
+        }
+        safe_actor = actor or {"client_ip": "", "via_ingress": False, "user_id": None, "user_name": None, "display_name": None, "ingress_path": None}
+        try:
+            self.record_audit_event(
+                "setup_persistent_mode_apply",
+                safe_actor,
+                details={
+                    "target_profile": safe_target,
+                    "changed_keys": list(result["changed_keys"]),
+                    "status": "ok",
                 },
                 persist_status=False,
             )

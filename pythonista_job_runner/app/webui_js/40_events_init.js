@@ -41,6 +41,7 @@ function toggleAuto() {
         if (action === "open-setup") openSetup();
         if (action === "open-advanced") openAdvanced();
         if (action === "refresh-setup-status") await refreshSetupStatus();
+        if (action === "setup-apply-persistent-mode") await applySetupPersistentMode();
         if (action === "setup-upload-wheel") await uploadSetupBinary("wheel", false);
         if (action === "setup-clear-wheel-file") clearSetupSelectedFile("wheel");
         if (action === "setup-upload-profile-zip") await uploadSetupBinary("profile", false);
@@ -577,6 +578,8 @@ function toggleAuto() {
     els.setup_close = document.getElementById("setup_close");
     els.setup_refresh = document.getElementById("setup_refresh");
     els.setup_status_banner = document.getElementById("setup_status_banner");
+    els.setup_persistent_mode_summary = document.getElementById("setup_persistent_mode_summary");
+    els.setup_apply_persistent_mode = document.getElementById("setup_apply_persistent_mode");
     els.setup_target_summary = document.getElementById("setup_target_summary");
     els.setup_settings_summary = document.getElementById("setup_settings_summary");
     els.setup_settings_list = document.getElementById("setup_settings_list");
