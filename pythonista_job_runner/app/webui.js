@@ -1,4 +1,4 @@
-/* VERSION: 0.6.15-webui.1 */
+/* VERSION: 0.6.16-webui.1 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -3462,35 +3462,35 @@ function toggleAuto() {
   function bindHeaderMoreDirectActions() {
     if (!els.header_more_toggle || !els.header_more_panel) return;
 
-    const onToggleActivate = (ev) => {
-      if (ev.type === "touchend" || ev.type === "pointerup") {
-        lockHeaderMoreSyntheticClick(els.header_more_toggle);
-      }
-      ev.preventDefault();
-      ev.stopPropagation();
-      toggleHeaderMoreMenu();
-    };
+    const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";
+    const lowLevelListenerOptions = lowLevelEvent === "touchend" ? { passive: false } : false;
 
-    els.header_more_toggle.addEventListener("click", onToggleActivate);
-    els.header_more_toggle.addEventListener("pointerup", onToggleActivate);
-    els.header_more_toggle.addEventListener("touchend", onToggleActivate, { passive: false });
-
-    els.header_more_panel.querySelectorAll("button[data-action]").forEach((btn) => {
-      const onActionActivate = async (ev) => {
-        if (ev.type === "touchend" || ev.type === "pointerup") {
-          lockHeaderMoreSyntheticClick(btn);
+    const bindHeaderMoreActivator = (target, handler) => {
+      const onActivate = async (ev) => {
+        if (consumeHeaderMoreSyntheticClick(ev)) return;
+        if (ev.type === lowLevelEvent) {
+          lockHeaderMoreSyntheticClick(target);
         }
         ev.preventDefault();
         ev.stopPropagation();
+        await handler(ev);
+      };
+      target.addEventListener("click", onActivate);
+      target.addEventListener(lowLevelEvent, onActivate, lowLevelListenerOptions);
+    };
+
+    bindHeaderMoreActivator(els.header_more_toggle, async () => {
+      toggleHeaderMoreMenu();
+    });
+
+    els.header_more_panel.querySelectorAll("button[data-action]").forEach((btn) => {
+      bindHeaderMoreActivator(btn, async () => {
         try {
           await runHeaderMoreAction(btn.getAttribute("data-action") || "");
         } catch (e) {
           toast("err", "Action failed", e && e.message ? e.message : String(e));
         }
-      };
-      btn.addEventListener("click", onActionActivate);
-      btn.addEventListener("pointerup", onActionActivate);
-      btn.addEventListener("touchend", onActionActivate, { passive: false });
+      });
     });
   }
 

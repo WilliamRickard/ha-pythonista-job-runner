@@ -1,4 +1,4 @@
-# Version: 0.6.15-tests-webui-js-regressions.1
+# Version: 0.6.16-tests-webui-js-regressions.1
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -277,11 +277,27 @@ def test_header_more_menu_uses_plain_button_panel_and_direct_handlers() -> None:
     assert 'function runHeaderMoreAction(action)' in init
     assert 'consumeHeaderMoreSyntheticClick(ev)' in init
     assert 'headerMoreClickLockUntil' in init
-    assert 'pointerup' in init
-    assert 'touchend' in init
+    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in init
+    assert 'target.addEventListener("click", onActivate);' in init
+    assert 'target.addEventListener(lowLevelEvent, onActivate, lowLevelListenerOptions);' in init
     assert '.header-more-wrap{' in layout
     assert 'touch-action:manipulation;' in layout
     assert 'function bindHeaderMoreDirectActions()' in built
+    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in built
+
+
+def test_header_more_menu_ignores_synthetic_click_after_touch_or_pointer_activation() -> None:
+    """Header-menu activations should not toggle twice on touch devices."""
+
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+
+    assert 'if (consumeHeaderMoreSyntheticClick(ev)) return;' in init
+    assert 'lockHeaderMoreSyntheticClick(target);' in init
+    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in init
+    assert 'if (consumeHeaderMoreSyntheticClick(ev)) return;' in built
+    assert 'lockHeaderMoreSyntheticClick(target);' in built
+    assert 'const lowLevelEvent = window.PointerEvent ? "pointerup" : "touchend";' in built
 
 
 def test_header_more_menu_respects_hidden_attribute_in_source_assets() -> None:
