@@ -1,6 +1,6 @@
-# Version: 0.6.13-config.2
+# Version: 0.6.14-config.1
 name: "Pythonista Job Runner"
-version: "0.6.13"
+version: "0.6.14"
 slug: "pythonista_job_runner"
 description: >-
   Run Python jobs sent from Pythonista and return results as a zip.

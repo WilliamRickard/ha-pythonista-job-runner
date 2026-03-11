@@ -1,4 +1,4 @@
-/* VERSION: 0.6.13-webui.8 */
+/* VERSION: 0.6.14-webui.1 */
 /* eslint-disable no-alert */
 (() => {
   "use strict";
@@ -2367,8 +2367,7 @@ function closeAbout() {
       ["Package wheelhouse hit", (pkg.wheelhouse_hit === true) ? "yes" : ((pkg.wheelhouse_hit === false && pkg.enabled) ? "no" : "")],
       ["Package install source", pkg.install_source || ""],
       ["Package local only", pkg.local_only_attempted ? (pkg.local_only_status || "attempted") : ""],
-      ["Package find-links", (pkg.find_links_dirs && pkg.find_links_dirs.length) ? pkg.find_links_dirs.join("
-") : ""],
+      ["Package find-links", (pkg.find_links_dirs && pkg.find_links_dirs.length) ? pkg.find_links_dirs.join("\n") : ""],
       ["Wheelhouse files", (pkg.wheelhouse_total_files === null || pkg.wheelhouse_total_files === undefined) ? "" : String(pkg.wheelhouse_total_files)],
       ["Wheelhouse imported", (pkg.wheelhouse_imported_files === null || pkg.wheelhouse_imported_files === undefined) ? "" : String(pkg.wheelhouse_imported_files)],
       ["Public wheels sync", pkg.public_wheel_sync_status || ""],

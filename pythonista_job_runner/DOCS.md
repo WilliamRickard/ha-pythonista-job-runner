@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.9 -->
+<!-- Version: 0.6.14-docs.1 -->
 # Pythonista Job Runner
 
 Pythonista Job Runner is a Home Assistant add-on that accepts a job zip, extracts it into an isolated working directory, runs `run.py`, streams logs while it runs, and returns a result zip when it finishes.

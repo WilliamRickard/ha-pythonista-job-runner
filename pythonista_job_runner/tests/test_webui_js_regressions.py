@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-webui-js-regressions.8
+# Version: 0.6.14-tests-webui-js-regressions.1
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -8,6 +8,8 @@ sources to reduce the chance of reintroducing subtle UI bugs.
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
+import subprocess
 
 
 def _read(path: Path) -> str:
@@ -240,6 +242,26 @@ def test_setup_ui_and_actions_exist() -> None:
     assert 'setup-delete-profile' in init
     assert 'function openSetup()' in render
 
+
+
+
+def test_built_webui_javascript_parses_cleanly() -> None:
+    """The bundled Web UI JavaScript should parse without syntax errors."""
+
+    built_path = Path(__file__).resolve().parent.parent / "app" / "webui.js"
+    built = _read(built_path)
+
+    assert 'pkg.find_links_dirs.join("\\n")' in built
+
+    node = shutil.which("node")
+    if node:
+        proc = subprocess.run(
+            [node, "--check", str(built_path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
 
 def test_header_more_menu_uses_plain_button_panel_and_direct_handlers() -> None:
     shell = _read(Path(__file__).resolve().parent.parent / "app" / "webui_html" / "00_shell.html")

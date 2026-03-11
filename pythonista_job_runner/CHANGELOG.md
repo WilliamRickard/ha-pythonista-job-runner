@@ -1,4 +1,4 @@
-<!-- Version: 0.6.13-docs.9 -->
+<!-- Version: 0.6.14-docs.1 -->
 # Changelog
 
 ## Unreleased
@@ -11,6 +11,9 @@
 
 
 ### Web UI and add-on usability
+
+- Fix a Web UI JavaScript syntax error in the job detail package metadata renderer that stopped the entire Ingress UI from responding after the script failed to parse.
+- Add a regression check that syntax-checks the bundled `webui.js` file and verifies the `Package find-links` newline join is emitted correctly.
 
 - Add a guided Setup flow in the Web UI for profile-mode package examples, including readiness checks, wheel uploads, profile archive uploads, delete and replace actions, build and rebuild controls, restart guidance, and a suggested config snippet.
 - Document the new Setup workflow in the repository README, add-on guide, package examples, and release-readiness checklist.
