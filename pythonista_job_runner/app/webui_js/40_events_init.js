@@ -14,6 +14,17 @@ function toggleAuto() {
     if (sourceBtn && typeof sourceBtn.focus === "function") sourceBtn.focus();
   }
 
+  function bindHeaderMoreTouchActions() {
+    const buttons = Array.from(document.querySelectorAll(".header-more-panel button[data-action]"));
+    for (const btn of buttons) {
+      btn.addEventListener("touchend", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        btn.click();
+      }, { passive: false });
+    }
+  }
+
   function bindEvents() {
     document.addEventListener("click", async (ev) => {
       const t = ev.target;
@@ -117,6 +128,8 @@ function toggleAuto() {
         toast("err", "Action failed", e && e.message ? e.message : String(e));
       }
     });
+
+    bindHeaderMoreTouchActions();
 
     if (els.about_overlay) {
       els.about_overlay.addEventListener("click", (ev) => {

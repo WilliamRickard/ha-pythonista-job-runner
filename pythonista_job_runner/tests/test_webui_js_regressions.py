@@ -1,4 +1,4 @@
-# Version: 0.6.13-tests-webui-js-regressions.7
+# Version: 0.6.13-tests-webui-js-regressions.8
 """Regression tests for key Web UI JavaScript safety fixes.
 
 These tests deliberately check for small, behaviour-critical patterns in the JS
@@ -206,6 +206,25 @@ def test_package_profiles_ui_and_actions_exist() -> None:
     assert 'refresh-package-profiles' in init
     assert 'Package profile' in detail
     assert 'Package profile bundle' in detail
+
+
+def test_header_more_menu_buttons_have_touch_fallback() -> None:
+    """Header more-menu actions should work on touch devices such as iPhone Ingress."""
+
+    init = _read(Path(__file__).resolve().parent.parent / "app" / "webui_js" / "40_events_init.js")
+    built = _read(Path(__file__).resolve().parent.parent / "app" / "webui.js")
+
+    assert 'function bindHeaderMoreTouchActions()' in init
+    assert 'document.querySelectorAll(".header-more-panel button[data-action]")' in init
+    assert 'btn.addEventListener("touchend",' in init
+    assert 'btn.click();' in init
+    assert 'bindHeaderMoreTouchActions();' in init
+
+    assert 'function bindHeaderMoreTouchActions()' in built
+    assert 'document.querySelectorAll(".header-more-panel button[data-action]")' in built
+    assert 'btn.addEventListener("touchend",' in built
+    assert 'btn.click();' in built
+    assert 'bindHeaderMoreTouchActions();' in built
 
 
 def test_setup_ui_and_actions_exist() -> None:
