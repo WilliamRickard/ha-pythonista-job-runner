@@ -10,7 +10,7 @@
 
 .tablewrap{
   overflow-x: auto;
-  border-radius: 10px;
+  border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
   background: color-mix(in srgb, var(--panel2) 70%, transparent);
 }
@@ -23,7 +23,7 @@ table{
 }
 
 th, td{
-  padding: 10px 12px;
+  padding: 12px;
   font-size: 13px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
@@ -74,6 +74,7 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-height: 40px;
 }
 
 
@@ -168,7 +169,7 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
 .badge.queued{ border-color: rgba(241,196,15,0.55); }
 .badge.queued::before{ background: var(--warn); }
 
-.job-actions-inline{display:flex;gap:8px;align-items:center;justify-content:flex-start;margin-top:10px;}
+.job-actions-inline{display:flex;gap:8px;align-items:center;justify-content:flex-start;margin-top:10px;flex-wrap:wrap;}
 
 .actionsbar{
   min-height: 44px;
@@ -218,6 +219,10 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
 .empty-body{margin-top:6px;max-width:36ch;line-height:1.45;}
 .empty-actions{margin-top:12px;}
 .empty-action{margin-top:10px;font-size:12px;max-width:44ch;color:var(--muted);}
+
+.table-region{
+  gap: 10px;
+}
 
 .meta-items{margin-top:10px;}
 

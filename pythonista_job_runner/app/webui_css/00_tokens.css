@@ -14,8 +14,8 @@
   --warn: #f1c40f;
   --err: #ff5c5c;
 
-  --radius: 14px;
-  --shadow: 0 6px 24px rgba(0,0,0,0.20);
+  --radius: 16px;
+  --shadow: 0 12px 28px rgba(0,0,0,0.22);
 
   --tableHeaderBg: rgba(20,24,36,0.92);
   --toastBg: rgba(20,24,36,0.96);
@@ -23,11 +23,11 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Typography */
-  --fs-xs: 13px;
-  --fs-sm: 14px;
+  --fs-xs: 12px;
+  --fs-sm: 15px;
   --fs-md: 16px;
-  --fs-lg: 18px;
-  --fs-xl: 22px;
+  --fs-lg: 19px;
+  --fs-xl: 24px;
 }
 
 @media (prefers-color-scheme: light){
@@ -43,7 +43,7 @@
     --chip: #eef2ff;
     --chip2: rgba(29,78,216,0.12);
 
-    --shadow: 0 10px 30px rgba(17,24,39,0.10);
+    --shadow: 0 14px 32px rgba(17,24,39,0.11);
     --tableHeaderBg: rgba(255,255,255,0.92);
     --toastBg: rgba(255,255,255,0.96);
   }

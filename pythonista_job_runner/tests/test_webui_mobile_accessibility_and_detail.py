@@ -102,9 +102,27 @@ def test_bundle_has_collapsible_queue_summary_and_single_primary_empty_action() 
     html = build_webui()
 
     assert 'id="queue_details"' in html
+    assert 'Queue overview' in html
     assert 'id="queue_summary_text"' in html
     assert html.count('data-action="copy-sample-task"') == 2
     assert 'Open quick start' in html
+
+
+def test_header_and_jobs_surfaces_expose_supportive_microcopy_and_clear_primary_action() -> None:
+    html = build_webui()
+
+    assert 'class="brand-support"' in html
+    assert 'Monitor job health, open results quickly' in html
+    assert 'class="jobs-support"' in html
+    assert 'aria-label="Refresh queue and jobs"' in html
+
+
+def test_css_has_reduced_motion_guardrail_and_modern_toolbar_density() -> None:
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert "prefers-reduced-motion: reduce" in css
+    assert ".jobs-toolbar{display:flex;flex-direction:column;gap:10px;" in css
+    assert ".input-group{display:flex;align-items:center;gap:0;" in css
 
 
 def test_phone_layout_guardrails_for_search_clear_and_mobile_cards() -> None:
