@@ -536,7 +536,23 @@ function parseUtcSeconds(v) {
     const cls = state || "queued";
     const span = document.createElement("span");
     span.className = `badge ${cls}`;
-    span.textContent = cls;
+
+    const icon = document.createElement("span");
+    icon.className = "badge-icon";
+    icon.setAttribute("aria-hidden", "true");
+    const iconByState = {
+      running: "↻",
+      queued: "…",
+      done: "✓",
+      error: "!",
+    };
+    icon.textContent = iconByState[cls] || "•";
+
+    const label = document.createElement("span");
+    label.className = "badge-label";
+    label.textContent = cls;
+
+    span.append(icon, label);
     return span;
   }
 
@@ -590,6 +606,7 @@ function parseUtcSeconds(v) {
     storageSet("pjr_filter_since", "");
     applyFilters();
     updateClearButtonVisibility();
+    if (typeof updateFiltersSummaryUi === "function") updateFiltersSummaryUi();
   }
 
   function resetUi() {

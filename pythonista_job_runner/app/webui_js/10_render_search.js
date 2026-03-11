@@ -153,6 +153,7 @@ function escapeHtml(s) {
     currentPage = 1;
     applyFilters();
     updateClearButtonVisibility();
+    if (typeof updateFiltersSummaryUi === "function") updateFiltersSummaryUi();
   }
 
   function renderLog(kind) {

@@ -898,6 +898,11 @@ label{
 .secondary-panel summary{list-style:none;cursor:pointer;padding:8px 12px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:12px;background:color-mix(in srgb, var(--panel2) 40%, transparent);font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:8px;min-height:42px;}
 .filters-sheet-trigger .summary-label{font-weight:700;color:var(--muted);}
 .secondary-panel[open] .secondary-panel-body{margin-top:8px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:12px;padding:10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
+
+.filters-footer-row{display:flex;justify-content:flex-end;padding-top:6px;}
+.filters-footer-row .small{min-height:42px;min-width:88px;}
+.secondary-panel summary:focus-visible{outline:2px solid rgba(138,180,255,0.72);outline-offset:2px;}
+.toggle-group .toggle-item:focus-visible{position:relative;z-index:1;outline:2px solid rgba(138,180,255,0.72);outline-offset:-2px;}
 .jobs-skeleton{display:flex;flex-direction:column;gap:7px;margin-bottom:8px;}
 .jobs-skeleton .sk{display:block;height:10px;background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.17), rgba(255,255,255,0.08));border-radius:999px;animation:sk-pulse 1.3s infinite;}
 .jobs-skeleton .sk-lg{width:85%;height:12px;}
@@ -1220,7 +1225,8 @@ th{
 
 tr:hover{ background: color-mix(in srgb, var(--panel2) 92%, rgba(138,180,255,0.16)); }
 tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
-tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.06) 60%, transparent); }
+tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.12) 72%, transparent); }
+tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230,0.08) 66%, transparent); }
 
 
 .jobcell{
@@ -1260,7 +1266,7 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
   line-height: 1.45;
 }
 .job-row{cursor:pointer;}
-.job-row:focus-visible{outline:2px solid rgba(138,180,255,0.55);outline-offset:-2px;}
+.job-row:focus-visible{outline:2px solid rgba(138,180,255,0.75);outline-offset:-2px;box-shadow:inset 0 0 0 1px rgba(138,180,255,0.35);}
 
 .jobmeta .meta{
   background: transparent;
@@ -1304,8 +1310,9 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
   appearance:none;
   border:0;
   background:transparent;
-  padding:0;
-  margin:0;
+  padding:4px;
+  margin:-4px;
+  min-height:36px;
   cursor:pointer;
 }
 
@@ -1315,32 +1322,39 @@ tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.
 
 .badge{
   display:inline-flex;
-  gap: 6px;
+  gap: 7px;
   align-items: center;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 999px;
   font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
   background: color-mix(in srgb, var(--panel2) 30%, transparent);
   color: var(--muted);
 }
 
-.badge::before{
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--muted);
+.badge-icon{
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 11px;
+  font-weight: 800;
+  line-height:1;
+  background: color-mix(in srgb, var(--line) 40%, transparent);
 }
 
-.badge.running{ border-color: rgba(49,130,206,0.6); }
-.badge.running::before{ background: var(--link); }
-.badge.done{ border-color: rgba(31,139,76,0.6); }
-.badge.done::before{ background: var(--ok); }
-.badge.error{ border-color: rgba(197,48,48,0.6); }
-.badge.error::before{ background: var(--err); }
-.badge.queued{ border-color: rgba(241,196,15,0.55); }
-.badge.queued::before{ background: var(--warn); }
+.badge.running{ border-color: rgba(49,130,206,0.72); color: color-mix(in srgb, var(--text) 84%, var(--link)); background: color-mix(in srgb, rgba(61,140,230,0.2) 48%, transparent); }
+.badge.running .badge-icon{ color: var(--link); background: color-mix(in srgb, rgba(61,140,230,0.28) 68%, transparent); }
+.badge.done{ border-color: rgba(31,139,76,0.72); color: color-mix(in srgb, var(--text) 84%, var(--ok)); background: color-mix(in srgb, rgba(31,139,76,0.22) 50%, transparent); }
+.badge.done .badge-icon{ color: var(--ok); background: color-mix(in srgb, rgba(31,139,76,0.32) 70%, transparent); }
+.badge.error{ border-color: rgba(197,48,48,0.9); color: color-mix(in srgb, var(--text) 86%, var(--err)); background: color-mix(in srgb, rgba(255,92,92,0.24) 56%, transparent); }
+.badge.error .badge-icon{ color: var(--err); background: color-mix(in srgb, rgba(255,92,92,0.34) 72%, transparent); }
+.badge.queued{ border-color: rgba(241,196,15,0.78); color: color-mix(in srgb, var(--text) 82%, var(--warn)); background: color-mix(in srgb, rgba(241,196,15,0.2) 52%, transparent); }
+.badge.queued .badge-icon{ color: var(--warn); background: color-mix(in srgb, rgba(241,196,15,0.28) 70%, transparent); }
 
 .job-actions-inline{display:flex;gap:8px;align-items:center;justify-content:flex-start;margin-top:10px;flex-wrap:wrap;}
 
@@ -2062,6 +2076,18 @@ details[open] summary::after{ transform: rotate(0deg); }
   .pagination-shell .small{flex:0 0 auto;}
 }
 
+
+@media (max-width: 430px){
+  .filters-sheet-trigger[open]{width:100%;}
+  .filters-sheet-trigger[open] .secondary-panel-body{position:fixed;left:8px;right:8px;bottom:8px;z-index:82;max-height:76vh;overflow:auto;padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px));}
+  .filters-sheet-trigger[open] summary{position:relative;z-index:83;}
+  .filters-sheet-trigger .field-hint{display:none;}
+  .filters-field-group{gap:10px;}
+  .filters-field-group .separator{display:none;}
+  .filters-footer-row{position:sticky;bottom:0;background:color-mix(in srgb, var(--panel) 92%, transparent);padding-top:8px;margin-top:4px;}
+  .filter-presets .small{flex:1 1 auto;}
+}
+
   </style>
 </head>
 <body>
@@ -2147,8 +2173,8 @@ details[open] summary::after{ transform: rotate(0deg); }
                     <button type="button" class="small sort-option" data-action="set-sort" data-sort="errors" role="menuitemradio" aria-checked="false">Errors first</button>
                   </div>
                 </details>
-                <details class="secondary-panel filters-sheet-trigger">
-                  <summary><span class="summary-label">Filters</span><span>By user, date, and artifacts</span></summary>
+                <details class="secondary-panel filters-sheet-trigger" id="filters_menu">
+                  <summary><span class="summary-label">Filters</span><span id="filters_summary">User, date, and artifacts</span></summary>
                   <div class="secondary-panel-body filters-sheet-body">
                     <div class="field-shell filters-field-group">
                       <div class="field adv-field combobox-field">
@@ -2172,6 +2198,9 @@ details[open] summary::after{ transform: rotate(0deg); }
                       </div>
                       <div class="separator" role="separator" aria-hidden="true"></div>
                       <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                      <div class="filters-footer-row">
+                        <button type="button" class="small tertiary" data-action="close-filters-panel">Done</button>
+                      </div>
                     </div>
                   </div>
                 </details>
@@ -3408,7 +3437,23 @@ function parseUtcSeconds(v) {
     const cls = state || "queued";
     const span = document.createElement("span");
     span.className = `badge ${cls}`;
-    span.textContent = cls;
+
+    const icon = document.createElement("span");
+    icon.className = "badge-icon";
+    icon.setAttribute("aria-hidden", "true");
+    const iconByState = {
+      running: "↻",
+      queued: "…",
+      done: "✓",
+      error: "!",
+    };
+    icon.textContent = iconByState[cls] || "•";
+
+    const label = document.createElement("span");
+    label.className = "badge-label";
+    label.textContent = cls;
+
+    span.append(icon, label);
     return span;
   }
 
@@ -3462,6 +3507,7 @@ function parseUtcSeconds(v) {
     storageSet("pjr_filter_since", "");
     applyFilters();
     updateClearButtonVisibility();
+    if (typeof updateFiltersSummaryUi === "function") updateFiltersSummaryUi();
   }
 
   function resetUi() {
@@ -3746,6 +3792,7 @@ function escapeHtml(s) {
     currentPage = 1;
     applyFilters();
     updateClearButtonVisibility();
+    if (typeof updateFiltersSummaryUi === "function") updateFiltersSummaryUi();
   }
 
   function renderLog(kind) {
@@ -6267,6 +6314,27 @@ function toggleAuto() {
   }
 
 
+
+  function updateFiltersSummaryUi() {
+    const summary = document.getElementById("filters_summary");
+    if (!summary) return;
+    const parts = [];
+    if (String(filterUser || "").trim()) parts.push(`User: ${String(filterUser).trim()}`);
+    if (String(filterSince || "").trim()) parts.push(`From: ${filterSince}`);
+    if (filterHasResult) parts.push("Has result zip");
+    summary.textContent = parts.length ? parts.join(" · ") : "User, date, and artifacts";
+  }
+
+  function closeJobsFiltersPanel(options) {
+    const returnFocus = !!(options && options.returnFocus);
+    const panel = document.getElementById("filters_menu");
+    if (!panel) return;
+    panel.open = false;
+    if (!returnFocus) return;
+    const summary = panel.querySelector("summary");
+    if (summary && typeof summary.focus === "function") summary.focus();
+  }
+
   function isHeaderMoreElement(el) {
     return !!(el && el.closest && el.closest("#header_more_toggle, #header_more_panel button[data-action], #header_more_panel"));
   }
@@ -6358,6 +6426,7 @@ function toggleAuto() {
           storageSet("pjr_filter_user", "");
           applyFilters();
           updateClearButtonVisibility();
+          updateFiltersSummaryUi();
         }
         if (action === "focus-search" && els.search) els.search.focus();
         if (action === "reset-ui") openConfirm({ title: "Reset UI settings?", body: "Saved UI preferences such as density, sorting, and filters will be cleared.", confirmLabel: "Reset UI", onConfirm: async () => resetUi() });
@@ -6365,6 +6434,7 @@ function toggleAuto() {
         if (action === "set-view") setView(btn.getAttribute("data-view") || "all");
         if (action === "set-sort") setSort(btn.getAttribute("data-sort") || "newest", btn);
         if (action === "set-date-preset") setDatePreset(btn.getAttribute("data-preset") || "clear");
+        if (action === "close-filters-panel") closeJobsFiltersPanel({ returnFocus: true });
         if (action === "page-prev") goToNextPage(-1);
         if (action === "page-next") goToNextPage(1);
         if (action === "purge") await purgeState(btn.getAttribute("data-state") || "");
@@ -6540,6 +6610,11 @@ function toggleAuto() {
 
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
+        const filtersPanel = document.getElementById("filters_menu");
+        if (filtersPanel && filtersPanel.open) {
+          closeJobsFiltersPanel({ returnFocus: true });
+          return;
+        }
         if (els.header_more_panel && !els.header_more_panel.hidden) closeHeaderMoreMenu({ returnFocus: true });
         if (els.command_overlay && !els.command_overlay.hidden) closeCommand();
         if (els.confirm_overlay && !els.confirm_overlay.hidden) closeConfirm();
@@ -6585,6 +6660,7 @@ function toggleAuto() {
         storageSet("pjr_has_result", filterHasResult ? "1" : "0");
         applyFilters();
         updateClearButtonVisibility();
+        updateFiltersSummaryUi();
       });
     }
 
@@ -6595,6 +6671,7 @@ function toggleAuto() {
         storageSet("pjr_filter_user", filterUser);
         applyFilters();
         updateClearButtonVisibility();
+        updateFiltersSummaryUi();
       });
     }
 
@@ -6605,6 +6682,7 @@ function toggleAuto() {
         storageSet("pjr_filter_since", filterSince);
         applyFilters();
         updateClearButtonVisibility();
+        updateFiltersSummaryUi();
       });
     }
     if (els.auto) {
@@ -6984,6 +7062,7 @@ function toggleAuto() {
     const savedSinceFilter = storageGet("pjr_filter_since");
     if (savedSinceFilter !== null) filterSince = savedSinceFilter;
     if (els.filter_since) els.filter_since.value = filterSince;
+    updateFiltersSummaryUi();
 
     const savedDensity = storageGet("pjr_density");
     if (savedDensity) uiDensity = savedDensity === "compact" ? "compact" : "comfortable";
