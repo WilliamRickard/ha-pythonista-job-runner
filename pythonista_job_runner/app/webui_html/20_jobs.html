@@ -2,12 +2,32 @@
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
           <div>
-            <h2>Jobs</h2>
-            <p class="jobs-support">Use search, filters, and states to narrow jobs, then open one for details.</p>
+            <h2 class="jobs-heading">Jobs</h2>
+            <p class="jobs-support">Check state chips first, then use filters only when you need to narrow the queue.</p>
           </div>
         </div>
         <div class="card-body jobs-body">
           <div id="jobs_banner" class="banner" role="status" aria-live="polite" hidden></div>
+
+          <section id="jobs_primary_path" class="primary-path-strip" aria-label="Recommended jobs path">
+            <div class="primary-path-copy">
+              <strong>Primary path</strong>
+              <span>Check triage, then open the most actionable job first.</span>
+            </div>
+            <button type="button" class="small primary" id="jobs_primary_open" data-action="open-primary-job" data-action-role="section-primary" data-risk-level="state-change">Open priority job</button>
+          </section>
+
+          <section id="jobs_triage" class="triage-strip" aria-label="Queue triage" hidden>
+            <div class="triage-copy">
+              <strong id="triage_title">Queue triage</strong>
+              <span id="triage_subtitle">No urgent conditions.</span>
+            </div>
+            <div class="triage-actions" role="group" aria-label="Urgent filters">
+              <button type="button" class="small triage-action" id="triage_errors" data-action="set-view" data-view="error">Errors 0</button>
+              <button type="button" class="small triage-action" id="triage_running" data-action="set-view" data-view="running">Running 0</button>
+              <button type="button" class="small triage-action" id="triage_queued" data-action="set-view" data-view="queued">Queued 0</button>
+            </div>
+          </section>
 
           <div id="jobs_loading" class="loading" role="status" aria-live="polite" hidden>
             <div class="jobs-skeleton" aria-hidden="true">
@@ -39,7 +59,7 @@
               </div>
               </div>
               <div class="jobs-secondary-row">
-                <details class="secondary-panel sort-menu" id="sort_menu">
+                <details class="secondary-panel sort-menu" id="sort_menu" data-action-role="section-secondary">
                   <summary><span class="summary-label">Sort</span><span id="sort_summary">Newest first</span></summary>
                   <div class="secondary-panel-body sort-menu-body" role="menu" aria-label="Sort jobs">
                     <button type="button" class="small sort-option" data-action="set-sort" data-sort="newest" role="menuitemradio" aria-checked="true">Newest first</button>
@@ -48,8 +68,8 @@
                     <button type="button" class="small sort-option" data-action="set-sort" data-sort="errors" role="menuitemradio" aria-checked="false">Errors first</button>
                   </div>
                 </details>
-                <details class="secondary-panel filters-sheet-trigger" id="filters_menu">
-                  <summary><span class="summary-label">Filters</span><span id="filters_summary">User, date, and artifacts</span></summary>
+                <details class="secondary-panel filters-sheet-trigger" id="filters_menu" data-action-role="section-secondary">
+                  <summary><span class="summary-label">Filters</span><span id="filters_summary">Refine list</span></summary>
                   <div class="secondary-panel-body filters-sheet-body">
                     <div class="field-shell filters-field-group">
                       <div class="field adv-field combobox-field">
@@ -72,7 +92,7 @@
                         </div>
                       </div>
                       <div class="separator" role="separator" aria-hidden="true"></div>
-                      <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                      <label class="tog"><input id="filter_has_result" type="checkbox"/> Result zip only</label>
                       <div class="filters-footer-row">
                         <button type="button" class="small tertiary" data-action="close-filters-panel">Done</button>
                       </div>
@@ -108,15 +128,16 @@
             </div>
 
             <div id="empty" class="empty empty-pattern" role="status" aria-live="polite" hidden>
-              <div class="empty-icon" aria-hidden="true">○</div>
+              <div class="empty-icon" id="empty_icon" aria-hidden="true">○</div>
               <div class="empty-content">
-                <div id="empty_title" class="empty-title">No jobs yet</div>
-                <div id="empty_body" class="empty-body">Copy the sample task, run it from Pythonista, then return here to open the first job.</div>
+                <div id="empty_title" class="empty-title">No jobs received yet</div>
+                <div id="empty_body" class="empty-body">Copy the sample task, run it in Pythonista, then return here and open the newest job first.</div>
                 <div class="help-actions-row empty-actions">
-                  <button type="button" class="small primary" data-action="copy-sample-task">Copy sample Python task</button>
-                  <button type="button" class="small tertiary text-link" data-action="open-about">Open quick start</button>
+                  <button type="button" class="small primary" data-action="copy-sample-task" data-action-role="empty-primary">Copy sample Python task</button>
+                  <button type="button" class="small tertiary text-link" data-action="open-about" data-action-role="empty-secondary">Open quick start</button>
+                                  <button type="button" class="small tertiary" id="empty_retry" data-action="refresh" data-action-role="empty-secondary" hidden>Retry connection</button>
                 </div>
-                <div id="empty_action" class="empty-action">A successful run appears here with a View button and a result zip when it finishes.</div>
+                <div id="empty_action" class="empty-action">When a run completes, open View first. Download result zip only when you need artifacts.</div>
               </div>
             </div>
           </div>

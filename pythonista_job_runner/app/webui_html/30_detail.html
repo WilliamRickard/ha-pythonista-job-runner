@@ -27,21 +27,33 @@
                   <span class="badge queued detail-inline-state" id="detail_inline_state" hidden>queued</span>
                 </div>
                 <div class="detail-subtitle">Lifecycle, outputs, and logs in one place.</div>
+                <div class="detail-context-row" aria-label="Detail context cues">
+                  <span class="context-chip" id="detail_context_scope">Scope: Jobs</span>
+                  <span class="context-chip" id="detail_context_actor">Actor: —</span>
+                  <span class="context-chip" id="detail_context_age">Age: —</span>
+                  <span class="context-chip" id="detail_context_duration">Duration: —</span>
+                </div>
+                <div class="detail-primary-path" role="note">Primary path: scan state banner, then use Download zip when resolved.</div>
               </div>
               <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
-                <button type="button" class="small primary" data-action="download-zip">Download zip</button>
-                <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
-                <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
-                <details class="secondary-panel detail-more-actions">
+                <button type="button" class="small primary" data-action="download-zip" data-action-role="section-primary" data-risk-level="state-change">Download zip</button>
+                <button type="button" class="small danger" id="btn_cancel" data-action="cancel" data-action-role="section-destructive" data-risk-level="destructive">Cancel</button>
+                <button type="button" class="small danger" id="btn_delete" data-action="delete" data-action-role="section-destructive" data-risk-level="destructive">Delete</button>
+                <details class="secondary-panel detail-more-actions" data-action-role="section-overflow">
                   <summary>More</summary>
                   <div class="secondary-panel-body detail-more-actions-body" role="menu" aria-label="More job actions">
-                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem">Download stdout</button>
-                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem">Download stderr</button>
-                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem">Copy curl</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem" data-risk-level="harmless">Download stdout</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem" data-risk-level="harmless">Download stderr</button>
+                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem" data-risk-level="harmless">Copy curl</button>
                   </div>
                 </details>
               </div>
             </div>
+
+            <section id="detail_handoff" class="detail-handoff" role="status" aria-live="polite" hidden>
+              <strong id="detail_handoff_title">Opened from Jobs</strong>
+              <span id="detail_handoff_body">Context will appear after selecting a job.</span>
+            </section>
 
             <section id="detail_state_banner" class="state-banner" role="status" aria-live="polite" style="margin-top:10px;" hidden>
               <div class="state-banner-main">
@@ -73,34 +85,45 @@
               </article>
             </section>
 
-            <div class="tabs detail-tabs" style="margin-top:14px;" role="tablist" aria-label="Detail sections">
+            <div class="detail-segmented-shell" style="margin-top:14px;">
+            <div class="tabs detail-tabs" role="tablist" aria-label="Detail sections">
               <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="true" aria-controls="overview" tabindex="0">summary</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stdout</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
             </div>
+            </div>
 
             <div id="overview" style="margin-top:12px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="false">
               <div class="detail-summary-stack">
+                <div class="section-kicker">Routine checks</div>
                 <section class="detail-summary-panel" aria-label="Lifecycle timeline">
                   <h3>Lifecycle</h3>
                   <ul id="detail_timeline" class="timeline"></ul>
                 </section>
-
-                <details class="detail-block detail-meta-block">
-                  <summary>Metadata</summary>
-                  <div class="scroll-area scroll-area-meta">
-                    <div class="item-list meta-items" id="meta"></div>
-                  </div>
-                </details>
 
                 <section class="detail-summary-panel detail-overview-note">
                   <h3>Quick facts</h3>
                   <div class="hint" id="overview_text"></div>
                 </section>
 
-                <details class="detail-block detail-api-block">
-                  <summary>Request and API</summary>
-                  <textarea id="curl_snippet" class="scroll-area-control" rows="9" readonly></textarea>
+                <details class="inline-help detail-inline-help">
+                  <summary>Need deeper troubleshooting guidance?</summary>
+                  <div class="hint">Start with state banner and summary cards first. Open stderr only for failures, then inspect Metadata and Request/API for root-cause context.</div>
+                </details>
+
+                <details class="detail-advanced-shell" data-section="advanced">
+                  <summary><span class="section-kicker section-kicker-advanced">Advanced diagnostics</span></summary>
+                  <details class="detail-block detail-meta-block" data-section="advanced">
+                    <summary>Metadata</summary>
+                    <div class="scroll-area scroll-area-meta">
+                      <div class="item-list meta-items" id="meta"></div>
+                    </div>
+                  </details>
+
+                  <details class="detail-block detail-api-block" data-section="advanced">
+                    <summary>Request and API</summary>
+                    <textarea id="curl_snippet" class="scroll-area-control" rows="9" readonly></textarea>
+                  </details>
                 </details>
               </div>
             </div>
@@ -114,52 +137,65 @@
             <details class="detail-log-shell" style="margin-top:10px;">
               <summary>Log controls</summary>
               <div class="detail-log-tools-body">
-            <div class="logtools" id="logtools" style="margin-top:10px;">
-              <div class="livebar" role="group" aria-label="Live tail controls">
-                <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
-                <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
-                <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
-                <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
-                <span class="pill" id="livepill" title="Live tail state">
-                  <span class="dot" aria-hidden="true"></span>
-                  <span id="livestate">Live</span>
-                </span>
-                <input type="checkbox" id="follow" checked hidden/>
-                <input type="checkbox" id="pause" hidden/>
-              </div>
+                <div class="logtools log-controls-group" id="logtools" style="margin-top:10px;" aria-label="Log control groups">
+                  <section class="log-control-block" aria-label="Live session controls">
+                    <h4>Session</h4>
+                    <div class="livebar" role="group" aria-label="Live tail controls">
+                      <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
+                      <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
+                      <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
+                      <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
+                      <span class="pill" id="livepill" title="Live tail state">
+                        <span class="dot" aria-hidden="true"></span>
+                        <span id="livestate">Live</span>
+                      </span>
+                      <input type="checkbox" id="follow" checked hidden/>
+                      <input type="checkbox" id="pause" hidden/>
+                    </div>
+                    <div class="log-utility-row">
+                      <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
+                      <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+                    </div>
+                  </section>
 
-              <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
-              <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
-              <label class="tog" style="gap:10px;">
-                font
-                <input type="range" id="font" min="11" max="18" value="13"/>
-              </label>
-              <button type="button" class="small" data-action="jump-error">Next error</button>
-              <span style="flex:1 1 140px;"></span>
-              <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
-              <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
-            </div>
+                  <section class="log-control-block" aria-label="Readability controls">
+                    <h4>Readability</h4>
+                    <div class="log-readability-row">
+                      <label class="tog"><input type="checkbox" id="wrap" checked/> Wrap</label>
+                      <label class="tog"><input type="checkbox" id="hilite"/> Highlight</label>
+                      <label class="tog" style="gap:10px;">
+                        Font
+                        <input type="range" id="font" min="11" max="18" value="13"/>
+                      </label>
+                      <button type="button" class="small" data-action="jump-error">Next error</button>
+                    </div>
+                  </section>
+                </div>
 
-            <div class="hilitebar" id="hilitebar" aria-label="Highlight terms">
-              <span class="hilite-label">Highlight</span>
-              <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
-              <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
-              <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
-              <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
-              <span style="flex:1 1 140px;"></span>
-              <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
-              <button type="button" class="small" data-action="add-hterm">Add</button>
-              <button type="button" class="small" data-action="clear-hterms">Clear</button>
-            </div>
+                <section class="hilitebar log-control-block" id="hilitebar" aria-label="Highlight terms">
+                  <h4>Highlight terms</h4>
+                  <div class="hilite-tools">
+                    <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
+                    <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
+                    <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
+                    <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
+                    <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
+                    <button type="button" class="small" data-action="add-hterm">Add</button>
+                    <button type="button" class="small" data-action="clear-hterms">Clear</button>
+                  </div>
+                </section>
 
-            <div class="findbar" id="findbar">
-              <label class="sr-only" for="logsearch">Find in log</label>
-              <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
-              <button type="button" class="small" data-action="find-prev">Prev</button>
-              <button type="button" class="small" data-action="find-next">Next</button>
-              <button type="button" class="small" data-action="clear-search">Clear</button>
-              <span class="count" id="matchcount" role="status" aria-live="polite"></span>
-            </div>
+                <section class="findbar log-control-block" id="findbar" aria-label="Find in log controls">
+                  <h4>Find in log</h4>
+                  <div class="find-tools">
+                    <label class="sr-only" for="logsearch">Find in log</label>
+                    <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
+                    <button type="button" class="small" data-action="find-prev">Prev</button>
+                    <button type="button" class="small" data-action="find-next">Next</button>
+                    <button type="button" class="small" data-action="clear-search">Clear</button>
+                    <span class="count" id="matchcount" role="status" aria-live="polite"></span>
+                  </div>
+                </section>
               </div>
             </details>
           </section>

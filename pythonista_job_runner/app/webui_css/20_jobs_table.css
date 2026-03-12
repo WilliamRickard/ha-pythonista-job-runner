@@ -8,6 +8,14 @@
   font-size: 13px;
 }
 
+.triage-strip{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 11px;border:1px solid color-mix(in srgb,var(--line) 78%, transparent);border-radius:12px;background:color-mix(in srgb,var(--panel2) 76%, transparent);margin-bottom:10px;}
+.triage-strip[data-urgency="urgent"]{border-color:color-mix(in srgb,var(--err) 60%, var(--line));background:color-mix(in srgb, rgba(255,92,92,0.16) 48%, transparent);}
+.triage-copy{display:grid;gap:2px;min-width:0;}
+#triage_title{font-size:12px;}
+#triage_subtitle{font-size:11px;color:var(--muted);}
+.triage-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.triage-action{min-height:32px;padding:6px 9px;font-size:11px;}
+
 .tablewrap{
   overflow-x: auto;
   border-radius: 14px;
@@ -49,6 +57,8 @@ tr:hover{ background: color-mix(in srgb, var(--panel2) 92%, rgba(138,180,255,0.1
 tr.selected{ outline: 2px solid rgba(138,180,255,0.40); outline-offset: -2px; }
 tr.job-row[data-state="error"]{ background: color-mix(in srgb, rgba(255,92,92,0.12) 72%, transparent); }
 tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230,0.08) 66%, transparent); }
+tr.job-row[data-state="done"][data-urgency="normal"]{ box-shadow: inset 3px 0 0 color-mix(in srgb, var(--ok) 72%, transparent); }
+tr.job-row[data-urgency="urgent"]{ box-shadow: inset 3px 0 0 color-mix(in srgb, var(--warn) 72%, transparent); }
 
 
 .jobcell{
@@ -71,12 +81,15 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
   flex: 1 1 auto;
   min-width: 0;
   text-align: left;
-  font-family: var(--mono);
+  font-family: inherit;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   min-height: 40px;
+  display:grid;
+  gap:2px;
 }
+
+.jobbtn-title{font-size:12.5px;font-weight:700;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.jobbtn-id{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 
 .jobmeta{
@@ -109,6 +122,11 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .jobmeta .meta-state{
   color:var(--muted);
+}
+
+.jobmeta .meta-risk{
+  color:color-mix(in srgb,var(--err) 88%, var(--text));
+  font-weight:680;
 }
 
 .row-progress-shell{
@@ -254,10 +272,6 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .logtools{
   margin-top: 6px;
-  display:flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
   color: var(--muted);
   font-size: 12px;
 }
@@ -294,21 +308,12 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .hilitebar{
   margin-top: 10px;
-  display:flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
 }
 
-.hilitebar .hilite-label{
-  color: var(--muted);
-  font-size: 12px;
-  padding: 0 6px;
-}
+.hilitebar .hilite-label{display:none;}
 
 .hilitebar input[type="text"]{
   width: 160px;
-  flex: 0 0 auto;
 }
 
 .hterms_custom{
@@ -459,3 +464,17 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
   width:min(320px, calc(100vw - 20px));
   box-shadow:0 18px 44px rgba(0,0,0,0.32);
 }
+
+
+.badge[data-state="running"] .badge-icon{border-radius:999px;}
+.badge[data-state="done"] .badge-icon{border-radius:5px;}
+.badge[data-state="error"] .badge-icon{border-radius:3px;border:1px solid color-mix(in srgb, var(--err) 46%, transparent);}
+.badge[data-state="queued"]{border-style:dashed;}
+.badge[data-state="queued"] .badge-icon{border-radius:2px;}
+.badge-label{text-transform:none;}
+
+#empty_retry[hidden]{display:none !important;}
+.empty-actions{row-gap:8px;}
+.empty[data-state="disconnected"] .empty-icon{color:var(--err);border-color:color-mix(in srgb,var(--err) 58%,var(--line));}
+.empty[data-state="filtered"] .empty-icon{color:var(--warn);}
+.empty[data-state="fresh"] .empty-icon{color:var(--link);}

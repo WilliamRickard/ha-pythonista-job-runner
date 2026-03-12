@@ -5,41 +5,49 @@
       <div class="modal-header">
         <div>
           <div class="modal-title" id="setup_title">Setup</div>
-          <div class="modal-sub" id="setup_sub">Persistent packages, with one guided toggle instead of a stack of settings</div>
+          <div class="modal-sub" id="setup_sub">Home Assistant add-on package setup, with guided steps before advanced controls</div>
         </div>
         <div class="item-actions">
           <button type="button" id="setup_refresh" class="small tertiary" data-action="refresh-setup-status">Refresh</button>
           <button type="button" id="setup_close" class="small tertiary" data-action="close-setup" aria-label="Close setup">Close</button>
         </div>
       </div>
-      <div class="modal-body">
+      <div class="modal-body setup-guided">
         <div id="setup_status_banner" class="banner" role="status" aria-live="polite">Loading setup readiness…</div>
+        <div class="setup-guidance" role="note">
+          <strong>Recommended path:</strong> finish Step 1, then Step 2, then run Step 3. Open Advanced sections only when troubleshooting.
+        </div>
         <details open>
-          <summary>Persistent packages</summary>
+          <summary><span>Step 1 · Persistent packages</span></summary>
           <div class="field-shell">
+            <div class="setup-primary-path" role="note">Primary path: complete Step 1, verify Step 2 target, then run Step 3 readiness before advanced uploads.</div>
             <div class="field-hint" id="setup_persistent_mode_summary">Checking whether the recommended persistent-package settings are saved and running…</div>
             <div class="help-actions-row compact-row">
               <button type="button" id="setup_apply_persistent_mode" class="small primary" data-action="setup-apply-persistent-mode">Enable persistent packages</button>
               <button type="button" id="setup_copy_config_snippet" class="small tertiary" data-action="setup-copy-config-snippet">Copy fallback config</button>
             </div>
             <div class="field-hint">This saves the recommended settings for persistent package profiles. Upload and build controls stay below for advanced use.</div>
+            <details class="inline-help">
+              <summary>Need help with Step 1?</summary>
+              <div class="field-hint">If settings look saved but not active, restart the add-on once, then return and run Refresh.</div>
+            </details>
           </div>
         </details>
         <details open>
-          <summary>Setup target</summary>
+          <summary><span>Step 2 · Setup target</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_target_summary">Checking target profile and wheel…</div>
           </div>
         </details>
-        <details open>
-          <summary>Add-on settings</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Add-on settings</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_settings_summary">Checking add-on settings…</div>
             <div id="setup_settings_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Wheel uploads</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Wheel uploads</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_wheels_summary">Checking wheel uploads…</div>
             <div class="setup-upload-panel">
@@ -54,8 +62,8 @@
             <div id="setup_wheels_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Package profiles</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Package profiles</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_profiles_summary">Checking package profiles…</div>
             <div class="setup-upload-panel">
@@ -70,8 +78,8 @@
             <div id="setup_profiles_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Readiness</summary>
+        <details>
+          <summary><span>Step 3 · Readiness check</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_readiness_summary">Checking example 5 readiness…</div>
             <div class="help-actions-row compact-row">
@@ -85,6 +93,10 @@
             <div id="setup_blockers_list" class="stack-list" aria-live="polite"></div>
             <div id="setup_warnings_list" class="stack-list" aria-live="polite"></div>
             <div id="setup_next_steps_list" class="stack-list" aria-live="polite"></div>
+            <details class="inline-help">
+              <summary>Need help with Step 3?</summary>
+              <div class="field-hint">A healthy success path is: state shows ready, target profile build succeeds, then example 5 produces a done job with a result archive.</div>
+            </details>
           </div>
         </details>
       </div>

@@ -254,3 +254,16 @@ details[open] summary::after{ transform: rotate(0deg); }
 .command-modal .modal-sub{
   max-width: 32ch;
 }
+
+
+.setup-guidance{padding:8px 10px;border:1px solid color-mix(in srgb, var(--line) 64%, transparent);border-radius:12px;background:color-mix(in srgb, var(--chip2) 56%, transparent);font-size:12px;line-height:1.45;color:var(--muted);}
+.setup-guided details{margin-top:2px;}
+.setup-advanced summary span{color:var(--muted);font-weight:700;}
+.setup-guided details:not([open]) summary{opacity:0.95;}
+
+.adv-guided details:not([open]) summary{color:var(--muted);}
+.adv-guided .modal-sub{max-width:34ch;}
+
+.inline-help{margin-top:8px;}
+.inline-help .field-hint,.inline-help .hint{margin-top:6px;}
+.modal [data-risk-level="destructive"]{border-color:rgba(255,92,92,0.62);}

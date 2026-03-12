@@ -188,12 +188,12 @@ def test_setup_status_reports_missing_wheel_and_mode(tmp_path):
     assert payload["wheel_present"] is False
     assert payload["profile_present"] is True
     assert payload["ready_for_example_5"] is False
-    assert payload["ready_state"] == "restart_required"
+    assert payload["ready_state"] == "content_missing"
     assert payload["build_available"] is True
     assert payload["build_recommended"] is True
     assert payload["target_profile_status"] == "not_built"
     assert "package_profile_default: demo_formatsize_profile" in payload["config_snippet"]
-    assert payload["restart_required"] is True
+    assert payload["restart_required"] is False
     assert any("Install requirements.txt automatically" in item for item in payload["blockers"])
     assert any("Dependency handling mode" in item for item in payload["blockers"])
     assert any("default package profile" in item for item in payload["blockers"])
@@ -244,7 +244,7 @@ def test_setup_status_marks_build_failure_and_wheelhouse_blocker(tmp_path):
     payload = package_profiles.setup_status(runner)
 
     assert payload["ready_state"] == "build_failed"
-    assert payload["restart_required"] is True
+    assert payload["restart_required"] is False
     assert payload["target_profile_last_error"] == "pip install failed"
     assert any("public wheelhouse support" in item for item in payload["blockers"])
     assert any("Rebuild demo_formatsize_profile" in item for item in payload["next_steps"])

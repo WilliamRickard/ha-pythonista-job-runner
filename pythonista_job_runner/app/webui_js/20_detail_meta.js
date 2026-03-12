@@ -47,6 +47,20 @@
     }
   }
 
+  function _detailTimingSignals(st) {
+    const state = String((st && st.state) || "queued");
+    const createdTs = parseUtcSeconds(st && st.created_utc);
+    const ageSeconds = createdTs ? Math.max(0, nowUtcSeconds() - createdTs) : 0;
+    const durationRaw = Number(st && st.duration_seconds);
+    const durationSeconds = Number.isFinite(durationRaw) && durationRaw >= 0 ? durationRaw : 0;
+    return {
+      staleQueued: state === "queued" && ageSeconds >= 600,
+      longRunning: state === "running" && durationSeconds >= 900,
+      ageText: fmtAge(st && st.created_utc) || "Just now",
+      durationText: fmtDuration(st && st.duration_seconds) || "Not yet",
+    };
+  }
+
   function _setStateBanner(st) {
     if (!els.detail_state_banner) return;
 
@@ -55,7 +69,7 @@
     const titleMap = {
       queued: "Queued for execution",
       running: "Running",
-      done: "Completed",
+      done: "Completed and resolved",
       error: "Failed",
     };
 
@@ -64,23 +78,25 @@
     els.detail_state_banner.classList.add(state);
 
     if (els.state_badge) {
-      els.state_badge.className = `badge ${state}`;
-      els.state_badge.textContent = state;
+      els.state_badge.textContent = "";
+      els.state_badge.className = "state-badge-shell";
+      els.state_badge.appendChild(badgeEl(state));
     }
     if (els.detail_inline_state) {
       els.detail_inline_state.hidden = false;
-      els.detail_inline_state.className = `badge ${state} detail-inline-state`;
-      els.detail_inline_state.textContent = state;
+      els.detail_inline_state.textContent = "";
+      els.detail_inline_state.className = "detail-inline-state";
+      els.detail_inline_state.appendChild(badgeEl(state));
     }
     if (els.state_title) els.state_title.textContent = titleMap[state] || "Unknown state";
 
     let desc = `Phase: ${phase}`;
     if (state === "queued") {
-      desc += ". Waiting for an execution slot.";
+      desc += ". Next: monitor queue position and confirm worker availability.";
     } else if (state === "running") {
-      desc += ". Logs update live below.";
+      desc += ". Next: follow stdout first, then use log controls for errors.";
     } else if (state === "done") {
-      desc += ". Result archive should be available.";
+      desc += ". Next: resolved successfully; download result zip first, then review logs only if needed.";
     } else if (state === "error") {
       const err = st && st.error ? String(st.error) : "Unknown failure";
       desc += `. ${err}`;
@@ -138,6 +154,13 @@
     const filename = st.result_filename ? String(st.result_filename) : "result archive";
     const exit = (st.exit_code === null || st.exit_code === undefined) ? "" : `Exit ${st.exit_code}`;
     const err = st.error ? String(st.error) : "Unknown error";
+    const actor = String((st.submitted_by && (st.submitted_by.display_name || st.submitted_by.name)) || "System").trim() || "System";
+    const timing = _detailTimingSignals(st);
+
+    if (els.detail_context_scope) els.detail_context_scope.textContent = "Scope: Jobs → Detail";
+    if (els.detail_context_actor) els.detail_context_actor.textContent = `Actor: ${actor}`;
+    if (els.detail_context_age) els.detail_context_age.textContent = `Age: ${timing.ageText}${timing.staleQueued ? " · delayed" : ""}`;
+    if (els.detail_context_duration) els.detail_context_duration.textContent = `Duration: ${timing.durationText}${timing.longRunning ? " · long-running" : ""}`;
 
     if (els.detail_subtitle) {
       if (state === "running") els.detail_subtitle.textContent = "Follow progress, outputs, and the latest status in one place.";
@@ -157,11 +180,11 @@
 
     if (els.detail_result_summary) {
       if (state === "queued") {
-        els.detail_result_summary.textContent = "Waiting for a worker slot. Refresh or leave this open to see when execution begins.";
+        els.detail_result_summary.textContent = `Waiting for a worker slot (${timing.ageText} old). Refresh or leave this open to see when execution begins${timing.staleQueued ? ". This queue wait is longer than usual." : ""}.`;
       } else if (state === "running") {
-        els.detail_result_summary.textContent = "Execution is in progress. Open stdout for live output and check the state banner for changes.";
+        els.detail_result_summary.textContent = `Execution is in progress (${timing.durationText}). Open stdout for live output and check the state banner for changes${timing.longRunning ? ". This run is long-running." : ""}.`;
       } else if (state === "done") {
-        els.detail_result_summary.textContent = `${filename} is ready or expected to be ready. Use Download zip to inspect outputs and status.json.`;
+        els.detail_result_summary.textContent = `Resolved successfully. ${filename} is ready or expected to be ready. Use Download zip to inspect outputs and status.json.`;
       } else if (state === "error") {
         els.detail_result_summary.textContent = `${err}. Open stderr and the request details to diagnose the failure.`;
       } else {
@@ -177,7 +200,7 @@
       } else if (state === "error") {
         els.detail_failure_summary.textContent = exit ? `${exit}. Check stderr first, then request and metadata for context.` : "Check stderr first, then request and metadata for context.";
       } else if (state === "done") {
-        els.detail_failure_summary.textContent = exit ? `${exit}. Inspect stdout and stderr if you need extra confirmation.` : "No failure detected. Inspect stdout and stderr only if you need extra confirmation.";
+        els.detail_failure_summary.textContent = exit ? `${exit}. Job resolved successfully. Inspect stdout and stderr only if you need extra confirmation.` : "Job resolved successfully with no failure detected. Inspect stdout and stderr only if you need extra confirmation.";
       } else {
         els.detail_failure_summary.textContent = "Failure diagnosis becomes available when the job finishes.";
       }
@@ -302,7 +325,16 @@
     els.detail_empty.hidden = true;
     els.detail.hidden = false;
     els.jobid.textContent = jobId;
-    if (els.detail_breadcrumb_current) els.detail_breadcrumb_current.textContent = jobId;
+    if (els.detail_breadcrumb_current) els.detail_breadcrumb_current.textContent = `Job ${jobId}`;
+    const source = _jobById(jobId);
+    if (els.detail_handoff) els.detail_handoff.hidden = false;
+    if (els.detail_handoff_title) els.detail_handoff_title.textContent = "Opened from Jobs";
+    if (els.detail_handoff_body) {
+      const stateText = source ? String(source.state || "queued") : "queued";
+      const actor = source ? String((source.submitted_by && (source.submitted_by.display_name || source.submitted_by.name)) || "System") : "System";
+      const age = source ? (fmtAge(source.created_utc) || "just now") : "just now";
+      els.detail_handoff_body.textContent = `${actor} · ${stateText} · ${age} old`;
+    }
     if (isNarrow()) setPane("detail");
 
     // Update URL (Ingress-safe: keep relative)
