@@ -1,26 +1,26 @@
 :root{
-  --bg: #0f1115;
-  --panel: #141824;
-  --panel2: #0b0d12;
-  --line: #242c3d;
-  --text: #e6e6e6;
-  --muted: #a9b0c0;
-  --link: #8ab4ff;
+  --bg: #0f0f0f;
+  --panel: #1a1a1a;
+  --panel2: #151515;
+  --line: #2d2d2d;
+  --text: #f0f0f0;
+  --muted: #aaaaaa;
+  --link: #00a3cc;
 
-  --chip: #1f2633;
-  --chip2: rgba(138,180,255,0.16);
+  --chip: #212121;
+  --chip2: rgba(0,163,204,0.16);
 
   --ok: #2ecc71;
   --warn: #f1c40f;
   --err: #ff5c5c;
 
-  --radius: 16px;
-  --shadow: 0 12px 28px rgba(0,0,0,0.22);
+  --radius: 10px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.18);
 
   --tableHeaderBg: rgba(20,24,36,0.92);
   --toastBg: rgba(20,24,36,0.96);
 
-  --sans: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sans: "IBM Plex Sans", "Noto Sans", "Helvetica Neue", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Typography */
@@ -33,27 +33,20 @@
 
 @media (prefers-color-scheme: light){
   :root{
-    --bg: #f5f7fb;
+    --bg: #f8f9fa;
     --panel: #ffffff;
-    --panel2: #f0f3f8;
-    --line: #d9e1ef;
-    --text: #0d1117;
-    --muted: #4b5563;
-    --link: #1d4ed8;
+    --panel2: #f1f3f5;
+    --line: #d7dce1;
+    --text: #212529;
+    --muted: #5f6770;
+    --link: #0066cc;
 
-    --chip: #eef2ff;
-    --chip2: rgba(29,78,216,0.12);
+    --chip: #eceff2;
+    --chip2: rgba(0,102,204,0.12);
 
-    --shadow: 0 14px 32px rgba(17,24,39,0.11);
+    --shadow: 0 2px 8px rgba(17,24,39,0.08);
     --tableHeaderBg: rgba(255,255,255,0.92);
     --toastBg: rgba(255,255,255,0.96);
-  }
-
-  body{
-    background:
-      radial-gradient(900px circle at 12% -10%, rgba(29,78,216,0.10), transparent 45%),
-      radial-gradient(900px circle at 88% 0%, rgba(46,204,113,0.08), transparent 40%),
-      var(--bg);
   }
 }
 
@@ -67,10 +60,7 @@ body{
   line-height: 1.5;
   margin: 0;
   padding: 16px;
-  background:
-    radial-gradient(900px circle at 12% -10%, rgba(138,180,255,0.16), transparent 45%),
-    radial-gradient(900px circle at 88% 0%, rgba(46,204,113,0.10), transparent 40%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
 }
 
