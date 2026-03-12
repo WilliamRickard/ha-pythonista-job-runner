@@ -53,7 +53,7 @@ async function stubWebUiApi(page) {
 async function openWebUi(page) {
   await stubWebUiApi(page);
   await page.goto(WEB_UI_PATH);
-  await expect(page.getByText("Connected")).toBeVisible();
+  await expect(page.locator("#statusline")).toHaveText(/Connected/i);
 }
 
 function headerPanel(page) {
@@ -80,7 +80,7 @@ test.describe("header More menu", () => {
 
     await moreButton(page).click();
     await expect(headerPanel(page)).toBeVisible();
-    await page.locator("#overview").click();
+    await page.locator("#main_content").click({ position: { x: 8, y: 8 } });
     await expect(headerPanel(page)).toBeHidden();
   });
 
