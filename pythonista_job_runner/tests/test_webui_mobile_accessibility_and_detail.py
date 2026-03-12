@@ -112,7 +112,7 @@ def test_header_and_jobs_surfaces_expose_supportive_microcopy_and_clear_primary_
     html = build_webui()
 
     assert 'class="brand-support"' in html
-    assert 'Monitor job health, open results quickly' in html
+    assert 'Monitor job health and take action quickly.' in html
     assert 'class="jobs-support"' in html
     assert 'aria-label="Refresh queue and jobs"' in html
 
@@ -121,7 +121,7 @@ def test_css_has_reduced_motion_guardrail_and_modern_toolbar_density() -> None:
     css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
 
     assert "prefers-reduced-motion: reduce" in css
-    assert ".jobs-toolbar{display:flex;flex-direction:column;gap:10px;" in css
+    assert ".jobs-toolbar{display:flex;flex-direction:column;gap:8px;" in css
     assert ".input-group{display:flex;align-items:center;gap:0;" in css
 
 
@@ -268,3 +268,45 @@ def test_bundle_header_more_toggle_uses_button_and_panel_contract() -> None:
     assert 'class="header-more-panel"' in html
     assert '<details class="header-more-menu"' not in html
     assert '.header-more-panel[hidden]{display:none !important;}' in css
+
+
+def test_mobile_header_and_jobs_surface_are_compact_first() -> None:
+    html = build_webui()
+    responsive = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "50_responsive.css").read_text(encoding="utf-8")
+
+    assert 'class="brand brand-compact"' in html
+    assert 'class="jobs-heading"' in html
+    assert '.brand-compact .brand-support{display:none;}' in responsive
+    assert '.jobs-support{display:none;}' in responsive
+
+
+def test_bundle_has_guided_setup_sequence_and_collapsed_advanced_groups() -> None:
+    html = build_webui()
+
+    assert 'class="modal-body setup-guided"' in html
+    assert 'Recommended path:' in html
+    assert 'Step 1 · Persistent packages' in html
+    assert 'Step 2 · Setup target' in html
+    assert 'Advanced · Wheel uploads' in html
+
+
+def test_bundle_has_grouped_log_controls_for_mobile_scanability() -> None:
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "10_layout.css").read_text(encoding="utf-8")
+
+    assert 'class="logtools log-controls-group" id="logtools"' in html
+    assert 'aria-label="Live session controls"' in html
+    assert 'aria-label="Readability controls"' in html
+    assert 'id="hilitebar" aria-label="Highlight terms"' in html
+    assert 'id="findbar" aria-label="Find in log controls"' in html
+    assert '.log-controls-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}' in css
+
+
+def test_filters_summary_and_mobile_compaction_rules_exist() -> None:
+    html = build_webui()
+    css = (Path(__file__).resolve().parent.parent / "app" / "webui_css" / "50_responsive.css").read_text(encoding="utf-8")
+
+    assert 'id="filters_summary">Refine list<' in html
+    assert 'Result zip only' in html
+    assert '.toggle-group .toggle-item{min-height:36px;padding:7px 10px;font-size:12px;}' in css
+    assert '.filters-field-group{gap:8px;}' in css

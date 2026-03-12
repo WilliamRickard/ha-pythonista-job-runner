@@ -12,10 +12,13 @@
           <button type="button" id="setup_close" class="small tertiary" data-action="close-setup" aria-label="Close setup">Close</button>
         </div>
       </div>
-      <div class="modal-body">
+      <div class="modal-body setup-guided">
         <div id="setup_status_banner" class="banner" role="status" aria-live="polite">Loading setup readiness…</div>
+        <div class="setup-guidance" role="note">
+          <strong>Recommended path:</strong> complete Step 1 and Step 2 first, then open advanced sections only if needed.
+        </div>
         <details open>
-          <summary>Persistent packages</summary>
+          <summary><span>Step 1 · Persistent packages</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_persistent_mode_summary">Checking whether the recommended persistent-package settings are saved and running…</div>
             <div class="help-actions-row compact-row">
@@ -26,20 +29,20 @@
           </div>
         </details>
         <details open>
-          <summary>Setup target</summary>
+          <summary><span>Step 2 · Setup target</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_target_summary">Checking target profile and wheel…</div>
           </div>
         </details>
-        <details open>
-          <summary>Add-on settings</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Add-on settings</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_settings_summary">Checking add-on settings…</div>
             <div id="setup_settings_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Wheel uploads</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Wheel uploads</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_wheels_summary">Checking wheel uploads…</div>
             <div class="setup-upload-panel">
@@ -54,8 +57,8 @@
             <div id="setup_wheels_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Package profiles</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Package profiles</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_profiles_summary">Checking package profiles…</div>
             <div class="setup-upload-panel">
@@ -70,8 +73,8 @@
             <div id="setup_profiles_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Readiness</summary>
+        <details>
+          <summary><span>Step 3 · Readiness check</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_readiness_summary">Checking example 5 readiness…</div>
             <div class="help-actions-row compact-row">

@@ -253,7 +253,7 @@ a:hover{ text-decoration: underline; }
 
 .monitor-header{
   align-items:flex-start;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .monitor-subline{
@@ -860,10 +860,10 @@ label{
 }
 
 .jobs-body{
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
-.jobs-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;padding:2px 0 0;}
+.jobs-toolbar{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;padding:0;}
 .searchbar-row{display:flex;align-items:center;gap:8px;}
 .searchbar-row input{flex:1 1 auto;min-width:0;font-size:16px;}
 .searchbar-row .input-group{width:100%;}
@@ -877,7 +877,7 @@ label{
 .clear-inline{min-width:72px;}
 .state-filters{display:flex;gap:0;overflow-x:auto;padding:2px 0 4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
 .toggle-group{display:inline-flex;border:1px solid color-mix(in srgb, var(--line) 68%, transparent);border-radius:14px;background:color-mix(in srgb, var(--panel2) 68%, transparent);overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);}
-.toggle-group .toggle-item{flex:1 1 auto;min-height:42px;padding:10px 14px;border:0;border-right:1px solid color-mix(in srgb, var(--line) 68%, transparent);border-radius:0;background:transparent;color:var(--muted);font-weight:650;white-space:nowrap;}
+.toggle-group .toggle-item{flex:1 1 auto;min-height:38px;padding:8px 11px;border:0;border-right:1px solid color-mix(in srgb, var(--line) 68%, transparent);border-radius:0;background:transparent;color:var(--muted);font-weight:650;white-space:nowrap;}
 .toggle-group .toggle-item:last-child{border-right:0;}
 .toggle-group .toggle-item.active{background:color-mix(in srgb, var(--chip2) 78%, transparent);color:var(--text);box-shadow:inset 0 -2px 0 rgba(138,180,255,0.38);}
 .toggle-group .toggle-item:hover{background:color-mix(in srgb, var(--panel) 55%, transparent);}
@@ -895,7 +895,7 @@ label{
 .sort-option{justify-content:flex-start;text-align:left;}
 .sort-option.active{border-color:rgba(138,180,255,0.42);background:color-mix(in srgb, var(--chip2) 70%, transparent);color:var(--text);}
 .secondary-panel{position:relative;border:0;padding:0;background:transparent;}
-.secondary-panel summary{list-style:none;cursor:pointer;padding:8px 12px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:12px;background:color-mix(in srgb, var(--panel2) 40%, transparent);font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:8px;min-height:42px;}
+.secondary-panel summary{list-style:none;cursor:pointer;padding:7px 10px;border:1px solid color-mix(in srgb, var(--line) 58%, transparent);border-radius:12px;background:color-mix(in srgb, var(--panel2) 40%, transparent);font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:7px;min-height:38px;}
 .filters-sheet-trigger .summary-label{font-weight:700;color:var(--muted);}
 .secondary-panel[open] .secondary-panel-body{margin-top:8px;border:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:12px;padding:10px;background:color-mix(in srgb, var(--panel) 84%, transparent);}
 
@@ -1176,6 +1176,20 @@ body.splitter-dragging{
   cursor:col-resize;
   user-select:none;
 }
+
+
+.brand-compact .brand-support{max-width:44ch;}
+.jobs-heading{margin-bottom:0;}
+.jobs-header{padding-bottom:8px;}
+.filters-field-group .tog{margin-top:2px;font-size:12px;}
+.filters-sheet-trigger .summary-label{font-size:11px;text-transform:uppercase;letter-spacing:0.24px;}
+#filters_summary{font-weight:650;color:var(--text);}
+.log-controls-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.log-control-block{border:1px solid color-mix(in srgb, var(--line) 62%, transparent);border-radius:12px;padding:8px 10px;background:color-mix(in srgb, var(--panel2) 46%, transparent);}
+.log-control-block h4{margin:0 0 8px 0;font-size:11px;letter-spacing:0.24px;text-transform:uppercase;color:var(--muted);}
+.log-readability-row,.log-utility-row,.hilite-tools,.find-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.log-utility-row{margin-top:8px;}
+.find-tools input[type="search"],.hilite-tools input[type="text"]{flex:1 1 160px;}
 .banner{
   margin-bottom: 10px;
   padding: 9px 11px;
@@ -1432,10 +1446,6 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .logtools{
   margin-top: 6px;
-  display:flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
   color: var(--muted);
   font-size: 12px;
 }
@@ -1472,21 +1482,12 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .hilitebar{
   margin-top: 10px;
-  display:flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
 }
 
-.hilitebar .hilite-label{
-  color: var(--muted);
-  font-size: 12px;
-  padding: 0 6px;
-}
+.hilitebar .hilite-label{display:none;}
 
 .hilitebar input[type="text"]{
   width: 160px;
-  flex: 0 0 auto;
 }
 
 .hterms_custom{
@@ -1953,6 +1954,12 @@ details[open] summary::after{ transform: rotate(0deg); }
 .command-modal .modal-sub{
   max-width: 32ch;
 }
+
+
+.setup-guidance{padding:8px 10px;border:1px solid color-mix(in srgb, var(--line) 64%, transparent);border-radius:12px;background:color-mix(in srgb, var(--chip2) 56%, transparent);font-size:12px;line-height:1.45;color:var(--muted);}
+.setup-guided details{margin-top:2px;}
+.setup-advanced summary span{color:var(--muted);font-weight:700;}
+.setup-guided details:not([open]) summary{opacity:0.95;}
 :focus-visible{
   outline: 2px solid rgba(138,180,255,0.55);
   outline-offset: 2px;
@@ -1978,6 +1985,20 @@ details[open] summary::after{ transform: rotate(0deg); }
   .kpis{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .queue-compact .kpi{min-height:48px;}
   .jobs-primary-row{gap:10px;}
+  .brand-compact .brand-support{display:none;}
+  .subline.monitor-subline{margin-top:2px;}
+  .jobs-header{padding-bottom:4px;}
+  .jobs-heading{font-size:15px;}
+  .jobs-support{display:none;}
+  .jobs-primary-row{gap:8px;}
+  .toggle-group .toggle-item{min-height:36px;padding:7px 10px;font-size:12px;}
+  .secondary-panel summary{min-height:36px;padding:6px 9px;}
+  .filters-sheet-trigger[open] .secondary-panel-body{padding:10px;}
+  .filters-field-group .field-label{margin-bottom:4px;}
+  .log-controls-group{grid-template-columns:1fr;}
+  .log-control-block{padding:8px;}
+  .find-tools .count{width:100%;padding:0;}
+
   .jobs-secondary-row{width:100%;justify-content:flex-start;}
   .sort-menu{width:auto;}
   .toggle-group{width:100%;}
@@ -2021,7 +2042,7 @@ details[open] summary::after{ transform: rotate(0deg); }
 
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
-  .jobs-support{max-width:30ch;}
+  .jobs-support{max-width:30ch;display:none;}
   .jobs-primary-row{gap:8px;}
   .jobs-secondary-row{gap:6px;}
   .sort-menu{width:auto;}
@@ -2082,7 +2103,7 @@ details[open] summary::after{ transform: rotate(0deg); }
   .filters-sheet-trigger[open] .secondary-panel-body{position:fixed;left:8px;right:8px;bottom:8px;z-index:82;max-height:76vh;overflow:auto;padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px));}
   .filters-sheet-trigger[open] summary{position:relative;z-index:83;}
   .filters-sheet-trigger .field-hint{display:none;}
-  .filters-field-group{gap:10px;}
+  .filters-field-group{gap:8px;}
   .filters-field-group .separator{display:none;}
   .filters-footer-row{position:sticky;bottom:0;background:color-mix(in srgb, var(--panel) 92%, transparent);padding-top:8px;margin-top:4px;}
   .filter-presets .small{flex:1 1 auto;}
@@ -2095,9 +2116,9 @@ details[open] summary::after{ transform: rotate(0deg); }
   <a class="skip-link" href="#main_content">Skip to main content</a>
   <div class="container">
     <header class="page-header monitor-header" id="main_header">
-      <div class="brand">
+      <div class="brand brand-compact">
         <h1>Pythonista Job Runner</h1>
-        <p class="brand-support">Monitor job health, open results quickly, and troubleshoot runs from one place.</p>
+        <p class="brand-support">Monitor job health and take action quickly.</p>
         <div class="subline monitor-subline">
           <span class="pill status-pill" id="statuspill">
             <span class="dot" aria-hidden="true"></span>
@@ -2110,7 +2131,7 @@ details[open] summary::after{ transform: rotate(0deg); }
         </div>
       </div>
       <div class="toplinks header-actions" role="group" aria-label="Primary actions">
-        <button type="button" class="linkbtn primary tooltip-target" data-tooltip="Reload queue, jobs, and selected details" data-action="refresh" aria-label="Refresh queue and jobs">Refresh jobs</button>
+        <button type="button" class="linkbtn primary tooltip-target" data-tooltip="Reload stats and jobs" data-action="refresh" aria-label="Refresh queue and jobs">Refresh jobs</button>
         <div class="header-more-wrap">
           <button type="button" id="header_more_toggle" class="linkbtn tertiary tooltip-target header-more-toggle" data-action="toggle-header-more" data-tooltip="Settings, help, and commands" aria-haspopup="menu" aria-controls="header_more_panel" aria-expanded="false" aria-label="More actions">More</button>
           <div id="header_more_panel" class="header-more-panel" role="menu" aria-label="Secondary actions" hidden>
@@ -2127,8 +2148,8 @@ details[open] summary::after{ transform: rotate(0deg); }
       <section id="pane_jobs" class="card jobs-surface" aria-label="Jobs list and filters">
         <div class="card-header jobs-header">
           <div>
-            <h2>Jobs</h2>
-            <p class="jobs-support">Use search, filters, and states to narrow jobs, then open one for details.</p>
+            <h2 class="jobs-heading">Jobs</h2>
+            <p class="jobs-support">Start with state chips, then refine only if needed.</p>
           </div>
         </div>
         <div class="card-body jobs-body">
@@ -2174,7 +2195,7 @@ details[open] summary::after{ transform: rotate(0deg); }
                   </div>
                 </details>
                 <details class="secondary-panel filters-sheet-trigger" id="filters_menu">
-                  <summary><span class="summary-label">Filters</span><span id="filters_summary">User, date, and artifacts</span></summary>
+                  <summary><span class="summary-label">Filters</span><span id="filters_summary">Refine list</span></summary>
                   <div class="secondary-panel-body filters-sheet-body">
                     <div class="field-shell filters-field-group">
                       <div class="field adv-field combobox-field">
@@ -2197,7 +2218,7 @@ details[open] summary::after{ transform: rotate(0deg); }
                         </div>
                       </div>
                       <div class="separator" role="separator" aria-hidden="true"></div>
-                      <label class="tog"><input id="filter_has_result" type="checkbox"/> Only show jobs with result zip</label>
+                      <label class="tog"><input id="filter_has_result" type="checkbox"/> Result zip only</label>
                       <div class="filters-footer-row">
                         <button type="button" class="small tertiary" data-action="close-filters-panel">Done</button>
                       </div>
@@ -2417,52 +2438,65 @@ details[open] summary::after{ transform: rotate(0deg); }
             <details class="detail-log-shell" style="margin-top:10px;">
               <summary>Log controls</summary>
               <div class="detail-log-tools-body">
-            <div class="logtools" id="logtools" style="margin-top:10px;">
-              <div class="livebar" role="group" aria-label="Live tail controls">
-                <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
-                <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
-                <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
-                <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
-                <span class="pill" id="livepill" title="Live tail state">
-                  <span class="dot" aria-hidden="true"></span>
-                  <span id="livestate">Live</span>
-                </span>
-                <input type="checkbox" id="follow" checked hidden/>
-                <input type="checkbox" id="pause" hidden/>
-              </div>
+                <div class="logtools log-controls-group" id="logtools" style="margin-top:10px;" aria-label="Log control groups">
+                  <section class="log-control-block" aria-label="Live session controls">
+                    <h4>Session</h4>
+                    <div class="livebar" role="group" aria-label="Live tail controls">
+                      <button type="button" class="chip small" id="btn_live" data-action="go-live" aria-label="Go live and follow output" aria-pressed="true">Live</button>
+                      <button type="button" class="chip small" id="btn_pause_resume" data-action="toggle-pause" aria-label="Pause or resume log updates" aria-pressed="false">Pause</button>
+                      <button type="button" class="chip small" id="btn_jump_latest" data-action="jump-latest" aria-label="Jump to latest output" hidden>Jump to latest</button>
+                      <button type="button" class="chip small" id="btn_clear_log" data-action="clear-log" aria-label="Clear log view">Clear</button>
+                      <span class="pill" id="livepill" title="Live tail state">
+                        <span class="dot" aria-hidden="true"></span>
+                        <span id="livestate">Live</span>
+                      </span>
+                      <input type="checkbox" id="follow" checked hidden/>
+                      <input type="checkbox" id="pause" hidden/>
+                    </div>
+                    <div class="log-utility-row">
+                      <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
+                      <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
+                    </div>
+                  </section>
 
-              <label class="tog"><input type="checkbox" id="wrap" checked/> wrap</label>
-              <label class="tog"><input type="checkbox" id="hilite"/> highlight</label>
-              <label class="tog" style="gap:10px;">
-                font
-                <input type="range" id="font" min="11" max="18" value="13"/>
-              </label>
-              <button type="button" class="small" data-action="jump-error">Next error</button>
-              <span style="flex:1 1 140px;"></span>
-              <button type="button" class="small" data-action="download-text" data-which="stdout" id="btn_dl_stdout" hidden>Download stdout</button>
-              <button type="button" class="small" data-action="download-text" data-which="stderr" id="btn_dl_stderr" hidden>Download stderr</button>
-            </div>
+                  <section class="log-control-block" aria-label="Readability controls">
+                    <h4>Readability</h4>
+                    <div class="log-readability-row">
+                      <label class="tog"><input type="checkbox" id="wrap" checked/> Wrap</label>
+                      <label class="tog"><input type="checkbox" id="hilite"/> Highlight</label>
+                      <label class="tog" style="gap:10px;">
+                        Font
+                        <input type="range" id="font" min="11" max="18" value="13"/>
+                      </label>
+                      <button type="button" class="small" data-action="jump-error">Next error</button>
+                    </div>
+                  </section>
+                </div>
 
-            <div class="hilitebar" id="hilitebar" aria-label="Highlight terms">
-              <span class="hilite-label">Highlight</span>
-              <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
-              <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
-              <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
-              <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
-              <span style="flex:1 1 140px;"></span>
-              <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
-              <button type="button" class="small" data-action="add-hterm">Add</button>
-              <button type="button" class="small" data-action="clear-hterms">Clear</button>
-            </div>
+                <section class="hilitebar log-control-block" id="hilitebar" aria-label="Highlight terms">
+                  <h4>Highlight terms</h4>
+                  <div class="hilite-tools">
+                    <button type="button" class="chip small" data-action="toggle-hterm" data-term="ERROR" id="hterm_error" aria-pressed="false">ERROR</button>
+                    <button type="button" class="chip small" data-action="toggle-hterm" data-term="WARN" id="hterm_warn" aria-pressed="false">WARN</button>
+                    <button type="button" class="chip small" data-action="toggle-hterm" data-term="Traceback" id="hterm_traceback" aria-pressed="false">Traceback</button>
+                    <span id="hterms_custom" class="hterms_custom" aria-label="Custom highlight terms"></span>
+                    <input id="hterm_input" type="text" placeholder="Add term" autocomplete="off" aria-label="Add highlight term"/>
+                    <button type="button" class="small" data-action="add-hterm">Add</button>
+                    <button type="button" class="small" data-action="clear-hterms">Clear</button>
+                  </div>
+                </section>
 
-            <div class="findbar" id="findbar">
-              <label class="sr-only" for="logsearch">Find in log</label>
-              <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
-              <button type="button" class="small" data-action="find-prev">Prev</button>
-              <button type="button" class="small" data-action="find-next">Next</button>
-              <button type="button" class="small" data-action="clear-search">Clear</button>
-              <span class="count" id="matchcount" role="status" aria-live="polite"></span>
-            </div>
+                <section class="findbar log-control-block" id="findbar" aria-label="Find in log controls">
+                  <h4>Find in log</h4>
+                  <div class="find-tools">
+                    <label class="sr-only" for="logsearch">Find in log</label>
+                    <input id="logsearch" type="search" placeholder="Find in log…" autocomplete="off"/>
+                    <button type="button" class="small" data-action="find-prev">Prev</button>
+                    <button type="button" class="small" data-action="find-next">Next</button>
+                    <button type="button" class="small" data-action="clear-search">Clear</button>
+                    <span class="count" id="matchcount" role="status" aria-live="polite"></span>
+                  </div>
+                </section>
               </div>
             </details>
           </section>
@@ -2578,10 +2612,13 @@ details[open] summary::after{ transform: rotate(0deg); }
           <button type="button" id="setup_close" class="small tertiary" data-action="close-setup" aria-label="Close setup">Close</button>
         </div>
       </div>
-      <div class="modal-body">
+      <div class="modal-body setup-guided">
         <div id="setup_status_banner" class="banner" role="status" aria-live="polite">Loading setup readiness…</div>
+        <div class="setup-guidance" role="note">
+          <strong>Recommended path:</strong> complete Step 1 and Step 2 first, then open advanced sections only if needed.
+        </div>
         <details open>
-          <summary>Persistent packages</summary>
+          <summary><span>Step 1 · Persistent packages</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_persistent_mode_summary">Checking whether the recommended persistent-package settings are saved and running…</div>
             <div class="help-actions-row compact-row">
@@ -2592,20 +2629,20 @@ details[open] summary::after{ transform: rotate(0deg); }
           </div>
         </details>
         <details open>
-          <summary>Setup target</summary>
+          <summary><span>Step 2 · Setup target</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_target_summary">Checking target profile and wheel…</div>
           </div>
         </details>
-        <details open>
-          <summary>Add-on settings</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Add-on settings</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_settings_summary">Checking add-on settings…</div>
             <div id="setup_settings_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Wheel uploads</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Wheel uploads</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_wheels_summary">Checking wheel uploads…</div>
             <div class="setup-upload-panel">
@@ -2620,8 +2657,8 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div id="setup_wheels_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Package profiles</summary>
+        <details class="setup-advanced">
+          <summary><span>Advanced · Package profiles</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_profiles_summary">Checking package profiles…</div>
             <div class="setup-upload-panel">
@@ -2636,8 +2673,8 @@ details[open] summary::after{ transform: rotate(0deg); }
             <div id="setup_profiles_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
-          <summary>Readiness</summary>
+        <details>
+          <summary><span>Step 3 · Readiness check</span></summary>
           <div class="field-shell">
             <div class="field-hint" id="setup_readiness_summary">Checking example 5 readiness…</div>
             <div class="help-actions-row compact-row">
