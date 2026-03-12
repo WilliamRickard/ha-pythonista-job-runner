@@ -23,6 +23,20 @@
   .kpis{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .queue-compact .kpi{min-height:48px;}
   .jobs-primary-row{gap:10px;}
+  .brand-compact .brand-support{display:none;}
+  .subline.monitor-subline{margin-top:2px;}
+  .jobs-header{padding-bottom:4px;}
+  .jobs-heading{font-size:15px;}
+  .jobs-support{display:none;}
+  .jobs-primary-row{gap:8px;}
+  .toggle-group .toggle-item{min-height:36px;padding:7px 10px;font-size:12px;}
+  .secondary-panel summary{min-height:36px;padding:6px 9px;}
+  .filters-sheet-trigger[open] .secondary-panel-body{padding:10px;}
+  .filters-field-group .field-label{margin-bottom:4px;}
+  .log-controls-group{grid-template-columns:1fr;}
+  .log-control-block{padding:8px;}
+  .find-tools .count{width:100%;padding:0;}
+
   .jobs-secondary-row{width:100%;justify-content:flex-start;}
   .sort-menu{width:auto;}
   .toggle-group{width:100%;}
@@ -66,7 +80,7 @@
 
 @media (max-width: 430px){
   .toplinks .linkbtn{padding:10px 12px;}
-  .jobs-support{max-width:30ch;}
+  .jobs-support{max-width:30ch;display:none;}
   .jobs-primary-row{gap:8px;}
   .jobs-secondary-row{gap:6px;}
   .sort-menu{width:auto;}
@@ -127,7 +141,7 @@
   .filters-sheet-trigger[open] .secondary-panel-body{position:fixed;left:8px;right:8px;bottom:8px;z-index:82;max-height:76vh;overflow:auto;padding:12px 12px calc(12px + env(safe-area-inset-bottom, 0px));}
   .filters-sheet-trigger[open] summary{position:relative;z-index:83;}
   .filters-sheet-trigger .field-hint{display:none;}
-  .filters-field-group{gap:10px;}
+  .filters-field-group{gap:8px;}
   .filters-field-group .separator{display:none;}
   .filters-footer-row{position:sticky;bottom:0;background:color-mix(in srgb, var(--panel) 92%, transparent);padding-top:8px;margin-top:4px;}
   .filter-presets .small{flex:1 1 auto;}

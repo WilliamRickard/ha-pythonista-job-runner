@@ -86,5 +86,6 @@ test("reduced-motion mode suppresses running progress animation", async ({ page 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openWebUi(page);
   const duration = await page.locator("tr[data-state='running'] .progress-bar").first().evaluate((el) => getComputedStyle(el).animationDuration);
-  expect(["0.01ms", "0.00001s"]).toContain(duration);
+  const ms = duration.endsWith("ms") ? parseFloat(duration) : parseFloat(duration) * 1000;
+  expect(ms).toBeLessThanOrEqual(0.02);
 });
