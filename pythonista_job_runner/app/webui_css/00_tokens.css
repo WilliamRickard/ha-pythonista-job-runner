@@ -20,6 +20,7 @@
   --tableHeaderBg: rgba(20,24,36,0.92);
   --toastBg: rgba(20,24,36,0.96);
 
+  --sans: "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Typography */
@@ -61,9 +62,9 @@
 html{ font-size: var(--fs-md); }
 
 body{
-  font-family: -apple-system, system-ui, sans-serif;
-  font-size: var(--fs-sm);
-  line-height: 1.45;
+  font-family: var(--sans);
+  font-size: var(--fs-md);
+  line-height: 1.5;
   margin: 0;
   padding: 16px;
   background:
