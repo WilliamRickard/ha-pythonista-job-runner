@@ -254,10 +254,6 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .logtools{
   margin-top: 6px;
-  display:flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
   color: var(--muted);
   font-size: 12px;
 }
@@ -294,21 +290,12 @@ tr.job-row[data-state="running"]{ background: color-mix(in srgb, rgba(61,140,230
 
 .hilitebar{
   margin-top: 10px;
-  display:flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
 }
 
-.hilitebar .hilite-label{
-  color: var(--muted);
-  font-size: 12px;
-  padding: 0 6px;
-}
+.hilitebar .hilite-label{display:none;}
 
 .hilitebar input[type="text"]{
   width: 160px;
-  flex: 0 0 auto;
 }
 
 .hterms_custom{
