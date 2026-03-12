@@ -27,21 +27,33 @@
                   <span class="badge queued detail-inline-state" id="detail_inline_state" hidden>queued</span>
                 </div>
                 <div class="detail-subtitle">Lifecycle, outputs, and logs in one place.</div>
+                <div class="detail-context-row" aria-label="Detail context cues">
+                  <span class="context-chip" id="detail_context_scope">Scope: Jobs</span>
+                  <span class="context-chip" id="detail_context_actor">Actor: —</span>
+                  <span class="context-chip" id="detail_context_age">Age: —</span>
+                  <span class="context-chip" id="detail_context_duration">Duration: —</span>
+                </div>
+                <div class="detail-primary-path" role="note">Primary path: scan state banner, then use Download zip when resolved.</div>
               </div>
               <div class="actionsbar detail-primary-actions" role="group" aria-label="Job actions">
-                <button type="button" class="small primary" data-action="download-zip">Download zip</button>
-                <button type="button" class="small danger" id="btn_cancel" data-action="cancel">Cancel</button>
-                <button type="button" class="small danger" id="btn_delete" data-action="delete">Delete</button>
-                <details class="secondary-panel detail-more-actions">
+                <button type="button" class="small primary" data-action="download-zip" data-action-role="section-primary" data-risk-level="state-change">Download zip</button>
+                <button type="button" class="small danger" id="btn_cancel" data-action="cancel" data-action-role="section-destructive" data-risk-level="destructive">Cancel</button>
+                <button type="button" class="small danger" id="btn_delete" data-action="delete" data-action-role="section-destructive" data-risk-level="destructive">Delete</button>
+                <details class="secondary-panel detail-more-actions" data-action-role="section-overflow">
                   <summary>More</summary>
                   <div class="secondary-panel-body detail-more-actions-body" role="menu" aria-label="More job actions">
-                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem">Download stdout</button>
-                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem">Download stderr</button>
-                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem">Copy curl</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stdout" role="menuitem" data-risk-level="harmless">Download stdout</button>
+                    <button type="button" class="small tertiary" data-action="download-text" data-which="stderr" role="menuitem" data-risk-level="harmless">Download stderr</button>
+                    <button type="button" class="small tertiary" data-action="copy-curl" role="menuitem" data-risk-level="harmless">Copy curl</button>
                   </div>
                 </details>
               </div>
             </div>
+
+            <section id="detail_handoff" class="detail-handoff" role="status" aria-live="polite" hidden>
+              <strong id="detail_handoff_title">Opened from Jobs</strong>
+              <span id="detail_handoff_body">Context will appear after selecting a job.</span>
+            </section>
 
             <section id="detail_state_banner" class="state-banner" role="status" aria-live="polite" style="margin-top:10px;" hidden>
               <div class="state-banner-main">
@@ -73,34 +85,45 @@
               </article>
             </section>
 
-            <div class="tabs detail-tabs" style="margin-top:14px;" role="tablist" aria-label="Detail sections">
+            <div class="detail-segmented-shell" style="margin-top:14px;">
+            <div class="tabs detail-tabs" role="tablist" aria-label="Detail sections">
               <button type="button" class="chip small" data-action="set-tab" data-tab="overview" id="tab_overview" role="tab" aria-selected="true" aria-controls="overview" tabindex="0">summary</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stdout" id="tab_stdout" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stdout</button>
               <button type="button" class="chip small" data-action="set-tab" data-tab="stderr" id="tab_stderr" role="tab" aria-selected="false" aria-controls="logpanel" tabindex="-1">stderr</button>
             </div>
+            </div>
 
             <div id="overview" style="margin-top:12px;" role="tabpanel" aria-labelledby="tab_overview" aria-hidden="false">
               <div class="detail-summary-stack">
+                <div class="section-kicker">Routine checks</div>
                 <section class="detail-summary-panel" aria-label="Lifecycle timeline">
                   <h3>Lifecycle</h3>
                   <ul id="detail_timeline" class="timeline"></ul>
                 </section>
-
-                <details class="detail-block detail-meta-block">
-                  <summary>Metadata</summary>
-                  <div class="scroll-area scroll-area-meta">
-                    <div class="item-list meta-items" id="meta"></div>
-                  </div>
-                </details>
 
                 <section class="detail-summary-panel detail-overview-note">
                   <h3>Quick facts</h3>
                   <div class="hint" id="overview_text"></div>
                 </section>
 
-                <details class="detail-block detail-api-block">
-                  <summary>Request and API</summary>
-                  <textarea id="curl_snippet" class="scroll-area-control" rows="9" readonly></textarea>
+                <details class="inline-help detail-inline-help">
+                  <summary>Need deeper troubleshooting guidance?</summary>
+                  <div class="hint">Start with state banner and summary cards first. Open stderr only for failures, then inspect Metadata and Request/API for root-cause context.</div>
+                </details>
+
+                <details class="detail-advanced-shell" data-section="advanced">
+                  <summary><span class="section-kicker section-kicker-advanced">Advanced diagnostics</span></summary>
+                  <details class="detail-block detail-meta-block" data-section="advanced">
+                    <summary>Metadata</summary>
+                    <div class="scroll-area scroll-area-meta">
+                      <div class="item-list meta-items" id="meta"></div>
+                    </div>
+                  </details>
+
+                  <details class="detail-block detail-api-block" data-section="advanced">
+                    <summary>Request and API</summary>
+                    <textarea id="curl_snippet" class="scroll-area-control" rows="9" readonly></textarea>
+                  </details>
                 </details>
               </div>
             </div>

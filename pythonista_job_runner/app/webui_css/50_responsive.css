@@ -40,6 +40,10 @@
   .jobs-secondary-row{width:100%;justify-content:flex-start;}
   .sort-menu{width:auto;}
   .toggle-group{width:100%;}
+  .triage-strip{flex-direction:column;align-items:flex-start;}
+  .triage-actions{width:100%;justify-content:flex-start;}
+  .primary-path-strip{flex-direction:column;align-items:flex-start;}
+  #jobs_primary_open{width:100%;}
   .detail-priority-strip{ grid-template-columns: 1fr; }
   .timeline{ grid-template-columns: 1fr; }
   .detail-primary-actions{width:100%;overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;}

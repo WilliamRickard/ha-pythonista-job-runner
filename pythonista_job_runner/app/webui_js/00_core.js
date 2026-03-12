@@ -134,10 +134,21 @@
     }
   }
 
+
+  function updateModeContextUi() {
+    const label = els.ui_mode_label;
+    if (!label) return;
+    const paneLabel = (pane === "detail") ? "Detail" : "Jobs list";
+    const tabLabel = (currentTab === "overview") ? "Summary" : String(currentTab || "stdout").toUpperCase();
+    if (pane === "detail") label.textContent = `Mode: ${paneLabel} · ${tabLabel}`;
+    else label.textContent = `Mode: ${paneLabel}`;
+  }
+
   function setPane(next) {
     pane = (next === "detail") ? "detail" : "jobs";
     storageSet("pjr_pane", pane);
     ensurePaneForViewport();
+    updateModeContextUi();
   }
 
   function updateSplitUi() {
@@ -155,12 +166,14 @@
       els.pane_jobs.hidden = false;
       els.pane_detail.hidden = false;
       if (els.btn_back) els.btn_back.hidden = true;
+      updateModeContextUi();
       return;
     }
 
     els.pane_jobs.hidden = (pane !== "jobs");
     els.pane_detail.hidden = (pane !== "detail");
     if (els.btn_back) els.btn_back.hidden = (pane !== "detail");
+    updateModeContextUi();
   }
 
   async function api(path, opts) {
@@ -479,6 +492,7 @@ function parseUtcSeconds(v) {
   function setTab(next) {
     currentTab = next;
     storageSet("pjr_tab", next);
+    updateModeContextUi();
 
     const tStdout = document.getElementById("tab_stdout");
     const tStderr = document.getElementById("tab_stderr");
@@ -536,6 +550,7 @@ function parseUtcSeconds(v) {
     const cls = state || "queued";
     const span = document.createElement("span");
     span.className = `badge ${cls}`;
+    span.dataset.state = cls;
 
     const icon = document.createElement("span");
     icon.className = "badge-icon";
@@ -546,12 +561,25 @@ function parseUtcSeconds(v) {
       done: "✓",
       error: "!",
     };
+    const labelByState = {
+      running: "Running",
+      queued: "Queued",
+      done: "Done",
+      error: "Failed",
+    };
+    const detailByState = {
+      running: "active",
+      queued: "waiting",
+      done: "resolved",
+      error: "needs attention",
+    };
     icon.textContent = iconByState[cls] || "•";
 
     const label = document.createElement("span");
     label.className = "badge-label";
-    label.textContent = cls;
+    label.textContent = labelByState[cls] || cls;
 
+    span.setAttribute("aria-label", `${label.textContent}, ${detailByState[cls] || "state"}`);
     span.append(icon, label);
     return span;
   }

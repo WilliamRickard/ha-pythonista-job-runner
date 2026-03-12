@@ -150,6 +150,7 @@ function toggleAuto() {
           closeHeaderMoreMenu();
           await openAbout();
         }
+        if (action === "open-primary-job") openPrimaryJob();
         if (action === "close-about") closeAbout();
         if (action === "close-confirm") closeConfirm();
         if (action === "confirm-accept") await acceptConfirm();
@@ -540,6 +541,8 @@ function toggleAuto() {
     els.lastupdated = document.getElementById("lastupdated");
     els.ha_host_pill = document.getElementById("ha_host_pill");
     els.ha_host_label = document.getElementById("ha_host_label");
+    els.ui_mode_pill = document.getElementById("ui_mode_pill");
+    els.ui_mode_label = document.getElementById("ui_mode_label");
     els.meta_ha_host = document.getElementById("meta_ha_host");
     els.meta_access_mode = document.getElementById("meta_access_mode");
     els.meta_allowed_cidrs = document.getElementById("meta_allowed_cidrs");
@@ -561,6 +564,7 @@ function toggleAuto() {
 
     els.jobs_banner = document.getElementById("jobs_banner");
     els.jobs_loading = document.getElementById("jobs_loading");
+    els.jobs_primary_open = document.getElementById("jobs_primary_open");
 
     els.pollms = document.getElementById("pollms");
     els.search = document.getElementById("search");
@@ -584,6 +588,10 @@ function toggleAuto() {
     els.detail = document.getElementById("detail");
     els.detail_empty = document.getElementById("detail_empty");
     els.jobid = document.getElementById("jobid");
+    els.detail_context_scope = document.getElementById("detail_context_scope");
+    els.detail_context_actor = document.getElementById("detail_context_actor");
+    els.detail_context_age = document.getElementById("detail_context_age");
+    els.detail_context_duration = document.getElementById("detail_context_duration");
     els.meta = document.getElementById("meta");
     els.detail_state_banner = document.getElementById("detail_state_banner");
     els.state_badge = document.getElementById("state_badge");
@@ -599,6 +607,9 @@ function toggleAuto() {
     els.detail_progress_bar = document.getElementById("detail_progress_bar");
     els.detail_progress_copy = document.getElementById("detail_progress_copy");
     els.detail_breadcrumb_current = document.getElementById("detail_breadcrumb_current");
+    els.detail_handoff = document.getElementById("detail_handoff");
+    els.detail_handoff_title = document.getElementById("detail_handoff_title");
+    els.detail_handoff_body = document.getElementById("detail_handoff_body");
 
     els.follow = document.getElementById("follow");
     els.btn_live = document.getElementById("btn_live");

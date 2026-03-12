@@ -8,7 +8,8 @@
         </div>
         <button type="button" id="adv_close" class="small tertiary" data-action="close-advanced" aria-label="Close advanced">Close</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body adv-guided">
+        <div class="setup-guidance" role="note"><strong>Use with care:</strong> start with Maintenance, then open package sections only for diagnostics.</div>
         <details open>
           <summary>Maintenance</summary>
           <div class="field-shell">
@@ -17,7 +18,7 @@
                 <div class="item-title">Finished jobs</div>
                 <div class="item-description">Delete job files for completed runs.</div>
               </div>
-              <button type="button" class="small danger" data-action="purge" data-state="done">Purge done jobs</button>
+              <button type="button" class="small danger" data-action="purge" data-state="done" data-risk-level="destructive">Purge done jobs</button>
             </div>
             <div class="separator" role="separator" aria-hidden="true"></div>
             <div class="item-row">
@@ -25,7 +26,7 @@
                 <div class="item-title">Failed jobs</div>
                 <div class="item-description">Delete job files for failed runs.</div>
               </div>
-              <button type="button" class="small danger" data-action="purge" data-state="error">Purge error jobs</button>
+              <button type="button" class="small danger" data-action="purge" data-state="error" data-risk-level="destructive">Purge error jobs</button>
             </div>
             <div class="separator" role="separator" aria-hidden="true"></div>
             <div class="item-row">
@@ -33,7 +34,7 @@
                 <div class="item-title">Interface state</div>
                 <div class="item-description">Reset saved UI preferences such as density and filters.</div>
               </div>
-              <button type="button" class="small tertiary" data-action="reset-ui">Reset UI settings</button>
+              <button type="button" class="small tertiary" data-action="reset-ui" data-risk-level="state-change">Reset UI settings</button>
             </div>
             <div class="separator" role="separator" aria-hidden="true"></div>
             <div class="item-row">
@@ -41,11 +42,11 @@
                 <div class="item-title">Quick actions</div>
                 <div class="item-description">Open the command menu for refresh, search, help, and navigation.</div>
               </div>
-              <button type="button" class="small tertiary" data-action="open-command">Open command menu</button>
+              <button type="button" class="small tertiary" data-action="open-command" data-risk-level="harmless">Open command menu</button>
             </div>
           </div>
         </details>
-        <details open>
+        <details>
           <summary>Package setup</summary>
           <div class="field-shell">
             <div class="item-row">
@@ -53,11 +54,11 @@
                 <div class="item-title">Example 5 readiness</div>
                 <div class="item-description">Check the target wheel, profile, and active add-on settings before running the profile example.</div>
               </div>
-              <button type="button" class="small tertiary" data-action="open-setup">Open setup</button>
+              <button type="button" class="small tertiary" data-action="open-setup" data-risk-level="harmless">Open setup</button>
             </div>
           </div>
         </details>
-        <details open>
+        <details>
           <summary>Package storage</summary>
           <div class="field-shell">
             <div class="item-row">
@@ -66,16 +67,16 @@
                 <div class="item-description">Inspect usage, prune to the configured size cap, or purge caches without touching running jobs.</div>
               </div>
               <div class="item-actions">
-                <button type="button" class="small tertiary" data-action="refresh-package-cache">Refresh</button>
-                <button type="button" class="small tertiary" data-action="prune-package-cache">Prune</button>
-                <button type="button" class="small danger" data-action="purge-package-cache">Purge caches</button>
+                <button type="button" class="small tertiary" data-action="refresh-package-cache" data-risk-level="harmless">Refresh</button>
+                <button type="button" class="small tertiary" data-action="prune-package-cache" data-risk-level="state-change">Prune</button>
+                <button type="button" class="small danger" data-action="purge-package-cache" data-risk-level="destructive">Purge caches</button>
               </div>
             </div>
             <div class="field-hint" id="package_cache_summary">Package cache summary unavailable.</div>
             <div id="package_cache_list" class="stack-list" aria-live="polite"></div>
           </div>
         </details>
-        <details open>
+        <details>
           <summary>Package profiles</summary>
           <div class="field-shell">
             <div class="item-row">
@@ -83,7 +84,7 @@
                 <div class="item-title">Reusable package profiles</div>
                 <div class="item-description">Build and reuse named package environments from /config/package_profiles.</div>
               </div>
-              <button type="button" class="small tertiary" data-action="refresh-package-profiles">Refresh</button>
+              <button type="button" class="small tertiary" data-action="refresh-package-profiles" data-risk-level="harmless">Refresh</button>
             </div>
             <div class="field-hint" id="package_profiles_summary">No package profiles loaded yet.</div>
             <div id="package_profiles_list" class="stack-list" aria-live="polite"></div>

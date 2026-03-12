@@ -260,3 +260,10 @@ details[open] summary::after{ transform: rotate(0deg); }
 .setup-guided details{margin-top:2px;}
 .setup-advanced summary span{color:var(--muted);font-weight:700;}
 .setup-guided details:not([open]) summary{opacity:0.95;}
+
+.adv-guided details:not([open]) summary{color:var(--muted);}
+.adv-guided .modal-sub{max-width:34ch;}
+
+.inline-help{margin-top:8px;}
+.inline-help .field-hint,.inline-help .hint{margin-top:6px;}
+.modal [data-risk-level="destructive"]{border-color:rgba(255,92,92,0.62);}

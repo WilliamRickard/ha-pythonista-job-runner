@@ -54,6 +54,42 @@ function escapeHtml(s) {
     els.page_summary.textContent = `Page ${currentPage} of ${pages} · ${total} jobs`;
   }
 
+
+
+  function openPrimaryJob() {
+    const ordered = jobsCache.slice(0);
+    ordered.sort((a, b) => parseUtcSeconds(b.created_utc) - parseUtcSeconds(a.created_utc));
+    const priority = ordered.find((j) => String(j.state || "queued") === "error")
+      || ordered.find((j) => String(j.state || "queued") === "running")
+      || ordered.find((j) => String(j.state || "queued") === "queued")
+      || ordered[0];
+    if (!priority || !priority.job_id) {
+      toast("err", "No jobs available", "Run a job first, then use Open priority job.");
+      return;
+    }
+    setView(String(priority.state || "all"));
+    selectJob(String(priority.job_id || ""));
+  }
+
+  function _timingSignals(job) {
+    const state = String((job && job.state) || "queued");
+    const createdTs = parseUtcSeconds(job && job.created_utc);
+    const ageSeconds = createdTs ? Math.max(0, nowUtcSeconds() - createdTs) : 0;
+    const durationRaw = Number(job && job.duration_seconds);
+    const durationSeconds = Number.isFinite(durationRaw) && durationRaw >= 0 ? durationRaw : 0;
+    const staleQueued = state === "queued" && ageSeconds >= 600;
+    const longRunning = state === "running" && durationSeconds >= 900;
+    const oldFailure = state === "error" && ageSeconds >= 1800;
+    return {
+      ageSeconds,
+      durationSeconds,
+      staleQueued,
+      longRunning,
+      oldFailure,
+      urgency: longRunning || staleQueued || state === "error",
+    };
+  }
+
   function _stateSpecificRowSummary(job) {
     const state = String((job && job.state) || "queued");
     const age = fmtAge(job && job.created_utc) || "Just now";
@@ -62,24 +98,26 @@ function escapeHtml(s) {
     const exitText = (job && job.exit_code !== undefined && job.exit_code !== null && String(job.exit_code) !== "") ? `Exit ${job.exit_code}` : "";
     const errorText = String((job && job.error) || "").trim();
     const resultReady = !!(job && job.result_ready);
+    const timing = _timingSignals(job);
 
     if (state === "running") {
       return {
-        lead: "Running now",
+        lead: timing.longRunning ? "Running long" : "Running now",
         pieces: [
-          { text: `Duration ${dur}`, cls: "meta-state" },
+          { text: `Started ${age} ago`, cls: "meta-state" },
+          { text: `Duration ${dur}${timing.longRunning ? " · long-running" : ""}`, cls: timing.longRunning ? "meta-risk" : "meta-state" },
           user ? { text: user } : null,
-          { text: "Live logs available" },
         ].filter(Boolean),
       };
     }
     if (state === "done") {
       return {
-        lead: resultReady ? "Archive ready" : "Completed",
+        lead: resultReady ? "Resolved · archive ready" : "Resolved",
         pieces: [
-          { text: `Duration ${dur}`, cls: "meta-state" },
+          { text: `Finished after ${dur}`, cls: "meta-state" },
+          { text: `Created ${age} ago`, cls: "meta-state" },
           user ? { text: user } : null,
-          exitText ? { text: exitText } : { text: "Ready to download" },
+          exitText ? { text: exitText } : { text: "Resolved successfully" },
         ].filter(Boolean),
       };
     }
@@ -87,6 +125,7 @@ function escapeHtml(s) {
       return {
         lead: errorText ? errorText : "Failed",
         pieces: [
+          { text: `Age ${age}${timing.oldFailure ? " · still unresolved" : ""}`, cls: timing.oldFailure ? "meta-risk" : "meta-state" },
           exitText ? { text: exitText, cls: "meta-state" } : { text: `Duration ${dur}`, cls: "meta-state" },
           user ? { text: user } : null,
           { text: "Open details for stderr" },
@@ -94,9 +133,9 @@ function escapeHtml(s) {
       };
     }
     return {
-      lead: "Waiting to start",
+      lead: timing.staleQueued ? "Queued too long" : "Waiting to start",
       pieces: [
-        { text: `Queued ${age}`, cls: "meta-state" },
+        { text: `Queued ${age}${timing.staleQueued ? " · delayed" : ""}`, cls: timing.staleQueued ? "meta-risk" : "meta-state" },
         user ? { text: user } : null,
         { text: "Will run when a worker is free" },
       ].filter(Boolean),
@@ -325,7 +364,7 @@ function applyFilters() {
 
   /**
    * Ensure a table row exists for the given job id, creating and initialising one with controls if necessary.
-   * The created row contains job metadata cells, action controls (View, Zip, Copy id) and attaches the appropriate event handlers.
+   * The created row contains operator-first summary text, lifecycle metadata cells, and action controls, then attaches event handlers.
    * @param {string} jobId - The job identifier.
    * @returns {HTMLTableRowElement|null} The existing or newly created table row element for the job, or `null` if `jobId` is falsy.
    */
@@ -405,14 +444,22 @@ function applyFilters() {
     const btnJob = document.createElement("button");
     btnJob.type = "button";
     btnJob.className = "small jobbtn tooltip-target hover-preview-trigger";
-    btnJob.setAttribute("data-tooltip", "Open details");
+    btnJob.setAttribute("data-tooltip", "Open details and next actions");
     btnJob.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
     btnJob.addEventListener("mouseenter", () => scheduleHoverOpen(btnJob));
     btnJob.addEventListener("mouseleave", scheduleHoverClose);
 
+    const jobTitle = document.createElement("span");
+    jobTitle.className = "jobbtn-title";
+    const jobIdMeta = document.createElement("span");
+    jobIdMeta.className = "jobbtn-id";
+    btnJob.append(jobTitle, jobIdMeta);
+
     const inlineState = document.createElement("button");
     inlineState.type = "button";
     inlineState.className = "state-badge-inline state-badge-trigger tooltip-target hover-preview-trigger";
+    inlineState.setAttribute("data-action-role", "row-inline");
+    inlineState.setAttribute("data-risk-level", "harmless");
     inlineState.setAttribute("aria-label", "Quick peek");
     inlineState.setAttribute("data-tooltip", "Quick peek");
     inlineState.addEventListener("click", (ev) => {
@@ -450,6 +497,8 @@ function applyFilters() {
     const stateBtn = document.createElement("button");
     stateBtn.type = "button";
     stateBtn.className = "state-badge-trigger tooltip-target hover-preview-trigger";
+    stateBtn.setAttribute("data-action-role", "row-inline");
+    stateBtn.setAttribute("data-risk-level", "harmless");
     stateBtn.setAttribute("aria-label", "Quick peek");
     stateBtn.setAttribute("data-tooltip", "Quick peek");
     stateBtn.addEventListener("click", (ev) => {
@@ -474,12 +523,16 @@ function applyFilters() {
     const btnView = document.createElement("button");
     btnView.type = "button";
     btnView.className = "small primary row-view";
+    btnView.setAttribute("data-action-role", "row-primary");
+    btnView.setAttribute("data-risk-level", "state-change");
     btnView.textContent = "View";
     btnView.addEventListener("click", () => selectJob(tr.dataset.jobId || ""));
 
     const overflow = document.createElement("button");
     overflow.type = "button";
     overflow.className = "small tertiary row-overflow tooltip-target";
+    overflow.setAttribute("data-action-role", "row-overflow");
+    overflow.setAttribute("data-risk-level", "harmless");
     overflow.setAttribute("aria-label", "More row actions");
     overflow.setAttribute("data-tooltip", "More actions");
     overflow.textContent = "⋯";
@@ -500,9 +553,11 @@ function applyFilters() {
     const state = j.state || "queued";
     const age = fmtAge(j.created_utc);
     const dur = fmtDuration(j.duration_seconds);
+    const timing = _timingSignals(j);
 
     tr.dataset.jobId = jobId;
     tr.dataset.state = state;
+    tr.dataset.actor = user || "System";
     const isSelected = !!(currentJob && jobId === currentJob);
     tr.classList.toggle("selected", isSelected);
     tr.setAttribute("aria-selected", isSelected ? "true" : "false");
@@ -510,10 +565,17 @@ function applyFilters() {
     const tdJob = tr.children[0];
     const btnJob = tdJob.querySelector(".jobbtn");
     if (btnJob) {
-      btnJob.textContent = jobId;
-      btnJob.title = jobId;
+      const model = _progressModelForState(state);
+      const titleEl = btnJob.querySelector(".jobbtn-title");
+      const idEl = btnJob.querySelector(".jobbtn-id");
+      const actor = user || "System";
+      if (titleEl) titleEl.textContent = `${actor} · ${model.label}`;
+      if (idEl) idEl.textContent = jobId ? `${age || "now"} old · ${dur || "not started"} · ID ${jobId}` : "";
+      btnJob.title = `${model.label} · ${jobId}`;
     }
-    tr.setAttribute("aria-label", `Job ${jobId}, ${state}`);
+    const model = _progressModelForState(state);
+    tr.setAttribute("aria-label", `${model.label}. ${user ? `Submitted by ${user}. ` : ""}Job ID ${jobId}. Age ${age || "unknown"}. Duration ${dur || "not started"}. Press Enter for details.`);
+    tr.dataset.urgency = timing.urgency ? "urgent" : "normal";
 
     const meta = tdJob.querySelector(".jobmeta");
     if (meta) {
@@ -555,8 +617,8 @@ function applyFilters() {
       stateBtn.appendChild(badgeEl(state));
     }
 
-    tr.children[2].textContent = age;
-    tr.children[3].textContent = dur;
+    tr.children[2].textContent = timing.staleQueued ? `${age} · delayed` : age;
+    tr.children[3].textContent = timing.longRunning ? `${dur} · long` : dur;
     tr.children[4].textContent = user;
 
     const zip = tr.children[5].querySelector("a");
@@ -585,6 +647,10 @@ function applyFilters() {
     if (!hasJobs) {
       const emptyTitle = document.getElementById("empty_title");
       const emptyBody = document.getElementById("empty_body");
+      const emptyAction = document.getElementById("empty_action");
+      const emptyIcon = document.getElementById("empty_icon");
+      const emptyRetry = document.getElementById("empty_retry");
+      const emptyShell = document.getElementById("empty");
       if (emptyTitle && emptyBody) {
         if (jobsViewState === "initial") {
           emptyTitle.textContent = "Loading jobs";
@@ -594,21 +660,30 @@ function applyFilters() {
           emptyBody.textContent = "The runner is unreachable right now. Check connection details and retry refresh.";
         } else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) {
           emptyTitle.textContent = "No matching jobs";
-          emptyBody.textContent = "No jobs match the current search/filter. Clear search or switch state filters.";
+          emptyBody.textContent = "No jobs match the current filters. Clear filters, then try Running or Errors first.";
         } else {
-          emptyTitle.textContent = "No jobs yet";
-          emptyBody.textContent = "Copy the sample task, run it from Pythonista, then return here to open the first job.";
+          emptyTitle.textContent = "No jobs received yet";
+          emptyBody.textContent = "Copy the sample task, run it in Pythonista, then return here and open the newest job first.";
         }
 
-        const emptyAction = document.getElementById("empty_action");
         if (emptyAction) {
           if (jobsViewState === "disconnected") {
-            emptyAction.textContent = "Use header Refresh. If it persists, open Help for troubleshooting steps.";
+            emptyAction.textContent = "Use Refresh jobs first. If still disconnected, open Help and run health checks.";
           } else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) {
-            emptyAction.textContent = "Use Clear to reset search and filters quickly.";
+            emptyAction.textContent = "Use Clear to reset filters, then start with Running or Errors.";
           } else {
             emptyAction.textContent = "Quick start has the step-by-step path if you want a guided first run.";
           }
+        }
+        if (emptyRetry) emptyRetry.hidden = jobsViewState !== "disconnected";
+        if (emptyIcon) {
+          if (jobsViewState === "disconnected") emptyIcon.textContent = "⚠";
+          else if (view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) emptyIcon.textContent = "◌";
+          else emptyIcon.textContent = "○";
+        }
+        if (emptyShell) {
+          const mode = (jobsViewState === "disconnected") ? "disconnected" : ((view !== "all" || (query && String(query).trim()) || String(filterUser || "").trim() || String(filterSince || "").trim()) ? "filtered" : "fresh");
+          emptyShell.dataset.state = mode;
         }
       }
     }
@@ -685,6 +760,28 @@ function applyFilters() {
       els.meta_allowed_cidrs.hidden = false;
       const strong = els.meta_allowed_cidrs.querySelector("strong");
       if (strong) strong.textContent = allowedCidrsText;
+    }
+
+    const triageShell = document.getElementById("jobs_triage");
+    const triageTitle = document.getElementById("triage_title");
+    const triageSubtitle = document.getElementById("triage_subtitle");
+    const triageErrors = document.getElementById("triage_errors");
+    const triageRunning = document.getElementById("triage_running");
+    const triageQueued = document.getElementById("triage_queued");
+    const staleQueuedCount = jobsCache.filter((j) => _timingSignals(j).staleQueued).length;
+    const longRunningCount = jobsCache.filter((j) => _timingSignals(j).longRunning).length;
+    const urgentCount = error + staleQueuedCount + longRunningCount;
+    if (triageErrors) triageErrors.textContent = `Errors ${error}`;
+    if (triageRunning) triageRunning.textContent = `Running ${running}${longRunningCount ? ` · long ${longRunningCount}` : ""}`;
+    if (triageQueued) triageQueued.textContent = `Queued ${queued}${staleQueuedCount ? ` · delayed ${staleQueuedCount}` : ""}`;
+    if (triageShell) {
+      triageShell.hidden = total <= 0;
+      triageShell.dataset.urgency = urgentCount > 0 ? "urgent" : "clear";
+    }
+    if (triageTitle) triageTitle.textContent = urgentCount > 0 ? "Urgent triage" : "Queue triage";
+    if (triageSubtitle) {
+      if (urgentCount > 0) triageSubtitle.textContent = `${urgentCount} items need attention first.`;
+      else triageSubtitle.textContent = "No urgent conditions. Start with running jobs.";
     }
 
     els.stats.hidden = false;
