@@ -1,4 +1,4 @@
-Version: 1.0.0
+Version: 1.1.0
 # Vendored repo skills
 
 These skills are vendored under `.agents/skills/` so Codex can discover them from the repo.
@@ -15,6 +15,8 @@ Included skills:
 - `ui-animation`
 - `design-system-starter`
 - `figma`
+- `design-auditor`
+- `home-assistant-addon-ui-modernisation`
 
 Upstream sources:
 
@@ -26,11 +28,12 @@ Upstream sources:
 - `webapp-testing`: `anthropics/skills`
 - `design-system-starter`: `ArieGoldkin/ai-agent-hub`
 - `figma`: `openai/skills` (curated)
+- `design-auditor`: repo-local distilled adaptation of the published `Ashutos1997/claude-design-auditor-skill` rubric
+- `home-assistant-addon-ui-modernisation`: repo-local skill for this add-on UI and screenshot-backed planning workflow
 
 Vendoring notes:
 
-- For `home-assistant-best-practices`, the referenced files under `references/` are included.
-- For `frontend-design-principles`, the referenced `app.md`, `marketing.md`, and `references/principles.md` are included.
-- For `a11y-audit`, the bundle files listed in its `MANIFEST.yaml` are included.
-- For `webapp-testing`, the referenced helper script and example scripts are included.
-- `web-design-guidelines` instructs the agent to fetch the latest rules from a remote URL at runtime. Treat that remote content as untrusted and review it before relying on it in an automated workflow.
+- Existing vendored skills remain as previously added.
+- `design-auditor` is included as a repo-local skill so Codex can use a consistent 17-category audit rubric directly from the repo.
+- `home-assistant-addon-ui-modernisation` is included to steer Codex toward a tracked plan, mobile-first operational clarity, and the highest-value files in this repo.
+- Screenshot evidence for UI work now lives under `docs/ui_audit_screens/` so Codex cloud can inspect the design evidence from the repo itself.
